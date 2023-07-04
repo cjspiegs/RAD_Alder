@@ -146,6 +146,7 @@ day1.30.plot=ggplot(meta.day1.df[meta.day1.df$time=="30",], aes(x = treatment, y
   Fig.formatting+
   theme(legend.position = "right")+
    scale_fill_manual(values = color_palette)+
+  coord_cartesian(ylim = c(0.25,3.15))+
  geom_hline(data = meta.day1.df[meta.day1.df$time=="30",],
              aes(yintercept = mean(od_corrected),
                  linetype = "Average"),
@@ -162,6 +163,7 @@ day1.120.plot=ggplot(meta.day1.df[meta.day1.df$time=="120",], aes(x = treatment,
   Fig.formatting+
   theme(legend.position = "right")+
    scale_fill_manual(values = color_palette)+
+  coord_cartesian(ylim = c(0.25,3.15))+
  geom_hline(data = meta.day1.df[meta.day1.df$time=="120",],
              aes(yintercept = mean(od_corrected),
                  linetype = "Average"),
@@ -175,6 +177,7 @@ day1.960.plot=ggplot(meta.day1.df[meta.day1.df$time=="960",], aes(x = treatment,
   labs(x = "Treatment", y = "OD Corrected") +
   Fig.formatting+
   theme(legend.position = "right")+
+  coord_cartesian(ylim = c(0.25,3.15))+
    scale_fill_manual(values = color_palette)+
  geom_hline(data = meta.day1.df[meta.day1.df$time=="960",],
              aes(yintercept = mean(od_corrected),
@@ -189,6 +192,7 @@ day1.1440.plot=ggplot(meta.day1.df[meta.day1.df$time=="1440",], aes(x = treatmen
   labs(x = "Treatment", y = "OD Corrected") +
   Fig.formatting+
   theme(legend.position = "right")+
+  coord_cartesian(ylim = c(0.25,3.15))+
    scale_fill_manual(values = color_palette)+
  geom_hline(data = meta.day1.df[meta.day1.df$time=="1440",],
              aes(yintercept = mean(od_corrected),
@@ -203,6 +207,7 @@ day1.2880.plot=ggplot(meta.day1.df[meta.day1.df$time=="2880",], aes(x = treatmen
   labs(x = "Treatment", y = "OD Corrected") +
   Fig.formatting+
   theme(legend.position = "right")+
+   coord_cartesian(ylim = c(0.25,3.15))+
    scale_fill_manual(values = color_palette)+
  geom_hline(data = meta.day1.df[meta.day1.df$time=="2800",],
              aes(yintercept = mean(od_corrected),
@@ -217,6 +222,7 @@ day1.4320.plot=ggplot(meta.day1.df[meta.day1.df$time=="4320",], aes(x = treatmen
   labs(x = "Treatment", y = "OD Corrected") +
   Fig.formatting+
   theme(legend.position = "right")+
+  coord_cartesian(ylim = c(0.25,3.15))+
    scale_fill_manual(values = color_palette)+
  geom_hline(data = meta.day1.df[meta.day1.df$time=="4320",],
              aes(yintercept = mean(od_corrected),
@@ -240,7 +246,7 @@ all.day1.plot <- plot_grid(
   day1.4320.plot + theme(legend.position = "none"),
   extract.legend,
   ncol = 7,
-  rel_widths = c(8, 8, 8, 8, 8, 8, 6)
+  rel_widths = c(8, 8, 8, 8, 8, 8, 3)
 )
 
 all.day1.plot
