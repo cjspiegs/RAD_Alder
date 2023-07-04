@@ -1,0 +1,544 @@
+---
+title: "RAD Alder 2023"
+author: "Cody Spiegel"
+date: "`r Sys.Date()`"
+output: word_document
+---
+
+### Project overview
+For Project ‘RAD’ Alder, leaf packs are gamma irradiated or not, and deployed at “home” or “away” sites to test the role of  phyllosphere microbial communities on home-field advantage patterns in leaf litter decomposition between rivers on WA Olympic Peninsula. Using a reciprocal transplant experiment of leaf packs under four treatment conditions: phyllosphere present-home (PH), phyllosphere present-away (PAW), phyllosphere absent-home (ABH), phyllosphere absent-away (ABAW), the following questions are asked: 1) Do the source communities differ between the four treatments, 2) Do community metrics differ between the four treatments?, 3) Does plant compound metabolization differ between the four treatments?, 4) Does decomposition differ between the four treatments? 
+
+
+
+**DATA SETS**  
+This data set is among 3 to be generated for the project and focuses on:  
+
+(1) **dissolved organic carbon** (DOC) and  
+(2) **Fluorescence and UV-vis absorbance** indices  
+(3) **DOC Degradation** from either photo- or microbial decomposition 
+(4) **burning effects on plant material decomposition** using % mass loss
+
+```{r setup chunk, setup, include = FALSE, cache=FALSE, message=FALSE, warning=FALSE}
+if (!require('knitr')) install.packages('knitr'); library('knitr')
+knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.align='center')
+
+# load packages
+if (!require("pacman")) install.packages("pacman") # for rapid install if not in library
+
+# use pacman to load all the packages you are missing!
+pacman::p_load('knitr', 'lme4', 'lmerTest', 'tidyverse', 'magrittr', 'effects', 'plyr', 'dplyr', 
+               'plotrix', 'car',"gridExtra", "cowplot", "tools", "mgcv", "gratia", "tidymv")
+
+Fig.formatting<-(theme_classic()) +
+  theme(text=element_text(size=14),
+        legend.text.align = 0,
+        panel.border = element_rect(fill=NA, colour = "black", size=1),
+        aspect.ratio=1, 
+        axis.ticks.length=unit(0.25, "cm"),
+        axis.text.y=element_text(
+        margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm"), colour="black", size=12), 
+        axis.text.x=element_text(
+        margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm"), colour="black", size=12)) +
+  theme(legend.key.size = unit(0.4, "cm")) +
+  theme(aspect.ratio=1.3) 
+
+
+
+
+```
+
+Metabolic Assay
+```{r}
+meta.day1.df=read.csv("/Users/Cody1/Downloads/'RAD' Alder Metadata - day_1_metabolites_corrected.csv")
+
+aggra.day1.df <- meta.day1.df %>%
+  distinct(treatment, tree_id, deploy, metabolite, hfa) %>%
+  group_by(treatment, tree_id, deploy, metabolite, hfa) %>%
+  mutate(mean.od = mean(meta.day1.df$od_corrected, na.rm = TRUE))
+
+
+ggplot(meta.day1.df, aes(x = time, y = od_corrected, color = hfa, group = interaction(tree_id, metabolite, deploy))) +
+  geom_line()+
+  facet_grid(~treatment) +
+  labs(x = "Time", y = "Mean OD value") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+library(RColorBrewer)
+
+ggplot(meta.day1.df, aes(x = treatment, y = od_corrected, fill = treatment)) +
+  geom_boxplot() +
+  facet_grid(time~tree_id  + deploy +metabolite+hfa) +
+  scale_fill_manual(values = brewer.pal(n = 3, name = "Dark2"))+
+  labs(x = "Treatment", y = "OD Corrected") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+
+###visualize Day 1
+ggplot(meta.day1.df, aes(x = treatment, y = od_corrected, fill = treatment)) +
+  geom_boxplot() +
+  facet_grid(time ~ deploy + metabolite + hfa) +
+  scale_fill_manual(values = brewer.pal(n = 3, name = "Dark2")) +
+  labs(x = "Treatment", y = "OD Corrected") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+###############################
+
+# Calculate the overall average od_corrected value
+overall_avg <- mean(meta.day1.df[meta.day1.df$time == "1440", ]$od_corrected)
+
+ggplot(meta.day1.df[meta.day1.df$time == "1440", ], aes(x = hfa, y = od_corrected, group = interaction(tree_id, deploy, metabolite), fill = interaction(interaction(tree_id, deploy, metabolite)))) +
+  geom_boxplot() +
+  facet_grid(time ~ treatment) +
+  labs(x = "Treatment", y = "OD Corrected") +
+  Fig.formatting +
+  theme(legend.position = "bottom") +
+
+  # Add a horizontal reference line at the overall average
+  geom_hline(yintercept = overall_avg,
+             linetype = "dotted",
+             color = "red",
+             size=1.3) 
+
+#interpret the boxplots relative to the horizontal reference line. Boxplots above the line indicate greater od_corrected values, while boxplots below the line indicate lesser od_corrected values.
+
+ggplot(meta.day1.df[meta.day1.df$time=="1440",], aes(x = treatment, y = od_corrected, group= interaction(tree_id,deploy,metabolite), fill = interaction (interaction(tree_id, deploy, metabolite)))) +
+  geom_boxplot() +
+  facet_grid(time~hfa)+
+  labs(x = "Treatment", y = "OD Corrected") +
+  Fig.formatting+
+  theme(legend.position = "bottom")+
+  geom_hline(data = meta.day1.df[meta.day1.df$time=="1440",],
+             aes(yintercept = mean(od_corrected),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted") 
+
+###### THIS ONE
+
+
+ggplot(meta.day1.df[meta.day1.df$time=="1440",], aes(x = hfa, y = od_corrected, group= interaction(tree_id,deploy,metabolite), fill = factor(treatment))) +
+  geom_boxplot() +
+  facet_grid(~treatment)+
+  scale_fill_manual(values = color_palette)+
+  labs(x = "Treatment", y = "OD Corrected") +
+  Fig.formatting+
+  theme(legend.position = "bottom")+
+  geom_hline(data = meta.day1.df[meta.day1.df$time=="1440",],
+             aes(yintercept = mean(od_corrected),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")
+```
+
+
+```{r}
+########## THIS ONE TOO (JUST P VS AB)
+# Define a colorblind-friendly palette
+color_palette <- brewer.pal(n = 2, name = "Set1")
+
+
+day1.30.plot=ggplot(meta.day1.df[meta.day1.df$time=="30",], aes(x = treatment, y = od_corrected, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "OD Corrected") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day1.df[meta.day1.df$time=="30",],
+             aes(yintercept = mean(od_corrected),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+  ggtitle("30 min")+
+  Fig.formatting
+
+day1.30.plot
+
+day1.120.plot=ggplot(meta.day1.df[meta.day1.df$time=="120",], aes(x = treatment, y = od_corrected, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "OD Corrected") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day1.df[meta.day1.df$time=="120",],
+             aes(yintercept = mean(od_corrected),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+  ggtitle("2 hours")+
+  Fig.formatting 
+
+day1.960.plot=ggplot(meta.day1.df[meta.day1.df$time=="960",], aes(x = treatment, y = od_corrected, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "OD Corrected") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day1.df[meta.day1.df$time=="960",],
+             aes(yintercept = mean(od_corrected),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("16 hours")+
+  Fig.formatting 
+
+day1.1440.plot=ggplot(meta.day1.df[meta.day1.df$time=="1440",], aes(x = treatment, y = od_corrected, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "OD Corrected") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day1.df[meta.day1.df$time=="1440",],
+             aes(yintercept = mean(od_corrected),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("24 hours")+
+  Fig.formatting 
+
+day1.2880.plot=ggplot(meta.day1.df[meta.day1.df$time=="2880",], aes(x = treatment, y = od_corrected, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "OD Corrected") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day1.df[meta.day1.df$time=="2800",],
+             aes(yintercept = mean(od_corrected),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("48 hours")+
+  Fig.formatting
+
+day1.4320.plot=ggplot(meta.day1.df[meta.day1.df$time=="4320",], aes(x = treatment, y = od_corrected, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "OD Corrected") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day1.df[meta.day1.df$time=="4320",],
+             aes(yintercept = mean(od_corrected),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("72 hours")+
+  Fig.formatting 
+
+# Create the grid with modified plots
+extract.legend <- get_legend(
+  # create some space to the left of the legend
+  day1.30.plot + theme(legend.box.margin = margin(0, 0, 0, 10)))
+# Combine plots
+all.day1.plot <- plot_grid(
+  day1.30.plot + theme(legend.position = "none"),
+  day1.120.plot + theme(legend.position = "none"),
+  day1.960.plot + theme(legend.position = "none"),
+  day1.1440.plot + theme(legend.position = "none"),
+  day1.2880.plot + theme(legend.position = "none"),
+  day1.4320.plot + theme(legend.position = "none"),
+  extract.legend,
+  ncol = 7,
+  rel_widths = c(8, 8, 8, 8, 8, 8, 6)
+)
+
+all.day1.plot
+# Set the overall size of the combined plot
+ggsave("figures/all.day1.plot.pdf", all.day1.plot, width = 48, height = 20)
+
+
+```
+
+
+```{r}
+
+# Fit ANCOVA model with random effect
+model <- lmer(od_corrected ~ treatment + hfa + (1 | deploy), data = meta.day1.df)
+
+# Extract model summary
+summary(model)
+
+
+
+
+```
+
+
+```{r}
+# Filter the dataframe based on the treatments you want to compare
+filtered_df <- meta.day1.long.df[c("Phyllosphere", "Pack.ID", "Deployment", "Metabolite", "HFA", "Time..min.", "OD_corrected", "OD_value")]
+
+
+# Calculate the mean OD_corrected values for each treatment and time point
+mean_values <- aggregate(. ~ Phyllosphere + Pack.ID + Deployment + Metabolite + HFA + Time..min.+ OD_corrected, data = filtered_df, FUN = mean)
+
+# Plot the mean OD_corrected values against the time points
+ggplot(mean_values, aes(x = HFA, y = OD_value, fill=Phyllosphere, linetype= Phyllosphere)) +
+  geom_boxplot(aes(group = interaction(Pack.ID, Deployment))) +
+  facet_grid(Metabolite~OD_corrected)+
+  ggtitle("Mean OD_value at each OD_corrected for different treatments") +
+  theme_minimal() 
+
+
+
+
+funique(filtered_data$HFA)
+unique(filtered_data$Well.ID)
+unique(meta.day1.long.df$Phyllosphere)
+unique(meta.day1.long.df$Well.ID)
+filtered_data <- meta.day1.long.df[meta.day1.long.df$HFA != "" &
+                                    meta.day1.long.df$Well.ID != "" &
+                                    meta.day1.long.df$Phyllosphere %in% c("P", "AB"), ]
+
+
+
+```
+
+
+```{r}
+# Calculate the mean OD_corrected values for each treatment and time point
+mean_values <- aggregate(. ~ Phyllosphere + Tree_ID + Deployment + Metabolite + HFA+ Time..min., data = filtered_df, FUN = mean)
+
+# Plot the mean OD_corrected values against the time points
+
+filtered_mean_values <- mean_values[mean_values$Deployment == "HOK 1", ]
+
+ggplot(filtered_mean_values, aes(x = HFA , y = OD_value)) +
+  geom_boxplot(aes(color = interaction(Phyllosphere, Tree_ID, Deployment))) +
+  labs(x = "Time (min)", y = "Mean OD_corrected") +
+  facet_grid(~Metabolite)+
+  ggtitle("Mean OD_corrected at each time point for different treatments") +
+  ggtitle("Deployment Site HOK 1")+
+Fig.formatting
+
+# Plot the mean OD_corrected values against the time points
+ggplot(mean_values, aes(x = Time..min., y = OD_30_corrected)) +  # Update with the desired time point column
+  geom_line(aes(color = interaction(Phyllosphere, Tree_ID, Deployment, Metabolite))) +
+  labs(x = "Time (min)", y = "Mean OD_corrected") +
+  ggtitle("Mean OD_corrected at each time point for different treatments") +
+  theme_minimal()
+
+
+```
+
+
+```{r}
+meta.day1.df$Tree_ID <- gsub("[0-9-]", "", meta.day1.df$Tree_ID)
+meta.day1.df$Deployment <- gsub("[0-9]", "", meta.day1.df$Deployment )
+
+library(tidyr)
+
+# Pivot the specific columns to long format
+meta.day1.long.df=pivot_longer(meta.day1.df, cols = matches("^OD_\\d+_corrected$"), names_to = "OD_corrected", values_to = "OD_value")
+
+# Calculate average OD_value based on groups
+avg.day1.long.df<- meta.day1.long.df %>%
+  distinct(Phyllosphere, Tree_ID, Deployment, Metabolite, HFA, OD_corrected, OD_value,) %>%
+  mutate(across(.cols = everything(), .fns = mean, na.rm = TRUE, .names = "avg_{.col}"))
+
+avg.day1.long.df$OD_corrected=as.factor(as.character(avg.day1.long.df$OD_corrected))
+avg.day1.long.df$OD_corrected <- factor(avg.day1.long.df$OD_corrected, 
+                                        levels = c("OD_30_corrected", "OD_2_corrected", "OD_16_corrected", "OD_24_corrected", "OD_48_corrected", "OD_72_corrected"))
+
+
+avg.day1.long.df %>%
+  na.omit() %>%
+  group_by(Phyllosphere, Tree_ID, Deployment, Metabolite, HFA, OD_corrected, .keep_all = TRUE) %>%
+  summarise(avg_OD_value = mean(OD_value, na.rm = TRUE), .groups = "drop")
+
+
+levels(avg.day1.long.df$OD_corrected)
+```
+
+
+```{r}
+filtered_data <- avg.day1.long.df[avg.day1.long.df$Phyllosphere %in% c("P", "AB"), ]
+filtered_data <- avg.day1.long.df[filtered_data$HFA %in% c("A", "H"), ]
+
+ggplot(avg.day1.long.df[avg.day1.long.df$Deployment == "HOK", ], aes(x = OD_corrected, y = OD_value, group = interaction(Tree_ID, Deployment, Metabolite, HFA), fill = interaction(Tree_ID, Deployment, Metabolite, HFA))) +
+  geom_boxplot() +
+  facet_grid(~Phyllosphere)+
+  xlab("Time") +
+  ylab("Optical density (OD)") +
+  Fig.formatting +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+unique(avg.day1.long.df$HFA)
+unique(avg.day1.long.df$Phyllosphere)
+unique(filtered_data$Tree_ID)
+
+filtered_data <- avg.day1.long.df[avg.day1.long.df$HFA != "", ]
+filtered_data$Tree_ID <- trimws(filtered_data$Tree_ID)
+
+unique(filtered_data$HFA)
+
+```
+
+
+```{r}
+# Violin plot
+ggplot(meta.df[(meta.df$Deployment=="HOK 2"),], aes(x = HFA, y = Corrected_OD, fill = Treatment)) +
+  geom_violin() +
+  facet_grid(Decomp_day ~ Time_min) +
+  xlab("ID") +
+  ylab("OD Value")
+
+
+met.hok2.plot=ggplot(meta.df[(meta.df$Deployment=="HOK 2"),], aes(x=Time_min, y=Corrected_OD, color=Treatment, group=Well_ID, linetype=Treatment))+
+geom_line()+
+  scale_color_manual(values = c("purple", "mediumseagreen")) + 
+  scale_fill_manual(values = c("purple", "mediumseagreen")) +
+  facet_grid(HFA~Decomp_day, scales= "free_x")+
+  ggtitle("HOK 2") +
+  ylab("Optical Density (590 nm)") +
+  Fig.formatting
+
+met.hok2.plot
+
+met.hok1.plot=ggplot(meta.df[(meta.df$Deployment=="HOK 1"),], aes(x=Time_min, y=Corrected_OD, color=Treatment, group=Well_ID, linetype=Treatment))+
+geom_line()+
+  scale_color_manual(values = c("purple", "mediumseagreen")) + 
+  scale_fill_manual(values = c("purple", "mediumseagreen")) +
+  facet_grid(HFA~Decomp_day, scales= "free_x")+
+  ggtitle("HOK 1") +
+  ylab("Optical Density (590 nm)") +
+  Fig.formatting
+
+met.hok1.plot
+
+met.sek1.plot=ggplot(meta.df[(meta.df$Deployment=="SEK 1"),], aes(x=Time_min, y=Corrected_OD, color=Treatment, group=Well_ID, linetype=Treatment))+
+geom_line()+
+  scale_color_manual(values = c("purple", "mediumseagreen")) + 
+  scale_fill_manual(values = c("purple", "mediumseagreen")) +
+  facet_grid(HFA~Decomp_day, scales= "free_x")+
+  ggtitle("SEK 1") +
+  ylab("Optical Density (590 nm)") +
+  Fig.formatting
+
+met.sek2.plot=ggplot(meta.df[(meta.df$Deployment=="SEK 2"),], aes(x=Time_min, y=Corrected_OD, color=Treatment, group=Well_ID, linetype=Treatment))+
+geom_line()+
+  scale_color_manual(values = c("purple", "mediumseagreen")) + 
+  scale_fill_manual(values = c("purple", "mediumseagreen")) +
+  facet_grid(HFA~Decomp_day, scales= "free_x")+
+  ggtitle("SEK 2") +
+  ylab("Optical Density (590 nm)") +
+  Fig.formatting
+
+met.sek2.plot
+```
+
+
+```{r}
+##Hoko only
+hoko.subset1 <- meta.df[meta.df$deployment == "HOK 1", ]
+hoko.subset2 <- meta.df[meta.df$deployment == "HOK 2", ]
+
+hoko_subset.df <- rbind(hoko.subset1, hoko.subset2)
+color_palette <- c("#1f77b4", "#ff7f0e")
+
+
+met.hoko1.plot <- ggplot(hoko_subset.df[(hoko_subset.df$deployment=="HOK 1"),], aes(x = Time, y = OD, color = Treatment, group = Pack_ID, linetype = Treatment)) +
+geom_line()+
+  scale_color_manual(values = color_palette) +
+  scale_fill_manual(values = color_palette) +
+  facet_grid(HFA~Decomp) +
+  ggtitle("Deployed at HOK 1") +
+  ylab("Optical Density (590 nm)") +
+  Fig.formatting
+
+
+# Subset the data for Away and Deployment == "HOK 1"
+hoko.present.subset1 <- hoko_subset.df[hoko_subset.df$HFA == "H" & hoko_subset.df$deployment == "HOK 1", ]
+
+# Create the bar plot
+hok1.home=ggplot(hoko.present.subset1, aes(x = Time, y = OD, color = Treatment, linetype=Treatment, group = Pack_ID)) +
+ geom_line()+
+  scale_color_manual(values = color_palette) +
+  scale_fill_manual(values = color_palette) +
+  facet_grid(~Decomp) +
+  ggtitle("Home packs deployed at HOK 1") +
+  ylab("Optical Density (590 nm)") +
+  Fig.formatting
+
+# Subset the data for Home and Deployment == "HOK 1"
+hoko.away.subset1 <- hoko_subset.df[hoko_subset.df$HFA == "A" & hoko_subset.df$deployment == "HOK 1", ]
+
+hok1.away=ggplot(hoko.away.subset1, aes(x = Time, y = OD, color = Treatment, linetype=Treatment, group = Pack_ID)) +
+ geom_line()+
+  scale_color_manual(values = color_palette) +
+  scale_fill_manual(values = color_palette) +
+  facet_grid(~Decomp) +
+  ggtitle("Away packs deployed at HOK 1") +
+  ylab("Optical Density (590 nm)") +
+  Fig.formatting
+
+plot_grid(hok1.away, hok1.home, nrow =2)
+```
+
+
+```{r}
+met.hoko1.boxplot
+
+met.hoko2.plot <- ggplot(hoko_subset.df[(hoko_subset.df$deployment=="HOK 2"),], aes(x = Time, y = OD, color = Treatment, group = Pack_ID, linetype = Treatment)) +
+geom_line()+
+  scale_color_manual(values = color_palette) +
+  scale_fill_manual(values = color_palette) +
+  facet_grid(HFA~Decomp) +
+  ggtitle("Deployed at HOK 2") +
+  ylab("Optical Density (590 nm)") +
+  Fig.formatting
+
+met.hoko2.plot
+
+met.allhoko<-plot_grid(
+  met.hoko1.plot+ theme(legend.position = "none"),
+  met.hoko2.plot+ theme(legend.position = "none"), extract.legend,
+  rel_widths = c(8,8,3), nrow=2)
+
+met.allhoko
+
+##SEKIU only
+sekiu.subset1 <- aggregate.df[aggregate.df$deployment == "SEK 1", ]
+sekiu.subset2 <- aggregate.df[aggregate.df$deployment == "SEK 2", ]
+sekiu_subset.df <- rbind(sekiu.subset1, sekiu.subset2)
+
+
+met.sek1.plot <- ggplot(sekiu_subset.df[(sekiu_subset.df$deployment=="SEK 1"),], aes(x = Time, y = OD, color = Treatment, group = Pack_ID, linetype = Treatment)) +
+geom_line()+
+  scale_color_manual(values = color_palette) +
+  scale_fill_manual(values = color_palette) +
+  facet_grid(HFA~Decomp) +
+  ggtitle("Deployed at SEK 1") +
+  ylab("Optical Density (590 nm)") +
+  Fig.formatting
+
+met.sek1.plot
+
+
+met.sek2.plot <- ggplot(sekiu_subset.df[(sekiu_subset.df$deployment=="SEK 2"),], aes(x = Time, y = OD, color = Treatment, group = Pack_ID, linetype = Treatment)) +
+geom_line()+
+  scale_color_manual(values = color_palette) +
+  scale_fill_manual(values = color_palette) +
+  facet_grid(HFA~Decomp) +
+  ggtitle("Deployed at SEK 2") +
+  ylab("Optical Density (590 nm)") +
+  Fig.formatting
+
+met.sek2.plot
+
+extract.legend <- get_legend(
+  # create some space to the left of the legend
+  met.sek1.plot + theme(legend.box.margin = margin(0, 0, 0, 10)))
+
+met.alltimes<-plot_grid(
+  met.hoko1.plot,
+  met.hoko2.plot,
+  met.sek1.plot,
+  met.sek2.plot,
+  rel_widths = c(8,8,8,8,3), nrow=2, ncol=2)
+
+met.alltimes
+
+```
+
