@@ -47,6 +47,21 @@ Fig.formatting<-(theme_classic()) +
 
 ```
 
+
+All metabolite decomp days
+```{r}
+meta.day1.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_1_metabolites_corrected.csv")
+meta.day3.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_3_metabolites_corrected.csv")
+meta.day5.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_5_metabolites_corrected.csv")
+meta.day7.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_7_metabolites_corrected.csv")
+
+meta.day1.raw.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_1_metabolites_raw_corrected.csv")
+meta.day3.raw.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_3_metabolites_raw_corrected.csv")
+meta.day5.raw.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_5_metabolites_raw_corrected.csv")
+meta.day7.raw.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_7_metabolites_raw_corrected.csv")
+
+```
+
 Metabolic Assay
 ```{r}
 meta.day1.df=read.csv("/Users/Cody1/Downloads/'RAD' Alder Metadata - day_1_metabolites_corrected.csv")
@@ -135,12 +150,153 @@ ggplot(meta.day1.df[meta.day1.df$time=="1440",], aes(x = hfa, y = od_corrected, 
 
 
 
+Day 1: z scored
+```{r}
+mean_od_raw.day1 <- mean(meta.day1.raw.df$od_raw, na.rm=T)
+sd_od_raw.day1 <- sd(meta.day1.raw.df$od_raw, na.rm=T)
+meta.day1.raw.df$z_score <- (meta.day1.raw.df$od_raw - mean_od_raw.day1) / sd_od_raw.day1
+
+
+day1.z.30.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="30",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+  coord_cartesian(ylim = c(-1.5,4))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day1.raw.df[meta.day1.raw.df$time=="30",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+  ggtitle("30 min")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting
+
+day1.z.30.plot
+
+day1.z.120.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="120",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+    coord_cartesian(ylim = c(-1.5,4))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day1.raw.df[meta.day1.raw.df$time=="120",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+  ggtitle("2 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+day1.z.960.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="960",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+    coord_cartesian(ylim = c(-1.5,4))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day1.raw.df[meta.day1.raw.df$time=="960",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("16 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+day1.z.1440.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="1440",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+    coord_cartesian(ylim = c(-1.5,4))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day1.raw.df[meta.day1.raw.df$time=="1440",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("24 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+day1.z.2880.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="2880",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+    coord_cartesian(ylim = c(-1.5,4))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day1.raw.df[meta.day1.raw.df$time=="2880",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("48 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting
+
+day1.z.4320.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="4320",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+    coord_cartesian(ylim = c(-1.5,4))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day1.raw.df[meta.day1.raw.df$time=="4320",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("72 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+
+
+# Create the grid with modified plots
+extract.legend <- get_legend(
+  day1.30.plot + theme(legend.box.margin = margin(0, 0, 0, 1, "cm"),
+                       legend.key.size = unit(100, "pt"),
+                       legend.text = element_text(size=20),
+                       legend.title= element_blank())
+)
+
+# Combine plots
+all.z.day1.plot <- plot_grid(
+  day1.z.30.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  day1.z.120.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  day1.z.960.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  day1.z.1440.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  day1.z.2880.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  day1.z.4320.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  extract.legend,
+  ncol = 7,
+  rel_widths = c(8, 8, 8, 8, 8, 8, 3)
+)
+
+
+all.z.day1.plot
+# Set the overall size of the combined plot
+ggsave("figures/all.z.day1.plot.pdf", all.z.day1.plot, width = 49, height = 12)
+
+
+
+```
+
+
+
+
+
 
 Best looking figs: Day 1 metabolites
 ```{r}
 ########## THIS ONE TOO (JUST P VS AB)
 # Define a colorblind-friendly palette
-color_palette <- brewer.pal(n = 2, name = "Set1")
+color_palette <- brewer.pal(n = 3, name = "Set1")
 
 
 day1.30.plot=ggplot(meta.day1.df[meta.day1.df$time=="30",], aes(x = treatment, y = od_corrected, fill = factor(hfa))) +
@@ -216,7 +372,7 @@ day1.2880.plot=ggplot(meta.day1.df[meta.day1.df$time=="2880",], aes(x = treatmen
   theme(legend.position = "right")+
    coord_cartesian(ylim = c(0.25,3.15))+
    scale_fill_manual(values = color_palette)+
- geom_hline(data = meta.day1.df[meta.day1.df$time=="2800",],
+ geom_hline(data = meta.day1.df[meta.day1.df$time=="2880",],
              aes(yintercept = mean(od_corrected),
                  linetype = "Average"),
              color = "red",
@@ -276,6 +432,417 @@ ggsave("figures/all.day1.plot.pdf", all.day1.plot, width = 49, height = 12)
 ```
 
 
+Best looking figs: Day 3 metabolites
+```{r}
+########## THIS ONE TOO (JUST P VS AB)
+# Define a colorblind-friendly palette
+color_palette <- brewer.pal(n = 3, name = "Set1")
+
+
+day3.30.plot=ggplot(meta.day3.df[meta.day3.df$time=="30",], aes(x = treatment, y = od_corrected, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "OD Corrected") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+  coord_cartesian(ylim = c(0.15,2.5))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day3.df[meta.day3.df$time=="30",],
+             aes(yintercept = mean(od_corrected),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+  ggtitle("30 min")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting
+
+day3.30.plot
+
+day3.120.plot=ggplot(meta.day3.df[meta.day3.df$time=="120",], aes(x = treatment, y = od_corrected, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "OD Corrected") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+   coord_cartesian(ylim = c(0.15,2.5))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day3.df[meta.day3.df$time=="120",],
+             aes(yintercept = mean(od_corrected),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+  ggtitle("2 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+day3.960.plot=ggplot(meta.day3.df[meta.day3.df$time=="960",], aes(x = treatment, y = od_corrected, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "OD Corrected") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+   coord_cartesian(ylim = c(0.15,2.5))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day3.df[meta.day3.df$time=="960",],
+             aes(yintercept = mean(od_corrected),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("16 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+day3.1440.plot=ggplot(meta.day3.df[meta.day3.df$time=="1440",], aes(x = treatment, y = od_corrected, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "OD Corrected") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+   coord_cartesian(ylim = c(0.15,2.5))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day3.df[meta.day3.df$time=="1440",],
+             aes(yintercept = mean(od_corrected),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("24 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+day3.2880.plot=ggplot(meta.day3.df[meta.day3.df$time=="2880",], aes(x = treatment, y = od_corrected, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "OD Corrected") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+   coord_cartesian(ylim = c(0.15,2.5))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day3.df[meta.day3.df$time=="2880",],
+             aes(yintercept = mean(od_corrected),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("48 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting
+
+day3.4320.plot=ggplot(meta.day3.df[meta.day3.df$time=="4320",], aes(x = treatment, y = od_corrected, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "OD Corrected") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+   coord_cartesian(ylim = c(0.15,2.5))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day3.df[meta.day3.df$time=="4320",],
+             aes(yintercept = mean(od_corrected),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("72 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+
+# Combine plots
+all.day3.plot <- plot_grid(
+  day3.30.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  day3.120.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  day3.960.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  day3.1440.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  day3.2880.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  day3.4320.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  extract.legend,
+  ncol = 7,
+  rel_widths = c(8, 8, 8, 8, 8, 8, 3)
+)
+
+
+# Set the overall size of the combined plot
+ggsave("figures/all.day3.plot.pdf", all.day3.plot, width = 49, height = 12)
+
+
+```
+
+
+Best looking figs: Day 5 metabolites
+```{r}
+########## THIS ONE TOO (JUST P VS AB)
+# Define a colorblind-friendly palette
+color_palette <- brewer.pal(n = 3, name = "Set1")
+
+
+day5.30.plot=ggplot(meta.day5.df[meta.day5.df$time=="30",], aes(x = treatment, y = od_corrected, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "OD Corrected") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+   coord_cartesian(ylim = c(0.15,2))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day5.df[meta.day5.df$time=="30",],
+             aes(yintercept = mean(od_corrected),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+  ggtitle("30 min")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting
+
+day5.30.plot
+
+day5.120.plot=ggplot(meta.day5.df[meta.day5.df$time=="120",], aes(x = treatment, y = od_corrected, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "OD Corrected") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+  coord_cartesian(ylim = c(0.15,2))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day5.df[meta.day5.df$time=="120",],
+             aes(yintercept = mean(od_corrected),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+  ggtitle("2 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+day5.960.plot=ggplot(meta.day5.df[meta.day5.df$time=="960",], aes(x = treatment, y = od_corrected, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "OD Corrected") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+  coord_cartesian(ylim = c(0.15,2))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day5.df[meta.day5.df$time=="960",],
+             aes(yintercept = mean(od_corrected),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("16 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+day5.1440.plot=ggplot(meta.day5.df[meta.day5.df$time=="1440",], aes(x = treatment, y = od_corrected, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "OD Corrected") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+   coord_cartesian(ylim = c(0.15,2))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day5.df[meta.day5.df$time=="1440",],
+             aes(yintercept = mean(od_corrected),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("24 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+day5.2880.plot=ggplot(meta.day5.df[meta.day5.df$time=="2880",], aes(x = treatment, y = od_corrected, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "OD Corrected") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+   coord_cartesian(ylim = c(0.15,2))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day5.df[meta.day5.df$time=="2880",],
+             aes(yintercept = mean(od_corrected),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("48 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting
+
+day5.4320.plot=ggplot(meta.day5.df[meta.day5.df$time=="4320",], aes(x = treatment, y = od_corrected, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "OD Corrected") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+   coord_cartesian(ylim = c(0.15,2))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day5.df[meta.day5.df$time=="4320",],
+             aes(yintercept = mean(od_corrected),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("72 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+
+
+# Create the grid with modified plots
+extract.legend <- get_legend(
+  day3.30.plot + theme(legend.box.margin = margin(0, 0, 0, 1, "cm"),
+                       legend.key.size = unit(100, "pt"),
+                       legend.text = element_text(size=20),
+                       legend.title= element_blank())
+)
+
+# Combine plots
+all.day5.plot <- plot_grid(
+  day5.30.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  day5.120.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  day5.960.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  day5.1440.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  day5.2880.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  day5.4320.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  extract.legend,
+  ncol = 7,
+  rel_widths = c(8, 8, 8, 8, 8, 8, 3)
+)
+
+
+
+all.day5.plot
+# Set the overall size of the combined plot
+ggsave("figures/all.day5.plot.pdf", all.day5.plot, width = 49, height = 12)
+
+
+```
+
+
+
+Best looking figs: Day 7 metabolites
+```{r}
+########## THIS ONE TOO (JUST P VS AB)
+# Define a colorblind-friendly palette
+color_palette <- brewer.pal(n = 3, name = "Set1")
+
+
+day7.30.plot=ggplot(meta.day7.df[meta.day7.df$time=="30",], aes(x = treatment, y = od_corrected, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "OD Corrected") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+  coord_cartesian(ylim = c(0.15, 2))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day7.df[meta.day7.df$time=="30",],
+             aes(yintercept = mean(od_corrected),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+  ggtitle("30 min")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting
+
+day7.30.plot
+
+day7.120.plot=ggplot(meta.day7.df[meta.day7.df$time=="120",], aes(x = treatment, y = od_corrected, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "OD Corrected") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+    coord_cartesian(ylim = c(0.15, 2))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day7.df[meta.day7.df$time=="120",],
+             aes(yintercept = mean(od_corrected),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+  ggtitle("2 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+day7.120.plot
+
+
+day7.960.plot=ggplot(meta.day7.df[meta.day7.df$time=="960",], aes(x = treatment, y = od_corrected, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "OD Corrected") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+    coord_cartesian(ylim = c(0.15, 2))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day7.df[meta.day7.df$time=="960",],
+             aes(yintercept = mean(od_corrected),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("16 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+day7.960.plot
+
+day7.1440.plot=ggplot(meta.day7.df[meta.day7.df$time=="1440",], aes(x = treatment, y = od_corrected, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "OD Corrected") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+    coord_cartesian(ylim = c(0.15, 2))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day7.df[meta.day7.df$time=="1440",],
+             aes(yintercept = mean(od_corrected),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("24 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+day7.1440.plot
+
+day7.2880.plot=ggplot(meta.day7.df[meta.day7.df$time=="2880",], aes(x = treatment, y = od_corrected, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "OD Corrected") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+    coord_cartesian(ylim = c(0.15, 2))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day7.df[meta.day7.df$time=="2880",],
+             aes(yintercept = mean(od_corrected),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("48 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting
+
+day7.2880.plot
+
+day7.4320.plot=ggplot(meta.day7.df[meta.day7.df$time=="4320",], aes(x = treatment, y = od_corrected, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "OD Corrected") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+    coord_cartesian(ylim = c(0.15, 2))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day7.df[meta.day7.df$time=="4320",],
+             aes(yintercept = mean(od_corrected),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("72 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+day7.4320.plot
+
+# Create the grid with modified plots
+extract.legend <- get_legend(
+  day3.30.plot + theme(legend.box.margin = margin(0, 0, 0, 1, "cm"),
+                       legend.key.size = unit(100, "pt"),
+                       legend.text = element_text(size=20),
+                       legend.title= element_blank())
+)
+
+# Combine plots
+all.day7.plot <- plot_grid(
+  day7.30.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  day7.120.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  day7.960.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  day7.1440.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  day7.2880.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  day7.4320.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  extract.legend,
+  ncol = 7,
+  rel_widths = c(8, 8, 8, 8, 8, 8, 3)
+)
+
+
+
+all.day7.plot
+# Set the overall size of the combined plot
+ggsave("figures/all.day7.plot.pdf", all.day7.plot, width = 49, height = 12)
+
+
+```
 
 
 
