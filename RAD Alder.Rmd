@@ -59,6 +59,14 @@ meta.day1.raw.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_
 meta.day3.raw.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_3_metabolites_raw_corrected.csv")
 meta.day5.raw.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_5_metabolites_raw_corrected.csv")
 meta.day7.raw.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_7_metabolites_raw_corrected.csv")
+meta.day11.raw.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_11_metabolites_raw_corrected.csv")
+
+hist(meta.day1.raw.df$od_raw)
+qqnorm(meta.day1.raw.df$od_raw)
+qqline(meta.day1.raw.df$od_raw)
+
+log_od_raw <- log(meta.day1.raw.df$od_raw)
+hist(log_od_raw)
 
 ```
 
@@ -159,6 +167,7 @@ meta.day1.raw.df$z_score <- (meta.day1.raw.df$od_raw - mean_od_raw.day1) / sd_od
 
 day1.z.30.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="30",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
+  facet_grid(~deploy)+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
@@ -177,6 +186,7 @@ day1.z.30.plot
 
 day1.z.120.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="120",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
+   facet_grid(~deploy)+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
@@ -193,6 +203,7 @@ day1.z.120.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="120",], aes(x = 
 
 day1.z.960.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="960",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
+   facet_grid(~deploy)+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
@@ -209,6 +220,7 @@ day1.z.960.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="960",], aes(x = 
 
 day1.z.1440.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="1440",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
+   facet_grid(~deploy)+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
@@ -225,6 +237,7 @@ day1.z.1440.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="1440",], aes(x 
 
 day1.z.2880.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="2880",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
+   facet_grid(~deploy)+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
@@ -241,6 +254,7 @@ day1.z.2880.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="2880",], aes(x 
 
 day1.z.4320.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="4320",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
+   facet_grid(~deploy)+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
@@ -259,33 +273,623 @@ day1.z.4320.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="4320",], aes(x 
 
 # Create the grid with modified plots
 extract.legend <- get_legend(
-  day1.30.plot + theme(legend.box.margin = margin(0, 0, 0, 1, "cm"),
-                       legend.key.size = unit(100, "pt"),
+  day1.z.4320.plot + theme(legend.box.margin = margin(1, 1, 1, 1, "cm"),
+                       legend.key.size = unit(50, "pt"),
                        legend.text = element_text(size=20),
                        legend.title= element_blank())
 )
 
+
 # Combine plots
 all.z.day1.plot <- plot_grid(
   day1.z.30.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
-  day1.z.120.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
-  day1.z.960.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
-  day1.z.1440.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
-  day1.z.2880.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
-  day1.z.4320.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  day1.z.120.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title.y = element_blank()),
+  day1.z.960.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title.y = element_blank()),
+  day1.z.1440.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title.y = element_blank()),
+  day1.z.2880.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title.y = element_blank()),
+  day1.z.4320.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title.y = element_blank()),
   extract.legend,
   ncol = 7,
-  rel_widths = c(8, 8, 8, 8, 8, 8, 3)
+  rel_widths = c(14, 14, 14, 14, 14, 14,3)
 )
 
 
 all.z.day1.plot
 # Set the overall size of the combined plot
-ggsave("figures/all.z.day1.plot.pdf", all.z.day1.plot, width = 49, height = 12)
+ggsave("figures/all.z.day1.plot.pdf", all.z.day1.plot, width = 49, height = 10)
 
 
 
 ```
+
+
+Day 3: z scored
+```{r}
+mean_od_raw.day3 <- mean(meta.day3.raw.df$od_raw, na.rm=T)
+sd_od_raw.day3 <- sd(meta.day3.raw.df$od_raw, na.rm=T)
+meta.day3.raw.df$z_score <- (meta.day3.raw.df$od_raw - mean_od_raw.day3) / sd_od_raw.day3
+
+
+day3.z.30.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="30",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+   facet_grid(~deploy)+
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+   coord_cartesian(ylim = c(-1.35,3.35))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day3.raw.df[meta.day3.raw.df$time=="30",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+  ggtitle("30 min")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting
+
+day3.z.30.plot
+
+day3.z.120.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="120",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+   facet_grid(~deploy)+
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+    coord_cartesian(ylim = c(-1.35,3.35))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day3.raw.df[meta.day3.raw.df$time=="120",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+  ggtitle("2 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+day3.z.960.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="960",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+   facet_grid(~deploy)+
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+   coord_cartesian(ylim = c(-1.35,3.35))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day3.raw.df[meta.day3.raw.df$time=="960",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("16 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+day3.z.1440.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="1440",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+   facet_grid(~deploy)+
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+      coord_cartesian(ylim = c(-1.35,3.35))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day3.raw.df[meta.day3.raw.df$time=="1440",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("24 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+day3.z.2880.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="2880",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+   facet_grid(~deploy)+
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+      coord_cartesian(ylim = c(-1.35,3.35))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day3.raw.df[meta.day3.raw.df$time=="2880",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("48 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting
+
+day3.z.4320.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="4320",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+   facet_grid(~deploy)+
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+       coord_cartesian(ylim = c(-1.35,3.35))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day3.raw.df[meta.day3.raw.df$time=="4320",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("72 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+
+# Combine plots
+all.z.day3.plot <- plot_grid(
+  day3.z.30.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  day3.z.120.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title.y = element_blank()),
+  day3.z.960.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title.y = element_blank()),
+  day3.z.1440.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title.y = element_blank()),
+  day3.z.2880.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title.y = element_blank()),
+  day3.z.4320.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title.y = element_blank()),
+  extract.legend,
+  ncol = 7,
+  rel_widths = c(14, 14, 14, 14, 14, 14,3)
+)
+
+
+# Set the overall size of the combined plot
+ggsave("figures/all.z.day3.plot.pdf", all.z.day3.plot, width = 49, height = 12)
+
+
+
+```
+
+
+
+Day 5: z scored
+```{r}
+mean_od_raw.day5 <- mean(meta.day5.raw.df$od_raw, na.rm=T)
+sd_od_raw.day5 <- sd(meta.day5.raw.df$od_raw, na.rm=T)
+meta.day5.raw.df$z_score <- (meta.day5.raw.df$od_raw - mean_od_raw.day5) / sd_od_raw.day5
+
+
+day5.z.30.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="30",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+  facet_grid(~deploy)+
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+  coord_cartesian(ylim = c(-1.4,2.85))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day5.raw.df[meta.day5.raw.df$time=="30",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+  ggtitle("30 min")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting
+
+day5.z.30.plot
+
+day5.z.120.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="120",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+  facet_grid(~deploy)+
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  Fig.formatting+
+  theme(legend.position = "right")+ 
+  coord_cartesian(ylim = c(-1.4,2.85))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day5.raw.df[meta.day5.raw.df$time=="120",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+  ggtitle("2 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+day5.z.120.plot
+
+day5.z.960.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="960",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+  facet_grid(~deploy)+
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+  coord_cartesian(ylim = c(-1.4,2.85))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day5.raw.df[meta.day5.raw.df$time=="960",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("16 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+day5.z.960.plot
+
+
+day5.z.1440.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="1440",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+  facet_grid(~deploy)+
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+    coord_cartesian(ylim = c(-1.4,2.85))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day5.raw.df[meta.day5.raw.df$time=="1440",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("24 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+day5.z.1440.plot
+
+day5.z.2880.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="2880",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+  facet_grid(~deploy)+
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+    coord_cartesian(ylim = c(-1.4,2.85))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day5.raw.df[meta.day5.raw.df$time=="2880",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("48 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting
+
+day5.z.2880.plot
+
+day5.z.4320.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="4320",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+  facet_grid(~deploy)+
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+  coord_cartesian(ylim = c(-1.4,2.85))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day5.raw.df[meta.day5.raw.df$time=="4320",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("72 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+
+
+# Combine plots
+all.z.day5.plot <- plot_grid(
+  day5.z.30.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  day5.z.120.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title.y = element_blank()),
+  day5.z.960.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title.y = element_blank()),
+  day5.z.1440.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title.y = element_blank()),
+  day5.z.2880.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title.y = element_blank()),
+  day5.z.4320.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title.y = element_blank()),
+  extract.legend,
+  ncol = 7,
+  rel_widths = c(14, 14, 14, 14, 14, 14,3)
+)
+
+
+# Set the overall size of the combined plot
+ggsave("figures/all.z.day5.plot.pdf", all.z.day5.plot, width = 49, height = 12)
+
+
+
+```
+
+
+
+Day 7: z scored
+```{r}
+mean_od_raw.day7 <- mean(meta.day7.raw.df$od_raw, na.rm=T)
+sd_od_raw.day7 <- sd(meta.day7.raw.df$od_raw, na.rm=T)
+meta.day7.raw.df$z_score <- (meta.day7.raw.df$od_raw - mean_od_raw.day7) / sd_od_raw.day7
+
+day7.z.30.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="30",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+  facet_grid(~deploy)+
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+  coord_cartesian(ylim = c(-1.25,3))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day7.raw.df[meta.day7.raw.df$time=="30",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+  ggtitle("30 min")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting
+
+day7.z.30.plot
+
+day7.z.120.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="120",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+    facet_grid(~deploy)+
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  Fig.formatting+
+  theme(legend.position = "right")+ 
+    coord_cartesian(ylim = c(-1.25,3))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day7.raw.df[meta.day7.raw.df$time=="120",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+  ggtitle("2 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+day7.z.120.plot
+
+day7.z.960.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="960",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+    facet_grid(~deploy)+
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+    coord_cartesian(ylim = c(-1.25,3))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day7.raw.df[meta.day7.raw.df$time=="960",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("16 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+day7.z.960.plot
+
+
+day7.z.1440.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="1440",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+    facet_grid(~deploy)+
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+    coord_cartesian(ylim = c(-1.25,3))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day7.raw.df[meta.day7.raw.df$time=="1440",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("24 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+day7.z.1440.plot
+
+day7.z.2880.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="2880",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+    facet_grid(~deploy)+
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+    coord_cartesian(ylim = c(-1.25,3))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day7.raw.df[meta.day7.raw.df$time=="2880",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("48 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting
+
+day5.z.2880.plot
+
+day7.z.4320.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="4320",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+    facet_grid(~deploy)+
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+    coord_cartesian(ylim = c(-1.25,3))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day7.raw.df[meta.day7.raw.df$time=="4320",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("72 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+
+# Combine plots
+all.z.day7.plot <- plot_grid(
+  day7.z.30.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  day7.z.120.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title.y = element_blank()),
+  day7.z.960.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title.y = element_blank()),
+  day7.z.1440.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title.y = element_blank()),
+  day7.z.2880.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title.y = element_blank()),
+  day7.z.4320.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title.y = element_blank()),
+  extract.legend,
+  ncol = 7,
+  rel_widths = c(14, 14, 14, 14, 14, 14,3)
+)
+
+
+# Set the overall size of the combined plot
+ggsave("figures/all.z.day7.plot.pdf", all.z.day7.plot, width = 49, height = 12)
+
+
+
+```
+
+
+
+Day 11: z scored
+```{r}
+mean_od_raw.day11 <- mean(meta.day11.raw.df$od_raw, na.rm=T)
+sd_od_raw.day11 <- sd(meta.day11.raw.df$od_raw, na.rm=T)
+meta.day11.raw.df$z_score <- (meta.day11.raw.df$od_raw - mean_od_raw.day11) / sd_od_raw.day11
+
+day11.z.30.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="30",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+  facet_grid(~deploy)+
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day11.raw.df[meta.day11.raw.df$time=="30",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+  ggtitle("30 min")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting
+
+day11.z.30.plot
+
+day11.z.120.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="120",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+    facet_grid(~deploy)+
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  Fig.formatting+
+  theme(legend.position = "right")+ 
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day11.raw.df[meta.day11.raw.df$time=="120",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+  ggtitle("2 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+day11.z.120.plot
+
+day7.z.960.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="960",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+    coord_cartesian(ylim = c(-1.25,3))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day7.raw.df[meta.day7.raw.df$time=="960",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("16 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+day7.z.960.plot
+
+
+day7.z.1440.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="1440",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+    coord_cartesian(ylim = c(-1.25,3))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day7.raw.df[meta.day7.raw.df$time=="1440",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("24 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+day7.z.1440.plot
+
+day7.z.2880.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="2880",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+    coord_cartesian(ylim = c(-1.25,3))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day7.raw.df[meta.day7.raw.df$time=="2880",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("48 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting
+
+day5.z.2880.plot
+
+day7.z.4320.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="4320",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+    coord_cartesian(ylim = c(-1.25,3))+
+   scale_fill_manual(values = color_palette)+
+ geom_hline(data = meta.day7.raw.df[meta.day7.raw.df$time=="4320",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("72 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+
+
+# Combine plots
+all.z.day11.plot <- plot_grid(
+  day11.z.30.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title = element_blank()),
+  day11.z.120.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title = element_blank()),
+  ncol = 2,
+  rel_widths = c(14, 14)
+)
+
+# Combine plots
+all.z.day7.plot <- plot_grid(
+  day7.z.30.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  day7.z.120.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  day7.z.960.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  day7.z.1440.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  day7.z.2880.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  day7.z.4320.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  ncol = 7,
+  rel_widths = c(8, 8, 8, 8, 8, 8, 3)
+)
+
+
+# Set the overall size of the combined plot
+ggsave("figures/all.z.day11.plot.pdf", all.z.day11.plot, width = 49, height = 12)
+
+
+
+```
+
+All metabolite assays plots
+
+```{r}
+
+all.z.days.plot <- plot_grid(
+  all.z.day1.plot,
+  all.z.day3.plot,
+  all.z.day5.plot,
+  all.z.day7.plot,
+  all.z.day11.plot,
+  nrow = 5
+)
+
+
+
+all.z.days.plot
+ggsave("figures/all.z.days.plot.pdf", all.z.days.plot, width = 49, height = 30)
+
+```
+
+
 
 
 
