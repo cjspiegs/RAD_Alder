@@ -61,12 +61,10 @@ meta.day5.raw.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_
 meta.day7.raw.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_7_metabolites_raw_corrected.csv")
 meta.day11.raw.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_11_metabolites_raw_corrected.csv")
 
-hist(meta.day1.raw.df$od_raw)
-qqnorm(meta.day1.raw.df$od_raw)
-qqline(meta.day1.raw.df$od_raw)
 
-log_od_raw <- log(meta.day1.raw.df$od_raw)
-hist(log_od_raw)
+#By z-scoring the raw OD values, I can effectively assess the relative changes in microbial metabolism across the wells, regardless of their absolute starting values.
+
+#z-scoring is a reasonable choice for this situation, as it standardizes the data within each well and facilitates comparisons. Note: z-scoring assumes a roughly symmetric distribution, but the raw OD values are right skewed.
 
 ```
 
@@ -768,14 +766,14 @@ day11.z.120.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="120",], aes(x
 
 day11.z.120.plot
 
-day7.z.960.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="960",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+day11.z.960.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="960",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
+   facet_grid(~deploy)+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
-    coord_cartesian(ylim = c(-1.25,3))+
    scale_fill_manual(values = color_palette)+
- geom_hline(data = meta.day7.raw.df[meta.day7.raw.df$time=="960",],
+ geom_hline(data = meta.day11.raw.df[meta.day11.raw.df$time=="960",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
              color = "red",
@@ -787,14 +785,14 @@ day7.z.960.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="960",], aes(x = 
 day7.z.960.plot
 
 
-day7.z.1440.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="1440",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+day11.z.1440.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="1440",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
+   facet_grid(~deploy)+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
-    coord_cartesian(ylim = c(-1.25,3))+
    scale_fill_manual(values = color_palette)+
- geom_hline(data = meta.day7.raw.df[meta.day7.raw.df$time=="1440",],
+ geom_hline(data = meta.day11.raw.df[meta.day11.raw.df$time=="1440",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
              color = "red",
@@ -845,7 +843,9 @@ day7.z.4320.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="4320",], aes(x 
 all.z.day11.plot <- plot_grid(
   day11.z.30.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title = element_blank()),
   day11.z.120.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title = element_blank()),
-  ncol = 2,
+  day11.z.960.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title = element_blank()),
+  day11.z.1440.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25),axis.title = element_blank()),
+  ncol = 4,
   rel_widths = c(14, 14)
 )
 
@@ -890,6 +890,46 @@ ggsave("figures/all.z.days.plot.pdf", all.z.days.plot, width = 49, height = 30)
 ```
 
 
+Metabolite analysis
+
+```{r}
+
+#make a big metabolite dataframe
+
+merged_df=rbind(meta.day1.raw.df,meta.day3.raw.df,meta.day5.raw.df,meta.day7.raw.df)
+class(merged_df$time)
+merged_df$treatment=as.factor(as.character(merged_df$treatment))
+merged_df$tree_id=as.factor(as.character(merged_df$tree_id))
+merged_df$deploy=as.factor(as.character(merged_df$deploy))
+merged_df$metabolite=as.factor(as.character(merged_df$metabolite))
+merged_df$hfa=as.factor(as.character(merged_df$hfa))
+
+
+# Fit the linear mixed-effects model with nested random effects and fixed effect
+model1 <- lmer(z_score ~ treatment + hfa +
+               (1 + decomp_day | deploy) +
+               (1 | site_num) +
+               (1 | tree_id / tree_num) +
+               (1 | tree_id / tree_num / metabolite),
+               data = merged_df)
+
+# Print the summary of the model
+summary(model)
+
+# Compute post hoc pairwise comparisons
+library(emmeans)
+
+posthoc_model1 <- emmeans(model1, "treatment",lmerTest.limit = 3600 )
+
+# Print the pairwise comparisons
+print(posthoc_model1)
+
+
+
+
+
+
+```
 
 
 
