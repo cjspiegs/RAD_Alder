@@ -158,10 +158,12 @@ ggplot(meta.day1.df[meta.day1.df$time=="1440",], aes(x = hfa, y = od_corrected, 
 
 Day 1: z scored
 ```{r}
-mean_od_raw.day1 <- mean(meta.day1.raw.df$od_raw, na.rm=T)
-sd_od_raw.day1 <- sd(meta.day1.raw.df$od_raw, na.rm=T)
-meta.day1.raw.df$z_score <- (meta.day1.raw.df$od_raw - mean_od_raw.day1) / sd_od_raw.day1
+mean_od_raw.day1 <- mean(meta.day1.raw.df$od_corrected, na.rm=T)
+sd_od_raw.day1 <- sd(meta.day1.raw.df$od_corrected, na.rm=T)
+meta.day1.raw.df$z_score <- (meta.day1.raw.df$od_corrected - mean_od_raw.day1) / sd_od_raw.day1
 
+#color blind palette
+library(viridis) 
 
 day1.z.30.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="30",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
@@ -169,8 +171,8 @@ day1.z.30.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="30",], aes(x = tr
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
-  coord_cartesian(ylim = c(-1.5,4))+
-   scale_fill_manual(values = color_palette)+
+   scale_fill_viridis(discrete = TRUE) +
+  coord_cartesian(ylim = c(-1.25, 3))+
  geom_hline(data = meta.day1.raw.df[meta.day1.raw.df$time=="30",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
@@ -188,8 +190,8 @@ day1.z.120.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="120",], aes(x = 
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
-    coord_cartesian(ylim = c(-1.5,4))+
-   scale_fill_manual(values = color_palette)+
+    scale_fill_viridis(discrete = TRUE) +
+    coord_cartesian(ylim = c(-1.25, 3))+
  geom_hline(data = meta.day1.raw.df[meta.day1.raw.df$time=="120",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
@@ -205,8 +207,8 @@ day1.z.960.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="960",], aes(x = 
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
-    coord_cartesian(ylim = c(-1.5,4))+
-   scale_fill_manual(values = color_palette)+
+    scale_fill_viridis(discrete = TRUE) +
+    coord_cartesian(ylim = c(-1.25, 3))+
  geom_hline(data = meta.day1.raw.df[meta.day1.raw.df$time=="960",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
@@ -222,8 +224,8 @@ day1.z.1440.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="1440",], aes(x 
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
-    coord_cartesian(ylim = c(-1.5,4))+
-   scale_fill_manual(values = color_palette)+
+       scale_fill_viridis(discrete = TRUE) +
+    coord_cartesian(ylim = c(-1.25, 3))+
  geom_hline(data = meta.day1.raw.df[meta.day1.raw.df$time=="1440",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
@@ -239,8 +241,8 @@ day1.z.2880.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="2880",], aes(x 
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
-    coord_cartesian(ylim = c(-1.5,4))+
-   scale_fill_manual(values = color_palette)+
+      scale_fill_viridis(discrete = TRUE) +
+    coord_cartesian(ylim = c(-1.25, 3))+
  geom_hline(data = meta.day1.raw.df[meta.day1.raw.df$time=="2880",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
@@ -256,8 +258,8 @@ day1.z.4320.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="4320",], aes(x 
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
-    coord_cartesian(ylim = c(-1.5,4))+
-   scale_fill_manual(values = color_palette)+
+      scale_fill_viridis(discrete = TRUE) +
+    coord_cartesian(ylim = c(-1.25, 3))+
  geom_hline(data = meta.day1.raw.df[meta.day1.raw.df$time=="4320",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
@@ -303,9 +305,9 @@ ggsave("figures/all.z.day1.plot.pdf", all.z.day1.plot, width = 49, height = 10)
 
 Day 3: z scored
 ```{r}
-mean_od_raw.day3 <- mean(meta.day3.raw.df$od_raw, na.rm=T)
-sd_od_raw.day3 <- sd(meta.day3.raw.df$od_raw, na.rm=T)
-meta.day3.raw.df$z_score <- (meta.day3.raw.df$od_raw - mean_od_raw.day3) / sd_od_raw.day3
+mean_od_raw.day3 <- mean(meta.day3.raw.df$od_corrected, na.rm=T)
+sd_od_raw.day3 <- sd(meta.day3.raw.df$od_corrected, na.rm=T)
+meta.day3.raw.df$z_score <- (meta.day3.raw.df$od_corrected - mean_od_raw.day3) / sd_od_raw.day3
 
 
 day3.z.30.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="30",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
@@ -314,8 +316,8 @@ day3.z.30.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="30",], aes(x = tr
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
-   coord_cartesian(ylim = c(-1.35,3.35))+
-   scale_fill_manual(values = color_palette)+
+  scale_fill_viridis(discrete = TRUE) +
+  coord_cartesian(ylim = c(-1.25,3))+
  geom_hline(data = meta.day3.raw.df[meta.day3.raw.df$time=="30",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
@@ -333,8 +335,8 @@ day3.z.120.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="120",], aes(x = 
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
-    coord_cartesian(ylim = c(-1.35,3.35))+
-   scale_fill_manual(values = color_palette)+
+     scale_fill_viridis(discrete = TRUE) +
+   coord_cartesian(ylim = c(-1.25,3))+
  geom_hline(data = meta.day3.raw.df[meta.day3.raw.df$time=="120",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
@@ -350,8 +352,8 @@ day3.z.960.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="960",], aes(x = 
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
-   coord_cartesian(ylim = c(-1.35,3.35))+
-   scale_fill_manual(values = color_palette)+
+     scale_fill_viridis(discrete = TRUE) +
+   coord_cartesian(ylim = c(-1.25,3))+
  geom_hline(data = meta.day3.raw.df[meta.day3.raw.df$time=="960",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
@@ -367,8 +369,8 @@ day3.z.1440.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="1440",], aes(x 
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
-      coord_cartesian(ylim = c(-1.35,3.35))+
-   scale_fill_manual(values = color_palette)+
+        scale_fill_viridis(discrete = TRUE) +
+   coord_cartesian(ylim = c(-1.25,3))+
  geom_hline(data = meta.day3.raw.df[meta.day3.raw.df$time=="1440",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
@@ -384,8 +386,8 @@ day3.z.2880.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="2880",], aes(x 
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
-      coord_cartesian(ylim = c(-1.35,3.35))+
-   scale_fill_manual(values = color_palette)+
+       scale_fill_viridis(discrete = TRUE) +
+   coord_cartesian(ylim = c(-1.25,3))+
  geom_hline(data = meta.day3.raw.df[meta.day3.raw.df$time=="2880",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
@@ -401,8 +403,8 @@ day3.z.4320.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="4320",], aes(x 
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
-       coord_cartesian(ylim = c(-1.35,3.35))+
-   scale_fill_manual(values = color_palette)+
+         scale_fill_viridis(discrete = TRUE) +
+   coord_cartesian(ylim = c(-1.25,3))+
  geom_hline(data = meta.day3.raw.df[meta.day3.raw.df$time=="4320",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
@@ -438,9 +440,9 @@ ggsave("figures/all.z.day3.plot.pdf", all.z.day3.plot, width = 49, height = 12)
 
 Day 5: z scored
 ```{r}
-mean_od_raw.day5 <- mean(meta.day5.raw.df$od_raw, na.rm=T)
-sd_od_raw.day5 <- sd(meta.day5.raw.df$od_raw, na.rm=T)
-meta.day5.raw.df$z_score <- (meta.day5.raw.df$od_raw - mean_od_raw.day5) / sd_od_raw.day5
+mean_od_raw.day5 <- mean(meta.day5.raw.df$od_corrected, na.rm=T)
+sd_od_raw.day5 <- sd(meta.day5.raw.df$od_corrected, na.rm=T)
+meta.day5.raw.df$z_score <- (meta.day5.raw.df$od_corrected - mean_od_raw.day5) / sd_od_raw.day5
 
 
 day5.z.30.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="30",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
@@ -449,8 +451,8 @@ day5.z.30.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="30",], aes(x = tr
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
-  coord_cartesian(ylim = c(-1.4,2.85))+
-   scale_fill_manual(values = color_palette)+
+         scale_fill_viridis(discrete = TRUE) +
+  coord_cartesian(ylim = c(-1.25,3.5))+
  geom_hline(data = meta.day5.raw.df[meta.day5.raw.df$time=="30",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
@@ -468,8 +470,8 @@ day5.z.120.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="120",], aes(x = 
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+ 
-  coord_cartesian(ylim = c(-1.4,2.85))+
-   scale_fill_manual(values = color_palette)+
+       scale_fill_viridis(discrete = TRUE) +
+    coord_cartesian(ylim = c(-1.25,3.5))+
  geom_hline(data = meta.day5.raw.df[meta.day5.raw.df$time=="120",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
@@ -487,8 +489,8 @@ day5.z.960.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="960",], aes(x = 
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
-  coord_cartesian(ylim = c(-1.4,2.85))+
-   scale_fill_manual(values = color_palette)+
+        scale_fill_viridis(discrete = TRUE) +
+    coord_cartesian(ylim = c(-1.25,3.5))+
  geom_hline(data = meta.day5.raw.df[meta.day5.raw.df$time=="960",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
@@ -507,8 +509,8 @@ day5.z.1440.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="1440",], aes(x 
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
-    coord_cartesian(ylim = c(-1.4,2.85))+
-   scale_fill_manual(values = color_palette)+
+          scale_fill_viridis(discrete = TRUE) +
+    coord_cartesian(ylim = c(-1.25,3.5))+
  geom_hline(data = meta.day5.raw.df[meta.day5.raw.df$time=="1440",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
@@ -526,8 +528,8 @@ day5.z.2880.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="2880",], aes(x 
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
-    coord_cartesian(ylim = c(-1.4,2.85))+
-   scale_fill_manual(values = color_palette)+
+         scale_fill_viridis(discrete = TRUE) +
+    coord_cartesian(ylim = c(-1.25,3.5))+
  geom_hline(data = meta.day5.raw.df[meta.day5.raw.df$time=="2880",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
@@ -545,8 +547,8 @@ day5.z.4320.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="4320",], aes(x 
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
-  coord_cartesian(ylim = c(-1.4,2.85))+
-   scale_fill_manual(values = color_palette)+
+       scale_fill_viridis(discrete = TRUE) +
+    coord_cartesian(ylim = c(-1.25,3.5))+
  geom_hline(data = meta.day5.raw.df[meta.day5.raw.df$time=="4320",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
@@ -583,9 +585,9 @@ ggsave("figures/all.z.day5.plot.pdf", all.z.day5.plot, width = 49, height = 12)
 
 Day 7: z scored
 ```{r}
-mean_od_raw.day7 <- mean(meta.day7.raw.df$od_raw, na.rm=T)
-sd_od_raw.day7 <- sd(meta.day7.raw.df$od_raw, na.rm=T)
-meta.day7.raw.df$z_score <- (meta.day7.raw.df$od_raw - mean_od_raw.day7) / sd_od_raw.day7
+mean_od_raw.day7 <- mean(meta.day7.raw.df$od_corrected, na.rm=T)
+sd_od_raw.day7 <- sd(meta.day7.raw.df$od_corrected, na.rm=T)
+meta.day7.raw.df$z_score <- (meta.day7.raw.df$od_corrected - mean_od_raw.day7) / sd_od_raw.day7
 
 day7.z.30.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="30",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
@@ -593,8 +595,8 @@ day7.z.30.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="30",], aes(x = tr
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
-  coord_cartesian(ylim = c(-1.25,3))+
-   scale_fill_manual(values = color_palette)+
+   scale_fill_viridis(discrete = TRUE) +
+  coord_cartesian(ylim = c(-1.25,4))+
  geom_hline(data = meta.day7.raw.df[meta.day7.raw.df$time=="30",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
@@ -612,8 +614,8 @@ day7.z.120.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="120",], aes(x = 
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+ 
-    coord_cartesian(ylim = c(-1.25,3))+
-   scale_fill_manual(values = color_palette)+
+     scale_fill_viridis(discrete = TRUE) + 
+ coord_cartesian(ylim = c(-1.25,4))+
  geom_hline(data = meta.day7.raw.df[meta.day7.raw.df$time=="120",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
@@ -631,8 +633,8 @@ day7.z.960.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="960",], aes(x = 
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
-    coord_cartesian(ylim = c(-1.25,3))+
-   scale_fill_manual(values = color_palette)+
+      scale_fill_viridis(discrete = TRUE) +
+ coord_cartesian(ylim = c(-1.25,4))+
  geom_hline(data = meta.day7.raw.df[meta.day7.raw.df$time=="960",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
@@ -651,8 +653,8 @@ day7.z.1440.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="1440",], aes(x 
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
-    coord_cartesian(ylim = c(-1.25,3))+
-   scale_fill_manual(values = color_palette)+
+      scale_fill_viridis(discrete = TRUE) +
+ coord_cartesian(ylim = c(-1.25,4))+
  geom_hline(data = meta.day7.raw.df[meta.day7.raw.df$time=="1440",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
@@ -670,8 +672,8 @@ day7.z.2880.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="2880",], aes(x 
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
-    coord_cartesian(ylim = c(-1.25,3))+
-   scale_fill_manual(values = color_palette)+
+      scale_fill_viridis(discrete = TRUE) +
+ coord_cartesian(ylim = c(-1.25,4))+
  geom_hline(data = meta.day7.raw.df[meta.day7.raw.df$time=="2880",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
@@ -689,8 +691,8 @@ day7.z.4320.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="4320",], aes(x 
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
-    coord_cartesian(ylim = c(-1.25,3))+
-   scale_fill_manual(values = color_palette)+
+      scale_fill_viridis(discrete = TRUE) +
+ coord_cartesian(ylim = c(-1.25,4))+
  geom_hline(data = meta.day7.raw.df[meta.day7.raw.df$time=="4320",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
@@ -726,9 +728,9 @@ ggsave("figures/all.z.day7.plot.pdf", all.z.day7.plot, width = 49, height = 12)
 
 Day 11: z scored
 ```{r}
-mean_od_raw.day11 <- mean(meta.day11.raw.df$od_raw, na.rm=T)
-sd_od_raw.day11 <- sd(meta.day11.raw.df$od_raw, na.rm=T)
-meta.day11.raw.df$z_score <- (meta.day11.raw.df$od_raw - mean_od_raw.day11) / sd_od_raw.day11
+mean_od_raw.day11 <- mean(meta.day11.raw.df$od_corrected, na.rm=T)
+sd_od_raw.day11 <- sd(meta.day11.raw.df$od_corrected, na.rm=T)
+meta.day11.raw.df$z_score <- (meta.day11.raw.df$od_corrected - mean_od_raw.day11) / sd_od_raw.day11
 
 day11.z.30.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="30",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
@@ -736,7 +738,8 @@ day11.z.30.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="30",], aes(x =
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
-   scale_fill_manual(values = color_palette)+
+        scale_fill_viridis(discrete = TRUE) +
+  coord_cartesian(ylim = c(-1.25,4))+
  geom_hline(data = meta.day11.raw.df[meta.day11.raw.df$time=="30",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
@@ -754,7 +757,8 @@ day11.z.120.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="120",], aes(x
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+ 
-   scale_fill_manual(values = color_palette)+
+       scale_fill_viridis(discrete = TRUE) +
+    coord_cartesian(ylim = c(-1.25,4))+
  geom_hline(data = meta.day11.raw.df[meta.day11.raw.df$time=="120",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
@@ -772,7 +776,8 @@ day11.z.960.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="960",], aes(x
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
-   scale_fill_manual(values = color_palette)+
+         scale_fill_viridis(discrete = TRUE) +
+    coord_cartesian(ylim = c(-1.25,4))+
  geom_hline(data = meta.day11.raw.df[meta.day11.raw.df$time=="960",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
@@ -791,7 +796,8 @@ day11.z.1440.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="1440",], aes
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
-   scale_fill_manual(values = color_palette)+
+         scale_fill_viridis(discrete = TRUE) +
+    coord_cartesian(ylim = c(-1.25,4))+
  geom_hline(data = meta.day11.raw.df[meta.day11.raw.df$time=="1440",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
@@ -803,14 +809,15 @@ day11.z.1440.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="1440",], aes
 
 day7.z.1440.plot
 
-day7.z.2880.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="2880",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+day11.z.2880.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="2880",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
+  facet_grid(~deploy)+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
-    coord_cartesian(ylim = c(-1.25,3))+
-   scale_fill_manual(values = color_palette)+
- geom_hline(data = meta.day7.raw.df[meta.day7.raw.df$time=="2880",],
+       scale_fill_viridis(discrete = TRUE) +
+    coord_cartesian(ylim = c(-1.25,4))+
+ geom_hline(data = meta.day11.raw.df[meta.day11.raw.df$time=="2880",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
              color = "red",
@@ -841,13 +848,15 @@ day7.z.4320.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="4320",], aes(x 
 
 # Combine plots
 all.z.day11.plot <- plot_grid(
-  day11.z.30.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title = element_blank()),
-  day11.z.120.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title = element_blank()),
-  day11.z.960.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title = element_blank()),
-  day11.z.1440.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25),axis.title = element_blank()),
-  ncol = 4,
-  rel_widths = c(14, 14)
+  day11.z.30.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25)),
+  day11.z.120.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title.y = element_blank()),
+  day11.z.960.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title.y = element_blank()),
+  day11.z.1440.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title.y = element_blank()),
+  day11.z.2880.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title.y = element_blank()),
+  ncol = 5,
+  rel_widths = c(14, 14, 14, 14, 14, 14,3)
 )
+
 
 # Combine plots
 all.z.day7.plot <- plot_grid(
