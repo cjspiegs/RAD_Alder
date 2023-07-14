@@ -166,9 +166,8 @@ meta.day1.raw.df$z_score <- (meta.day1.raw.df$od_corrected - mean_od_raw.day1) /
 #color blind palette
 library(viridis) 
 
-day1.z.30.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="30",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day1.z.30.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="30",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-  facet_grid(~metabolite)+
   coord_cartesian(ylim = c(-1.2, 3.4))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
@@ -185,9 +184,8 @@ day1.z.30.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="30",], aes(x = hf
 
 day1.z.30.plot
 
-day1.z.120.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="120",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day1.z.120.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="120",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-   facet_grid(~metabolite)+
   coord_cartesian(ylim = c(-1.2, 3.4))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
@@ -202,9 +200,8 @@ day1.z.120.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="120",], aes(x = 
   theme(plot.title = element_text(size = 12))+
   Fig.formatting 
 
-day1.z.960.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="960",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day1.z.960.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="960",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-   facet_grid(~metabolite)+
   coord_cartesian(ylim = c(-1.2, 3.4))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
@@ -219,9 +216,8 @@ day1.z.960.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="960",], aes(x = 
   theme(plot.title = element_text(size = 12))+
   Fig.formatting 
 
-day1.z.1440.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="1440",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day1.z.1440.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="1440",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-   facet_grid(~metabolite)+
   coord_cartesian(ylim = c(-1.2, 3.4))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
@@ -236,9 +232,8 @@ day1.z.1440.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="1440",], aes(x 
   theme(plot.title = element_text(size = 12))+
   Fig.formatting 
 
-day1.z.2880.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="2880",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day1.z.2880.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="2880",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-   facet_grid(~metabolite)+
   coord_cartesian(ylim = c(-1.2, 3.4))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
@@ -253,9 +248,8 @@ day1.z.2880.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="2880",], aes(x 
   theme(plot.title = element_text(size = 12))+
   Fig.formatting
 
-day1.z.4320.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="4320",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day1.z.4320.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="4320",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-   facet_grid(~metabolite)+
   coord_cartesian(ylim = c(-1.2, 3.4))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
@@ -311,9 +305,8 @@ sd_od_raw.day3 <- sd(meta.day3.raw.df$od_corrected, na.rm=T)
 meta.day3.raw.df$z_score <- (meta.day3.raw.df$od_corrected - mean_od_raw.day3) / sd_od_raw.day3
 
 
-day3.z.30.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="30",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day3.z.30.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="30",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-   facet_grid(~metabolite)+
   coord_cartesian(ylim = c(-1.2, 3))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
@@ -330,9 +323,8 @@ day3.z.30.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="30",], aes(x = hf
 
 day3.z.30.plot
 
-day3.z.120.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="120",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day3.z.120.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="120",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-   facet_grid(~metabolite)+
    coord_cartesian(ylim = c(-1.2, 3))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
@@ -347,9 +339,8 @@ day3.z.120.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="120",], aes(x = 
   theme(plot.title = element_text(size = 12))+
   Fig.formatting 
 
-day3.z.960.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="960",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day3.z.960.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="960",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-   facet_grid(~metabolite)+
    coord_cartesian(ylim = c(-1.2, 3))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
@@ -364,9 +355,8 @@ day3.z.960.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="960",], aes(x = 
   theme(plot.title = element_text(size = 12))+
   Fig.formatting 
 
-day3.z.1440.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="1440",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day3.z.1440.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="1440",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-   facet_grid(~metabolite)+
    coord_cartesian(ylim = c(-1.2, 3))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
@@ -381,9 +371,8 @@ day3.z.1440.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="1440",], aes(x 
   theme(plot.title = element_text(size = 12))+
   Fig.formatting 
 
-day3.z.2880.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="2880",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day3.z.2880.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="2880",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-   facet_grid(~metabolite)+
    coord_cartesian(ylim = c(-1.2, 3))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
@@ -398,9 +387,8 @@ day3.z.2880.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="2880",], aes(x 
   theme(plot.title = element_text(size = 12))+
   Fig.formatting
 
-day3.z.4320.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="4320",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day3.z.4320.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="4320",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-   facet_grid(~metabolite)+
    coord_cartesian(ylim = c(-1.2, 3))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
@@ -446,9 +434,8 @@ sd_od_raw.day5 <- sd(meta.day5.raw.df$od_corrected, na.rm=T)
 meta.day5.raw.df$z_score <- (meta.day5.raw.df$od_corrected - mean_od_raw.day5) / sd_od_raw.day5
 
 
-day5.z.30.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="30",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day5.z.30.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="30",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-  facet_grid(~metabolite)+
   coord_cartesian(ylim = c(-1.2,3.75))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
@@ -465,9 +452,8 @@ day5.z.30.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="30",], aes(x = hf
 
 day5.z.30.plot
 
-day5.z.120.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="120",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day5.z.120.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="120",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-  facet_grid(~metabolite)+
   coord_cartesian(ylim = c(-1.2,3.75))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
@@ -484,9 +470,8 @@ day5.z.120.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="120",], aes(x = 
 
 day5.z.120.plot
 
-day5.z.960.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="960",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day5.z.960.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="960",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-  facet_grid(~metabolite)+
   coord_cartesian(ylim = c(-1.2,3.75))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
@@ -504,10 +489,9 @@ day5.z.960.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="960",], aes(x = 
 day5.z.960.plot
 
 
-day5.z.1440.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="1440",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day5.z.1440.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="1440",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-  facet_grid(~metabolite)+
-  coord_cartesian(ylim = c(-1.2,3.75))+
+   coord_cartesian(ylim = c(-1.2,3.75))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
@@ -523,9 +507,8 @@ day5.z.1440.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="1440",], aes(x 
 
 day5.z.1440.plot
 
-day5.z.2880.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="2880",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day5.z.2880.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="2880",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-  facet_grid(~metabolite)+
   coord_cartesian(ylim = c(-1.2,3.75))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
@@ -542,9 +525,8 @@ day5.z.2880.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="2880",], aes(x 
 
 day5.z.2880.plot
 
-day5.z.4320.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="4320",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day5.z.4320.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="4320",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-  facet_grid(~metabolite)+
   coord_cartesian(ylim = c(-1.2,3.75))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
@@ -590,9 +572,8 @@ mean_od_raw.day7 <- mean(meta.day7.raw.df$od_corrected, na.rm=T)
 sd_od_raw.day7 <- sd(meta.day7.raw.df$od_corrected, na.rm=T)
 meta.day7.raw.df$z_score <- (meta.day7.raw.df$od_corrected - mean_od_raw.day7) / sd_od_raw.day7
 
-day7.z.30.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="30",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day7.z.30.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="30",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-  facet_grid(~metabolite)+
   coord_cartesian(ylim = c(-1.2,4.25))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
@@ -609,9 +590,8 @@ day7.z.30.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="30",], aes(x = hf
 
 day7.z.30.plot
 
-day7.z.120.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="120",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day7.z.120.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="120",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-    facet_grid(~metabolite)+
     coord_cartesian(ylim = c(-1.2,4.25))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
@@ -628,9 +608,8 @@ day7.z.120.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="120",], aes(x = 
 
 day7.z.120.plot
 
-day7.z.960.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="960",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day7.z.960.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="960",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-    facet_grid(~metabolite)+
     coord_cartesian(ylim = c(-1.2,4.25))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
@@ -648,9 +627,8 @@ day7.z.960.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="960",], aes(x = 
 day7.z.960.plot
 
 
-day7.z.1440.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="1440",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day7.z.1440.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="1440",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-    facet_grid(~metabolite)+
     coord_cartesian(ylim = c(-1.2,4.25))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
@@ -667,9 +645,8 @@ day7.z.1440.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="1440",], aes(x 
 
 day7.z.1440.plot
 
-day7.z.2880.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="2880",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day7.z.2880.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="2880",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-    facet_grid(~metabolite)+
     coord_cartesian(ylim = c(-1.2,4.25))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
@@ -686,9 +663,8 @@ day7.z.2880.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="2880",], aes(x 
 
 day5.z.2880.plot
 
-day7.z.4320.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="4320",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day7.z.4320.plot=ggplot(meta.day7.raw.df[meta.day7.raw.df$time=="4320",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-    facet_grid(~metabolite)+
     coord_cartesian(ylim = c(-1.2,4.25))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
@@ -733,9 +709,8 @@ mean_od_raw.day11 <- mean(meta.day11.raw.df$od_corrected, na.rm=T)
 sd_od_raw.day11 <- sd(meta.day11.raw.df$od_corrected, na.rm=T)
 meta.day11.raw.df$z_score <- (meta.day11.raw.df$od_corrected - mean_od_raw.day11) / sd_od_raw.day11
 
-day11.z.30.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="30",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day11.z.30.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="30",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-  facet_grid(~metabolite)+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
@@ -751,9 +726,8 @@ day11.z.30.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="30",], aes(x =
 
 day11.z.30.plot
 
-day11.z.120.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="120",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day11.z.120.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="120",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-    facet_grid(~metabolite)+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+ 
@@ -769,9 +743,8 @@ day11.z.120.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="120",], aes(x
 
 day11.z.120.plot
 
-day11.z.960.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="960",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day11.z.960.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="960",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-   facet_grid(~metabolite)+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
@@ -788,9 +761,8 @@ day11.z.960.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="960",], aes(x
 day7.z.960.plot
 
 
-day11.z.1440.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="1440",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day11.z.1440.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="1440",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-   facet_grid(~metabolite)+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
@@ -806,9 +778,8 @@ day11.z.1440.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="1440",], aes
 
 day7.z.1440.plot
 
-day11.z.2880.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="2880",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day11.z.2880.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="2880",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-  facet_grid(~metabolite)+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
@@ -824,9 +795,8 @@ day11.z.2880.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="2880",], aes
 
 day5.z.2880.plot
 
-day11.z.4320.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="4320",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day11.z.4320.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="4320",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-  facet_grid(~metabolite)+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
@@ -871,9 +841,9 @@ mean_od_raw.day17 <- mean(meta.day17.raw.df$od_corrected, na.rm=T)
 sd_od_raw.day17 <- sd(meta.day17.raw.df$od_corrected, na.rm=T)
 meta.day17.raw.df$z_score <- (meta.day17.raw.df$od_corrected - mean_od_raw.day17) / sd_od_raw.day17
 
-day17.z.30.plot=ggplot(meta.day17.raw.df[meta.day17.raw.df$time=="30",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day17.z.30.plot=ggplot(meta.day17.raw.df[meta.day17.raw.df$time=="30",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-  facet_grid(~metabolite)+
+  coord_cartesian(ylim = c(-1.5,4))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
@@ -889,9 +859,9 @@ day17.z.30.plot=ggplot(meta.day17.raw.df[meta.day17.raw.df$time=="30",], aes(x =
 
 day17.z.30.plot
 
-day17.z.120.plot=ggplot(meta.day17.raw.df[meta.day17.raw.df$time=="120",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day17.z.120.plot=ggplot(meta.day17.raw.df[meta.day17.raw.df$time=="120",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-    facet_grid(~metabolite)+
+  coord_cartesian(ylim = c(-1.5,4))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+ 
@@ -907,9 +877,9 @@ day17.z.120.plot=ggplot(meta.day17.raw.df[meta.day17.raw.df$time=="120",], aes(x
 
 day17.z.120.plot
 
-day17.z.960.plot=ggplot(meta.day17.raw.df[meta.day17.raw.df$time=="960",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day17.z.960.plot=ggplot(meta.day17.raw.df[meta.day17.raw.df$time=="960",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-   facet_grid(~metabolite)+
+  coord_cartesian(ylim = c(-1.5,4))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
@@ -926,9 +896,9 @@ day17.z.960.plot=ggplot(meta.day17.raw.df[meta.day17.raw.df$time=="960",], aes(x
 day17.z.960.plot
 
 
-day17.z.1440.plot=ggplot(meta.day17.raw.df[meta.day17.raw.df$time=="1440",], aes(x = hfa, y = z_score, fill = factor(treatment))) +
+day17.z.1440.plot=ggplot(meta.day17.raw.df[meta.day17.raw.df$time=="1440",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-   facet_grid(~metabolite)+
+  coord_cartesian(ylim = c(-1.5,4))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
@@ -945,15 +915,14 @@ day17.z.1440.plot=ggplot(meta.day17.raw.df[meta.day17.raw.df$time=="1440",], aes
 
 day17.z.1440.plot
 
-day11.z.2880.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="2880",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+day17.z.2880.plot=ggplot(meta.day17.raw.df[meta.day17.raw.df$time=="2880",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-  facet_grid(~deploy)+
+  coord_cartesian(ylim = c(-1.5,4))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
        scale_fill_viridis(discrete = TRUE) +
-    coord_cartesian(ylim = c(-1.25,4))+
- geom_hline(data = meta.day11.raw.df[meta.day11.raw.df$time=="2880",],
+ geom_hline(data = meta.day17.raw.df[meta.day17.raw.df$time=="2880",],
              aes(yintercept = mean(z_score),
                  linetype = "Average"),
              color = "red",
@@ -962,11 +931,10 @@ day11.z.2880.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="2880",], aes
   theme(plot.title = element_text(size = 12))+
   Fig.formatting
 
-day5.z.2880.plot
+day17.z.2880.plot
 
 day11.z.4320.plot=ggplot(meta.day11.raw.df[meta.day11.raw.df$time=="4320",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
-  facet_grid(~deploy)+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
@@ -988,9 +956,10 @@ all.z.day17.plot <- plot_grid(
   day17.z.120.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title.y = element_blank()),
   day17.z.960.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title.y = element_blank()),
   day17.z.1440.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title.y = element_blank()),
+  day17.z.2880.plot + theme(legend.position = "none", plot.margin = margin(1, 1, 1, 1, "cm"), plot.title = element_text(size= 25), axis.title.y = element_blank()),
   extract.legend,
-  ncol = 5,
-  rel_widths = c(14, 14, 14,14, 3)
+  ncol = 6,
+  rel_widths = c(14, 14, 14,14,14, 3)
 )
 
 # Set the overall size of the combined plot
@@ -1060,6 +1029,7 @@ Leaf mass
 ```{r}
 mass.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/leaf_mass.csv")
 
+
 #correction factor
 mass.df$final_correct<-0.941*(mass.df$final_mass)-0.00337 #correction
 
@@ -1072,22 +1042,32 @@ mass.df$perc.remain=(mass.df$final_correct / mass.df$initial_mass)*100
 #z score perc. remaining
 mass.df$z_score_perc=(mass.df$perc.remain - mean(mass.df$perc.remain))/sd(mass.df$perc.remain)
 
-#plot
-ggplot(mass.df, aes(x = hfa, y = z_score_perc, fill = factor(treatment))) +
+
+
+# Apply the asin(sqrt) transformation
+mass.df$arc_sin_remain= asin(sqrt(mass.df$perc.remain / max(mass.df$perc.remain)))
+
+#z score the arc sine
+mass.df$arc_z_score <- (mass.df$arc_sin_remain - mean(mass.df$arc_sin_remain))/sd(mass.df$arc_sin_remain)
+
+
+ggplot(mass.df, aes(x = treatment, y = arc_z_score, fill = factor(hfa))) +
   geom_boxplot() +
-  facet_grid(~factor(deloy))+
-  labs(x = "Treatment", y = "Z score (% mass remaining)") +
+  coord_cartesian(ylim = c(-1.75,1.75))+
+  labs(x = "Treatment", y = "Arc sine (% mass remaining)") +
   Fig.formatting+
   theme(legend.position = "right")+
        scale_fill_viridis(discrete = TRUE) +
  geom_hline(data = mass.df,
-             aes(yintercept = mean(z_score_perc),
+             aes(yintercept = mean(arc_z_score),
                  linetype = "Average"),
              color = "red",
              linetype = "dotted")+
   theme(plot.title = element_text(size = 12))+
   Fig.formatting
 
+
+ 
 
 
 ```
