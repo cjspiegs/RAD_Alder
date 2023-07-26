@@ -159,14 +159,19 @@ ggplot(meta.day1.df[meta.day1.df$time=="1440",], aes(x = hfa, y = od_corrected, 
 
 Day 1: z scored
 ```{r}
-mean_od_raw.day1 <- mean(meta.day1.raw.df$od_corrected, na.rm=T)
-sd_od_raw.day1 <- sd(meta.day1.raw.df$od_corrected, na.rm=T)
-meta.day1.raw.df$z_score <- (meta.day1.raw.df$od_corrected - mean_od_raw.day1) / sd_od_raw.day1
+mean_od_raw_b.day1 <- mean(meta.day1.raw.df$od_corrected_b, na.rm=T)
+sd_od_raw_b.day1 <- sd(meta.day1.raw.df$od_corrected_b, na.rm=T)
+meta.day1.raw.df$z_score_b <- (meta.day1.raw.df$od_corrected_b - mean_od_raw_b.day1) / sd_od_raw_b.day1
+
+
+mean_od_raw_b_n.day1 <- mean(meta.day1.raw.df$od_corrected_b_n, na.rm=T)
+sd_od_raw_b_n.day1 <- sd(meta.day1.raw.df$od_corrected_b_n, na.rm=T)
+meta.day1.raw.df$z_score_b_n <- (meta.day1.raw.df$od_corrected_b_n - mean_od_raw_b_n.day1) / sd_od_raw_b_n.day1
 
 #color blind palette
 library(viridis) 
 
-day1.z.30.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="30",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+day1.z.30.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="30",], aes(x = treatment, y = z_score_b_n, fill = factor(hfa))) +
   geom_boxplot() +
   coord_cartesian(ylim = c(-1.2, 3.4))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
@@ -174,7 +179,7 @@ day1.z.30.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="30",], aes(x = tr
   theme(legend.position = "right")+
    scale_fill_viridis(discrete = TRUE) +
  geom_hline(data = meta.day1.raw.df[meta.day1.raw.df$time=="30",],
-             aes(yintercept = mean(z_score),
+             aes(yintercept = mean(z_score_b_n),
                  linetype = "Average"),
              color = "red",
              linetype = "dotted")+
@@ -184,7 +189,7 @@ day1.z.30.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="30",], aes(x = tr
 
 day1.z.30.plot
 
-day1.z.120.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="120",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+day1.z.120.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="120",], aes(x = treatment, y = z_score_b_n, fill = factor(hfa))) +
   geom_boxplot() +
   coord_cartesian(ylim = c(-1.2, 3.4))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
@@ -192,7 +197,7 @@ day1.z.120.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="120",], aes(x = 
   theme(legend.position = "right")+
     scale_fill_viridis(discrete = TRUE) +
  geom_hline(data = meta.day1.raw.df[meta.day1.raw.df$time=="120",],
-             aes(yintercept = mean(z_score),
+             aes(yintercept = mean(z_score_b_n),
                  linetype = "Average"),
              color = "red",
              linetype = "dotted")+
@@ -200,7 +205,7 @@ day1.z.120.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="120",], aes(x = 
   theme(plot.title = element_text(size = 12))+
   Fig.formatting 
 
-day1.z.960.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="960",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+day1.z.960.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="960",], aes(x = treatment, y = z_score_b_n, fill = factor(hfa))) +
   geom_boxplot() +
   coord_cartesian(ylim = c(-1.2, 3.4))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
@@ -208,7 +213,7 @@ day1.z.960.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="960",], aes(x = 
   theme(legend.position = "right")+
     scale_fill_viridis(discrete = TRUE) +
  geom_hline(data = meta.day1.raw.df[meta.day1.raw.df$time=="960",],
-             aes(yintercept = mean(z_score),
+             aes(yintercept = mean(z_score_b_n),
                  linetype = "Average"),
              color = "red",
              linetype = "dotted")+
@@ -216,7 +221,7 @@ day1.z.960.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="960",], aes(x = 
   theme(plot.title = element_text(size = 12))+
   Fig.formatting 
 
-day1.z.1440.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="1440",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+day1.z.1440.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="1440",], aes(x = treatment, y = z_score_b_n, fill = factor(hfa))) +
   geom_boxplot() +
   coord_cartesian(ylim = c(-1.2, 3.4))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
@@ -224,7 +229,7 @@ day1.z.1440.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="1440",], aes(x 
   theme(legend.position = "right")+
        scale_fill_viridis(discrete = TRUE) +
  geom_hline(data = meta.day1.raw.df[meta.day1.raw.df$time=="1440",],
-             aes(yintercept = mean(z_score),
+             aes(yintercept = mean(z_score_b_n),
                  linetype = "Average"),
              color = "red",
              linetype = "dotted")+
@@ -232,7 +237,7 @@ day1.z.1440.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="1440",], aes(x 
   theme(plot.title = element_text(size = 12))+
   Fig.formatting 
 
-day1.z.2880.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="2880",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+day1.z.2880.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="2880",], aes(x = treatment, y = z_score_b_n, fill = factor(hfa))) +
   geom_boxplot() +
   coord_cartesian(ylim = c(-1.2, 3.4))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
@@ -240,7 +245,7 @@ day1.z.2880.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="2880",], aes(x 
   theme(legend.position = "right")+
       scale_fill_viridis(discrete = TRUE) +
  geom_hline(data = meta.day1.raw.df[meta.day1.raw.df$time=="2880",],
-             aes(yintercept = mean(z_score),
+             aes(yintercept = mean(z_score_b_n),
                  linetype = "Average"),
              color = "red",
              linetype = "dotted")+
@@ -248,7 +253,7 @@ day1.z.2880.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="2880",], aes(x 
   theme(plot.title = element_text(size = 12))+
   Fig.formatting
 
-day1.z.4320.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="4320",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+day1.z.4320.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="4320",], aes(x = treatment, y = z_score_b_n, fill = factor(hfa))) +
   geom_boxplot() +
   coord_cartesian(ylim = c(-1.2, 3.4))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
@@ -256,7 +261,7 @@ day1.z.4320.plot=ggplot(meta.day1.raw.df[meta.day1.raw.df$time=="4320",], aes(x 
   theme(legend.position = "right")+
       scale_fill_viridis(discrete = TRUE) +
  geom_hline(data = meta.day1.raw.df[meta.day1.raw.df$time=="4320",],
-             aes(yintercept = mean(z_score),
+             aes(yintercept = mean(z_score_b_n),
                  linetype = "Average"),
              color = "red",
              linetype = "dotted")+
@@ -300,12 +305,16 @@ ggsave("figures/all.z.day1.plot.pdf", all.z.day1.plot, width = 49, height = 10)
 
 Day 3: z scored
 ```{r}
-mean_od_raw.day3 <- mean(meta.day3.raw.df$od_corrected, na.rm=T)
-sd_od_raw.day3 <- sd(meta.day3.raw.df$od_corrected, na.rm=T)
-meta.day3.raw.df$z_score <- (meta.day3.raw.df$od_corrected - mean_od_raw.day3) / sd_od_raw.day3
+mean_od_raw_b.day3 <- mean(meta.day3.raw.df$od_corrected_b, na.rm=T)
+sd_od_raw_b.day3 <- sd(meta.day3.raw.df$od_corrected_b, na.rm=T)
+meta.day3.raw.df$z_score_b <- (meta.day3.raw.df$od_corrected_b - mean_od_raw_b.day3) / sd_od_raw_b.day3
 
 
-day3.z.30.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="30",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+mean_od_raw_b_n.day3 <- mean(meta.day3.raw.df$od_corrected_b_n, na.rm=T)
+sd_od_raw_b_n.day3 <- sd(meta.day3.raw.df$od_corrected_b_n, na.rm=T)
+meta.day3.raw.df$z_score_b_n <- (meta.day3.raw.df$od_corrected_b_n - mean_od_raw_b_n.day3) / sd_od_raw_b_n.day3
+
+day3.z.30.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="30",], aes(x = treatment, y = z_score_b_n, fill = factor(hfa))) +
   geom_boxplot() +
   coord_cartesian(ylim = c(-1.2, 3))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
@@ -313,7 +322,7 @@ day3.z.30.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="30",], aes(x = tr
   theme(legend.position = "right")+
   scale_fill_viridis(discrete = TRUE) +
  geom_hline(data = meta.day3.raw.df[meta.day3.raw.df$time=="30",],
-             aes(yintercept = mean(z_score),
+             aes(yintercept = mean(z_score_b_n),
                  linetype = "Average"),
              color = "red",
              linetype = "dotted")+
@@ -323,7 +332,7 @@ day3.z.30.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="30",], aes(x = tr
 
 day3.z.30.plot
 
-day3.z.120.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="120",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+day3.z.120.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="120",], aes(x = treatment, y = z_score_b_n, fill = factor(hfa))) +
   geom_boxplot() +
    coord_cartesian(ylim = c(-1.2, 3))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
@@ -331,7 +340,7 @@ day3.z.120.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="120",], aes(x = 
   theme(legend.position = "right")+
      scale_fill_viridis(discrete = TRUE) +
  geom_hline(data = meta.day3.raw.df[meta.day3.raw.df$time=="120",],
-             aes(yintercept = mean(z_score),
+             aes(yintercept = mean(z_score_b_n),
                  linetype = "Average"),
              color = "red",
              linetype = "dotted")+
@@ -339,7 +348,7 @@ day3.z.120.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="120",], aes(x = 
   theme(plot.title = element_text(size = 12))+
   Fig.formatting 
 
-day3.z.960.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="960",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+day3.z.960.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="960",], aes(x = treatment, y = z_score_b_n, fill = factor(hfa))) +
   geom_boxplot() +
    coord_cartesian(ylim = c(-1.2, 3))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
@@ -347,7 +356,7 @@ day3.z.960.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="960",], aes(x = 
   theme(legend.position = "right")+
      scale_fill_viridis(discrete = TRUE) +
  geom_hline(data = meta.day3.raw.df[meta.day3.raw.df$time=="960",],
-             aes(yintercept = mean(z_score),
+             aes(yintercept = mean(z_score_b_n),
                  linetype = "Average"),
              color = "red",
              linetype = "dotted")+
@@ -355,7 +364,7 @@ day3.z.960.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="960",], aes(x = 
   theme(plot.title = element_text(size = 12))+
   Fig.formatting 
 
-day3.z.1440.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="1440",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+day3.z.1440.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="1440",], aes(x = treatment, y = z_score_b_n, fill = factor(hfa))) +
   geom_boxplot() +
    coord_cartesian(ylim = c(-1.2, 3))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
@@ -363,7 +372,7 @@ day3.z.1440.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="1440",], aes(x 
   theme(legend.position = "right")+
         scale_fill_viridis(discrete = TRUE) +
  geom_hline(data = meta.day3.raw.df[meta.day3.raw.df$time=="1440",],
-             aes(yintercept = mean(z_score),
+             aes(yintercept = mean(z_score_b_n),
                  linetype = "Average"),
              color = "red",
              linetype = "dotted")+
@@ -371,7 +380,7 @@ day3.z.1440.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="1440",], aes(x 
   theme(plot.title = element_text(size = 12))+
   Fig.formatting 
 
-day3.z.2880.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="2880",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+day3.z.2880.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="2880",], aes(x = treatment, y = z_score_b_n, fill = factor(hfa))) +
   geom_boxplot() +
    coord_cartesian(ylim = c(-1.2, 3))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
@@ -379,7 +388,7 @@ day3.z.2880.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="2880",], aes(x 
   theme(legend.position = "right")+
        scale_fill_viridis(discrete = TRUE) +
  geom_hline(data = meta.day3.raw.df[meta.day3.raw.df$time=="2880",],
-             aes(yintercept = mean(z_score),
+             aes(yintercept = mean(z_score_b_n),
                  linetype = "Average"),
              color = "red",
              linetype = "dotted")+
@@ -387,7 +396,7 @@ day3.z.2880.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="2880",], aes(x 
   theme(plot.title = element_text(size = 12))+
   Fig.formatting
 
-day3.z.4320.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="4320",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+day3.z.4320.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="4320",], aes(x = treatment, y = z_score_b_n, fill = factor(hfa))) +
   geom_boxplot() +
    coord_cartesian(ylim = c(-1.2, 3))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
@@ -395,7 +404,7 @@ day3.z.4320.plot=ggplot(meta.day3.raw.df[meta.day3.raw.df$time=="4320",], aes(x 
   theme(legend.position = "right")+
          scale_fill_viridis(discrete = TRUE) +
  geom_hline(data = meta.day3.raw.df[meta.day3.raw.df$time=="4320",],
-             aes(yintercept = mean(z_score),
+             aes(yintercept = mean(z_score_b_n),
                  linetype = "Average"),
              color = "red",
              linetype = "dotted")+
@@ -419,7 +428,7 @@ all.z.day3.plot <- plot_grid(
 
 
 # Set the overall size of the combined plot
-ggsave("figures/all.z.day3.plot.pdf", all.z.day3.plot, width = 49, height = 12)
+ggsave("figures/all.z.day3.plot.pdf", all.z.day3.plot, width = 49, height = 10)
 
 
 
@@ -429,20 +438,24 @@ ggsave("figures/all.z.day3.plot.pdf", all.z.day3.plot, width = 49, height = 12)
 
 Day 5: z scored
 ```{r}
-mean_od_raw.day5 <- mean(meta.day5.raw.df$od_corrected, na.rm=T)
-sd_od_raw.day5 <- sd(meta.day5.raw.df$od_corrected, na.rm=T)
-meta.day5.raw.df$z_score <- (meta.day5.raw.df$od_corrected - mean_od_raw.day5) / sd_od_raw.day5
+mean_od_raw_b.day5 <- mean(meta.day5.raw.df$od_corrected_b, na.rm=T)
+sd_od_raw_b.day5 <- sd(meta.day5.raw.df$od_corrected_b, na.rm=T)
+meta.day5.raw.df$z_score_b <- (meta.day5.raw.df$od_corrected_b - mean_od_raw_b.day5) / sd_od_raw_b.day5
 
 
-day5.z.30.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="30",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+mean_od_raw_b_n.day5 <- mean(meta.day5.raw.df$od_corrected_b_n, na.rm=T)
+sd_od_raw_b_n.day5 <- sd(meta.day5.raw.df$od_corrected_b_n, na.rm=T)
+meta.day5.raw.df$z_score_b_n <- (meta.day5.raw.df$od_corrected_b_n - mean_od_raw_b_n.day5) / sd_od_raw_b_n.day5
+
+day5.z.30.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="30",], aes(x = treatment, y = z_score_b_n, fill = factor(hfa))) +
   geom_boxplot() +
-  coord_cartesian(ylim = c(-1.2,3.75))+
+  coord_cartesian(ylim = c(-1,3.75))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
          scale_fill_viridis(discrete = TRUE) +
  geom_hline(data = meta.day5.raw.df[meta.day5.raw.df$time=="30",],
-             aes(yintercept = mean(z_score),
+             aes(yintercept = mean(z_score_b_n),
                  linetype = "Average"),
              color = "red",
              linetype = "dotted")+
@@ -452,15 +465,15 @@ day5.z.30.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="30",], aes(x = tr
 
 day5.z.30.plot
 
-day5.z.120.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="120",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+day5.z.120.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="120",], aes(x = treatment, y = z_score_b_n, fill = factor(hfa))) +
   geom_boxplot() +
-  coord_cartesian(ylim = c(-1.2,3.75))+
+  coord_cartesian(ylim = c(-1,3.75))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+ 
        scale_fill_viridis(discrete = TRUE) +
  geom_hline(data = meta.day5.raw.df[meta.day5.raw.df$time=="120",],
-             aes(yintercept = mean(z_score),
+             aes(yintercept = mean(z_score_b_n),
                  linetype = "Average"),
              color = "red",
              linetype = "dotted")+
@@ -470,15 +483,15 @@ day5.z.120.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="120",], aes(x = 
 
 day5.z.120.plot
 
-day5.z.960.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="960",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+day5.z.960.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="960",], aes(x = treatment, y = z_score_b_n, fill = factor(hfa))) +
   geom_boxplot() +
-  coord_cartesian(ylim = c(-1.2,3.75))+
+  coord_cartesian(ylim = c(-1,3.75))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
         scale_fill_viridis(discrete = TRUE) +
  geom_hline(data = meta.day5.raw.df[meta.day5.raw.df$time=="960",],
-             aes(yintercept = mean(z_score),
+             aes(yintercept = mean(z_score_b_n),
                  linetype = "Average"),
              color = "red",
              linetype = "dotted")+
@@ -489,15 +502,15 @@ day5.z.960.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="960",], aes(x = 
 day5.z.960.plot
 
 
-day5.z.1440.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="1440",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+day5.z.1440.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="1440",], aes(x = treatment, y = z_score_b_n, fill = factor(hfa))) +
   geom_boxplot() +
-   coord_cartesian(ylim = c(-1.2,3.75))+
+  coord_cartesian(ylim = c(-1,3.75))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
           scale_fill_viridis(discrete = TRUE) +
  geom_hline(data = meta.day5.raw.df[meta.day5.raw.df$time=="1440",],
-             aes(yintercept = mean(z_score),
+             aes(yintercept = mean(z_score_b_n),
                  linetype = "Average"),
              color = "red",
              linetype = "dotted")+
@@ -507,15 +520,15 @@ day5.z.1440.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="1440",], aes(x 
 
 day5.z.1440.plot
 
-day5.z.2880.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="2880",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+day5.z.2880.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="2880",], aes(x = treatment, y = z_score_b_n, fill = factor(hfa))) +
   geom_boxplot() +
-  coord_cartesian(ylim = c(-1.2,3.75))+
+  coord_cartesian(ylim = c(-1,3.75))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
          scale_fill_viridis(discrete = TRUE) +
  geom_hline(data = meta.day5.raw.df[meta.day5.raw.df$time=="2880",],
-             aes(yintercept = mean(z_score),
+             aes(yintercept = mean(z_score_b_n),
                  linetype = "Average"),
              color = "red",
              linetype = "dotted")+
@@ -525,15 +538,15 @@ day5.z.2880.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="2880",], aes(x 
 
 day5.z.2880.plot
 
-day5.z.4320.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="4320",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+day5.z.4320.plot=ggplot(meta.day5.raw.df[meta.day5.raw.df$time=="4320",], aes(x = treatment, y = z_score_b_n, fill = factor(hfa))) +
   geom_boxplot() +
-  coord_cartesian(ylim = c(-1.2,3.75))+
+  coord_cartesian(ylim = c(-1,3.75))+
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   Fig.formatting+
   theme(legend.position = "right")+
        scale_fill_viridis(discrete = TRUE) +
  geom_hline(data = meta.day5.raw.df[meta.day5.raw.df$time=="4320",],
-             aes(yintercept = mean(z_score),
+             aes(yintercept = mean(z_score_b_n),
                  linetype = "Average"),
              color = "red",
              linetype = "dotted")+
@@ -558,7 +571,7 @@ all.z.day5.plot <- plot_grid(
 
 
 # Set the overall size of the combined plot
-ggsave("figures/all.z.day5.plot.pdf", all.z.day5.plot, width = 49, height = 12)
+ggsave("figures/all.z.day5.plot.pdf", all.z.day5.plot, width = 49, height = 10)
 
 
 
@@ -1043,7 +1056,6 @@ mass.df$perc.remain=(mass.df$final_correct / mass.df$initial_mass)*100
 mass.df$z_score_perc=(mass.df$perc.remain - mean(mass.df$perc.remain))/sd(mass.df$perc.remain)
 
 
-
 # Apply the asin(sqrt) transformation
 mass.df$arc_sin_remain= asin(sqrt(mass.df$perc.remain / max(mass.df$perc.remain)))
 
@@ -1051,10 +1063,19 @@ mass.df$arc_sin_remain= asin(sqrt(mass.df$perc.remain / max(mass.df$perc.remain)
 mass.df$arc_z_score <- (mass.df$arc_sin_remain - mean(mass.df$arc_sin_remain))/sd(mass.df$arc_sin_remain)
 
 
-ggplot(mass.df, aes(x = treatment, y = arc_z_score, fill = factor(hfa))) +
+# Calculate percent mass loss
+mass.df$percent_loss <- (mass.df$initial_mass - mass.df$final_correct) / mass.df$initial_mass * 100
+
+#z score percent loss
+mass.df$z_score_loss=(mass.df$percent_loss - mean(mass.df$percent_loss))/sd(mass.df$percent_loss)
+
+
+
+
+leaf.mass.plot=ggplot(mass.df, aes(x = treatment, y = arc_z_score, fill = factor(hfa))) +
   geom_boxplot() +
   coord_cartesian(ylim = c(-1.75,1.75))+
-  labs(x = "Treatment", y = "Arc sine (% mass remaining)") +
+  labs(x = "treatment", y = "Arc sine (% mass remaining)") +
   Fig.formatting+
   theme(legend.position = "right")+
        scale_fill_viridis(discrete = TRUE) +
@@ -1066,9 +1087,43 @@ ggplot(mass.df, aes(x = treatment, y = arc_z_score, fill = factor(hfa))) +
   theme(plot.title = element_text(size = 12))+
   Fig.formatting
 
+leaf.mass.z.plot=ggplot(mass.df, aes(x = treatment, y = z_score_loss, fill = factor(hfa))) +
+  geom_boxplot() +
+  facet_grid(~deploy)+
+  labs(x = "treatment", y = "mass loss (%)") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+       scale_fill_viridis(discrete = TRUE) +
+ geom_hline(data = mass.df,
+             aes(yintercept = mean(z_score_loss),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting
+
+
+leaf.mass.loss.plot=ggplot(mass.df, aes(x = treatment, y = percent_loss, fill = factor(hfa))) +
+  geom_boxplot() +
+  facet_grid(~deploy)+
+  labs(x = "treatment", y = "mass loss (%)") +
+  Fig.formatting+
+  theme(legend.position = "right")+
+       scale_fill_viridis(discrete = TRUE) +
+ geom_hline(data = mass.df,
+             aes(yintercept = mean(percent_loss),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting
+
+
+
+ggsave("figures/leaf.mass.loss.plot.pdf", leaf.mass.loss.plot, width = 7, height = 6)
 
  
-
+mean(mass.df$percent_loss)
 
 ```
 
