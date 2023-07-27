@@ -56,11 +56,22 @@ meta.day5.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_5_me
 meta.day7.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_7_metabolites_corrected.csv")
 
 meta.day1.raw.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_1_metabolites_raw_corrected.csv")
+meta.day1.raw.df$deploy <- trimws(mass.df$deploy)
+
 meta.day3.raw.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_3_metabolites_raw_corrected.csv")
+meta.day3.raw.df$deploy <- trimws(mass.df$deploy)
+
 meta.day5.raw.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_5_metabolites_raw_corrected.csv")
+meta.day5.raw.df$deploy <- trimws(mass.df$deploy)
+
 meta.day7.raw.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_7_metabolites_raw_corrected.csv")
+meta.day7.raw.df$deploy <- trimws(mass.df$deploy)
+
 meta.day11.raw.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_11_metabolites_raw_corrected.csv")
+meta.day11.raw.df$deploy <- trimws(mass.df$deploy)
+
 meta.day17.raw.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_17_metabolites_raw_corrected.csv")
+meta.day17.raw.df$deploy <- trimws(mass.df$deploy)
 
 
 #By z-scoring the raw OD values, I can effectively assess the relative changes in microbial metabolism across the wells, regardless of their absolute starting values.
@@ -978,7 +989,7 @@ all.z.day17.plot <- plot_grid(
 # Set the overall size of the combined plot
 ggsave("figures/all.z.day17.plot.pdf", all.z.day17.plot, width = 49, height = 12)
 
-
+grepl("\\s",meta.day1.raw.df$site_num)
 
 ```
 
@@ -1042,35 +1053,84 @@ Leaf mass
 ```{r}
 mass.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/leaf_mass.csv")
 
-
 #correction factor
 mass.df$final_correct<-0.941*(mass.df$final_mass)-0.00337 #correction
 
-#z score
-mass.df$z_score= (mass.df$final_correct - mean(mass.df$final_correct)) / sd(mass.df$final_correct)
+#z score across deployment site (mass within hok 1, mass within hok 2)
 
+##HOK 1
+mass.hok1.df<- data.frame(mass.df[mass.df$deploy == "HOK" & mass.df$site_num == "1", ])
+mass.hok1.df$z_score= (mass.hok1.df$final_correct - mean(mass.hok1.df$final_correct)) / sd(mass.hok1.df$final_correct)
 #percent remaining
-mass.df$perc.remain=(mass.df$final_correct / mass.df$initial_mass)*100
-
+mass.hok1.df$perc.remain=(mass.hok1.df$final_correct / mass.hok1.df$initial_mass)*100
 #z score perc. remaining
-mass.df$z_score_perc=(mass.df$perc.remain - mean(mass.df$perc.remain))/sd(mass.df$perc.remain)
-
-
+mass.hok1.df$z_score_perc=(mass.hok1.df$perc.remain - mean(mass.hok1.df$perc.remain))/sd(mass.hok1.df$perc.remain)
 # Apply the asin(sqrt) transformation
-mass.df$arc_sin_remain= asin(sqrt(mass.df$perc.remain / max(mass.df$perc.remain)))
-
-#z score the arc sine
-mass.df$arc_z_score <- (mass.df$arc_sin_remain - mean(mass.df$arc_sin_remain))/sd(mass.df$arc_sin_remain)
-
-
+mass.hok1.df$arc_sin_remain= asin(sqrt(mass.hok1.df$perc.remain / max(mass.hok1.df$perc.remain)))
 # Calculate percent mass loss
-mass.df$percent_loss <- (mass.df$initial_mass - mass.df$final_correct) / mass.df$initial_mass * 100
-
+mass.hok1.df$percent_loss <- (mass.hok1.df$initial_mass - mass.hok1.df$final_correct) / mass.hok1.df$initial_mass * 100
 #z score percent loss
-mass.df$z_score_loss=(mass.df$percent_loss - mean(mass.df$percent_loss))/sd(mass.df$percent_loss)
+mass.hok1.df$z_score_loss=(mass.hok1.df$percent_loss - mean(mass.hok1.df$percent_loss))/sd(mass.hok1.df$percent_loss)
 
 
 
+##HOK 2
+mass.hok2.df<- data.frame(mass.df[mass.df$deploy == "HOK" & mass.df$site_num == "2", ])
+mass.hok2.df$z_score= (mass.hok2.df$final_correct - mean(mass.hok2.df$final_correct)) / sd(mass.hok2.df$final_correct)
+#percent remaining
+mass.hok2.df$perc.remain=(mass.hok2.df$final_correct / mass.hok2.df$initial_mass)*100
+#z score perc. remaining
+mass.hok2.df$z_score_perc=(mass.hok2.df$perc.remain - mean(mass.hok2.df$perc.remain))/sd(mass.hok2.df$perc.remain)
+# Apply the asin(sqrt) transformation
+mass.hok2.df$arc_sin_remain= asin(sqrt(mass.hok2.df$perc.remain / max(mass.hok2.df$perc.remain)))
+# Calculate percent mass loss
+mass.hok2.df$percent_loss <- (mass.hok2.df$initial_mass - mass.hok2.df$final_correct) / mass.hok2.df$initial_mass * 100
+#z score percent loss
+mass.hok2.df$z_score_loss=(mass.hok2.df$percent_loss - mean(mass.hok2.df$percent_loss))/sd(mass.hok2.df$percent_loss)
+
+
+##SEK 1
+mass.sek1.df<- data.frame(mass.df[mass.df$deploy == "SEK" & mass.df$site_num == "1", ])
+mass.sek1.df$z_score= (mass.sek1.df$final_correct - mean(mass.sek1.df$final_correct)) / sd(mass.sek1.df$final_correct)
+#percent remaining
+mass.sek1.df$perc.remain=(mass.sek1.df$final_correct / mass.sek1.df$initial_mass)*100
+#z score perc. remaining
+mass.sek1.df$z_score_perc=(mass.sek1.df$perc.remain - mean(mass.sek1.df$perc.remain))/sd(mass.sek1.df$perc.remain)
+# Apply the asin(sqrt) transformation
+mass.sek1.df$arc_sin_remain= asin(sqrt(mass.sek1.df$perc.remain / max(mass.sek1.df$perc.remain)))
+# Calculate percent mass loss
+mass.sek1.df$percent_loss <- (mass.sek1.df$initial_mass - mass.sek1.df$final_correct) / mass.sek1.df$initial_mass * 100
+#z score percent loss
+mass.sek1.df$z_score_loss=(mass.sek1.df$percent_loss - mean(mass.sek1.df$percent_loss))/sd(mass.sek1.df$percent_loss)
+
+
+##SEK 2
+mass.sek2.df<- data.frame(mass.df[mass.df$deploy == "SEK" & mass.df$site_num == "2", ])
+mass.sek2.df$z_score= (mass.sek2.df$final_correct - mean(mass.sek2.df$final_correct)) / sd(mass.sek2.df$final_correct)
+#percent remaining
+mass.sek2.df$perc.remain=(mass.sek2.df$final_correct / mass.sek2.df$initial_mass)*100
+#z score perc. remaining
+mass.sek2.df$z_score_perc=(mass.sek2.df$perc.remain - mean(mass.sek2.df$perc.remain))/sd(mass.sek2.df$perc.remain)
+# Apply the asin(sqrt) transformation
+mass.sek2.df$arc_sin_remain= asin(sqrt(mass.sek2.df$perc.remain / max(mass.sek2.df$perc.remain)))
+# Calculate percent mass loss
+mass.sek2.df$percent_loss <- (mass.sek2.df$initial_mass - mass.sek2.df$final_correct) / mass.sek2.df$initial_mass * 100
+#z score percent loss
+mass.sek2.df$z_score_loss=(mass.sek2.df$percent_loss - mean(mass.sek2.df$percent_loss))/sd(mass.sek2.df$percent_loss)
+
+
+##merge all sites
+mass.merged.df=rbind(mass.hok1.df, mass.hok2.df, mass.sek1.df, mass.sek2.df)
+mass.merged.df$treatment=as.factor(as.character(mass.merged.df$treatment))
+mass.merged.df$tree_id=as.factor(as.character(mass.merged.df$tree_id))
+mass.merged.df$tree_id=as.factor(as.character(mass.merged.df$tree_id))
+mass.merged.df$deploy=as.factor(as.character(mass.merged.df$deploy))
+mass.merged.df$hfa=as.factor(as.character(mass.merged.df$hfa))
+```
+
+
+```{r}
+#plots
 
 leaf.mass.plot=ggplot(mass.df, aes(x = treatment, y = arc_z_score, fill = factor(hfa))) +
   geom_boxplot() +
@@ -1103,29 +1163,50 @@ leaf.mass.z.plot=ggplot(mass.df, aes(x = treatment, y = z_score_loss, fill = fac
   Fig.formatting
 
 
-leaf.mass.loss.plot=ggplot(mass.df, aes(x = treatment, y = percent_loss, fill = factor(hfa))) +
+
+ggplot(mass.merged.df, aes(x = treatment, y = z_score_loss, fill = factor(hfa))) +
   geom_boxplot() +
-  facet_grid(~deploy)+
+  facet_grid(~deploy) +
   labs(x = "treatment", y = "mass loss (%)") +
-  Fig.formatting+
-  theme(legend.position = "right")+
-       scale_fill_viridis(discrete = TRUE) +
- geom_hline(data = mass.df,
-             aes(yintercept = mean(percent_loss),
+  Fig.formatting +
+  theme(legend.position = "right") +
+  scale_fill_viridis(discrete = TRUE) +
+  geom_hline(data = mass.merged.df,
+             aes(yintercept = mean(z_score_loss),
                  linetype = "Average"),
              color = "red",
-             linetype = "dotted")+
-  theme(plot.title = element_text(size = 12))+
+             linetype = "dotted") +
+  theme(plot.title = element_text(size = 12)) +
+  Fig.formatting
+
+ggplot(mass.merged.df, aes(x = treatment, y = z_score_loss, fill = factor(hfa))) +
+  geom_boxplot() +
+  facet_grid(~interaction(deploy, tree_id)) +
+  labs(x = "treatment", y = "mass loss (%)") +
+  Fig.formatting +
+  theme(legend.position = "right") +
+  scale_fill_viridis(discrete = TRUE) +
+  geom_hline(data = mass.merged.df,
+             aes(yintercept = mean(z_score_loss),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted") +
+  theme(plot.title = element_text(size = 12)) +
   Fig.formatting
 
 
+  class(mass.merged.df$percent_loss)
+
+
+leaf.mass.loss.plot
 
 ggsave("figures/leaf.mass.loss.plot.pdf", leaf.mass.loss.plot, width = 7, height = 6)
 
- 
-mean(mass.df$percent_loss)
+
 
 ```
+
+
 
 
 
