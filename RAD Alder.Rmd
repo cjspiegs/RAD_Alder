@@ -941,8 +941,7 @@ anova(model)
 
 ```
 
-Leaf mass
-
+Leaf mass data config
 ```{r}
 mass.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/leaf_mass.csv")
 
@@ -1021,7 +1020,7 @@ mass.merged.df$deploy=as.factor(as.character(mass.merged.df$deploy))
 mass.merged.df$hfa=as.factor(as.character(mass.merged.df$hfa))
 ```
 
-
+Leaf mass plots
 ```{r}
 #plots
 #z score plot
@@ -1060,7 +1059,7 @@ leaf.mass.plot=
 leaf.mass.plot
 
 #no deploy facet, z plot
-ggplot(mass.merged.df, aes(x = treatment, y = z_score_loss, fill = factor(hfa))) +
+no.facet.mass.z.loss.plot=ggplot(mass.merged.df, aes(x = treatment, y = z_score_loss, fill = factor(hfa))) +
   geom_boxplot() +
   labs(x = "treatment", y = "mass loss (%)") +
   Fig.formatting +
@@ -1075,7 +1074,7 @@ ggplot(mass.merged.df, aes(x = treatment, y = z_score_loss, fill = factor(hfa)))
   Fig.formatting
 
 #facet by origin and deployment
-ggplot(mass.merged.df, aes(x = treatment, y = z_score_loss, fill = factor(hfa))) +
+origin.deploy.mass.z.loss.plot=ggplot(mass.merged.df, aes(x = treatment, y = z_score_loss, fill = factor(hfa))) +
   geom_boxplot() +
   facet_grid(~interaction(deploy, tree_id)) +
   labs(x = "treatment", y = "mass loss (%)") +
@@ -1093,7 +1092,7 @@ ggplot(mass.merged.df, aes(x = treatment, y = z_score_loss, fill = factor(hfa)))
 
 
 
-ggsave("figures/leaf.mass.z.loss.plot.pdf", leaf.mass.z.plot, width = 7, height = 6)
+ggsave("figures/origin.deploy.mass.z.loss.plot.pdf", origin.deploy.mass.z.loss.plot, width = 10, height = 6)
 
 
 
