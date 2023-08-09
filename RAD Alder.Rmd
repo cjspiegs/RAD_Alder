@@ -940,6 +940,74 @@ anova(model)
 
 
 ```
+Day 16 metabolite plots
+```{r}
+
+day1.16hr.plot=ggplot(meta.day1.df[meta.day1.df$time=="960",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+  coord_cartesian(ylim = c(-1.5,2))+
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  theme(legend.position = "right")+
+    scale_fill_viridis(discrete = TRUE) +
+ geom_hline(data = meta.day1.df[meta.day1.df$time=="960",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("16 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+day1.16hr.plot
+
+day5.16hr.plot=ggplot(meta.day5.df[meta.day5.df$time=="960",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+  coord_cartesian(ylim = c(-1.5,2))+
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  theme(legend.position = "right")+
+    scale_fill_viridis(discrete = TRUE) +
+ geom_hline(data = meta.day5.df[meta.day5.df$time=="960",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("16 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+day5.16hr.plot
+
+day11.16hr.plot=ggplot(meta.day11.df[meta.day11.df$time=="960",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+  coord_cartesian(ylim = c(-1.5,2))+
+  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  theme(legend.position = "right")+
+    scale_fill_viridis(discrete = TRUE) +
+ geom_hline(data = meta.day11.df[meta.day11.df$time=="960",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("16 hours")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting 
+
+day11.16hr.plot
+
+all.16hr.z.plots=plot_grid(
+  day1.16hr.plot,
+  day5.16hr.plot,
+  day11.16hr.plot,
+  ncol=4,
+  extract.legend,
+  rel_widths = c(8,8,8,3))
+
+
+all.day16.z.plots
+ggsave("figures/all.16hr.z.plots.pdf", all.16hr.z.plots, width = 26, height = 8)
+
+
+```
 
 Leaf mass data config
 ```{r}
