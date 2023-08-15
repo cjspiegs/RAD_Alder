@@ -946,7 +946,7 @@ Day 16 metabolite plots
 day1.16hr.plot=ggplot(meta.day1.df[meta.day1.df$time=="960",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
   coord_cartesian(ylim = c(-1.5,2))+
-  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  labs(x = "", y = "Optical density (z-scored)") +
   theme(legend.position = "right")+
     scale_fill_viridis(discrete = TRUE) +
  geom_hline(data = meta.day1.df[meta.day1.df$time=="960",],
@@ -954,16 +954,34 @@ day1.16hr.plot=ggplot(meta.day1.df[meta.day1.df$time=="960",], aes(x = treatment
                  linetype = "Average"),
              color = "red",
              linetype = "dotted")+
-    ggtitle("16 hours")+
+    ggtitle("Day 1")+
   theme(plot.title = element_text(size = 12))+
-  Fig.formatting 
+  Fig.formatting +
+   theme(legend.position = "none")
 
 day1.16hr.plot
+
+day3.16hr.plot=ggplot(meta.day3.df[meta.day3.df$time=="960",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+  geom_boxplot() +
+  coord_cartesian(ylim = c(-1.5,2))+
+  labs(x = "", y ="") +
+  theme(legend.position = "right")+
+    scale_fill_viridis(discrete = TRUE) +
+ geom_hline(data = meta.day3.df[meta.day3.df$time=="960",],
+             aes(yintercept = mean(z_score),
+                 linetype = "Average"),
+             color = "red",
+             linetype = "dotted")+
+    ggtitle("Day 3")+
+  theme(plot.title = element_text(size = 12))+
+  Fig.formatting +
+   theme(legend.position = "none")
+
 
 day5.16hr.plot=ggplot(meta.day5.df[meta.day5.df$time=="960",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
   coord_cartesian(ylim = c(-1.5,2))+
-  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  labs(x = "Treatment", y ="") +
   theme(legend.position = "right")+
     scale_fill_viridis(discrete = TRUE) +
  geom_hline(data = meta.day5.df[meta.day5.df$time=="960",],
@@ -971,16 +989,17 @@ day5.16hr.plot=ggplot(meta.day5.df[meta.day5.df$time=="960",], aes(x = treatment
                  linetype = "Average"),
              color = "red",
              linetype = "dotted")+
-    ggtitle("16 hours")+
+    ggtitle("Day 5")+
   theme(plot.title = element_text(size = 12))+
-  Fig.formatting 
+  Fig.formatting+
+   theme(legend.position = "none")
 
 day5.16hr.plot
 
 day11.16hr.plot=ggplot(meta.day11.df[meta.day11.df$time=="960",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
   coord_cartesian(ylim = c(-1.5,2))+
-  labs(x = "Treatment", y = "Optical density (z-scored)") +
+  labs(x = "", y ="") +
   theme(legend.position = "right")+
     scale_fill_viridis(discrete = TRUE) +
  geom_hline(data = meta.day11.df[meta.day11.df$time=="960",],
@@ -988,19 +1007,21 @@ day11.16hr.plot=ggplot(meta.day11.df[meta.day11.df$time=="960",], aes(x = treatm
                  linetype = "Average"),
              color = "red",
              linetype = "dotted")+
-    ggtitle("16 hours")+
+    ggtitle("Day 11")+
   theme(plot.title = element_text(size = 12))+
-  Fig.formatting 
+  Fig.formatting+
+  theme(legend.position = "none")
 
 day11.16hr.plot
 
 all.16hr.z.plots=plot_grid(
   day1.16hr.plot,
+  day3.16hr.plot,
   day5.16hr.plot,
   day11.16hr.plot,
-  ncol=4,
+  ncol=5,
   extract.legend,
-  rel_widths = c(8,8,8,3))
+  rel_widths = c(8,8,8,8,3))
 
 
 all.day16.z.plots
