@@ -6,8 +6,13 @@ output: word_document
 ---
 
 ### Project overview
-For Project ‘RAD’ Alder, leaf packs are gamma irradiated or not, and deployed at “home” or “away” sites to test the role of  phyllosphere microbial communities on home-field advantage patterns in leaf litter decomposition between rivers on WA Olympic Peninsula. Using a reciprocal transplant experiment of leaf packs under four treatment conditions: phyllosphere present-home (PH), phyllosphere present-away (PAW), phyllosphere absent-home (ABH), phyllosphere absent-away (ABAW), the following questions are asked: 1) Do the source communities differ between the four treatments, 2) Do community metrics differ between the four treatments?, 3) Does plant compound metabolization differ between the four treatments?, 4) Does decomposition differ between the four treatments? 
+For Project ‘RAD’ Alder, gamma irradiated vs. non-irradiated leaf packs deployed at “home” or “away” sites tests the role of phyllosphere microbial communities on home-field advantage patterns in leaf litter decomposition. We utilized a reciprocal transplant experiment between the Hoko and Sekiu rivers on the Olympic Peninsula under four treatment conditions: phyllosphere present-home (PH), phyllosphere present-away (PAW), phyllosphere absent-home (ABH), phyllosphere absent-away (ABAW) to ask the following questions: 
 
+1) How does dispersal from the regional species pool (i.e., source communities) influence community composition on the leaf packs?
+2) How does microbial community composition (alpha and beta diversity) and function differ between the leaf packs, as well as change over the course of decomposition?
+3) How does alder stoichiometric and secondary chemical composition differ between the leaf packs, as well as change over the course of decomposition?
+4) How does microbial metabolization differ between the leaf packs, as well as change over the course of decomposition?
+5) How does particulate leaf mass loss differ between the leaf packs? 
 
 
 **DATA SETS**  
