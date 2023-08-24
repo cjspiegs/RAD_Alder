@@ -1048,8 +1048,23 @@ ggsave("figures/all.16hr.z.plots.pdf", all.16hr.z.plots, width = 26, height = 8)
 
 
 ```
+Background information:
 
-Leaf mass data (Ayres et al.(2009) HFA index)
+The Home Field Advantage Index (HFAI) derived from Ayres et al. (2009) uses the relative mass loss values (rml) of species A and B at different sites. The HFAI therefore represents the difference in the rate of litter decomposition between two different sites ("Hoko" and "Sekiu") for both species A and B. Species A and B, in this case, are alder trees of different origin. For example, species A is Hoko alder and species B is Sekiu alder. There are 10 alder trees per river, representing biological replicates. So, the HFAI quantifies the *advantage* or *disadvantage* of each "species" in their respective home environment compared to an away environment.
+
+Interpreting HFAI values involves considering their sign and magnitude:
+
+**Positive** HFAI Values:
+Positive values indicate that both species A and B experience faster decomposition rates at their home site compared to the away site. This suggests that both species are better adapted to their home environment in terms of litter decomposition.
+
+**Negative** HFAI Values:
+Negative values indicate that both species A and B experience slower decomposition rates at their home site compared to the away site. This suggests that both species might not be well-suited for decomposition in their own environment and may decompose more efficiently in a different environment.
+
+**Magnitude** of HFAI:
+The magnitude of the HFAI values indicates the strength of the advantage or disadvantage. Larger absolute values (positive or negative) suggest a greater difference in decomposition rates between the home and away sites.
+
+
+Load mass data (Ayres et al.(2009) HFA index)
 ```{r}
 mass.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/leaf_mass.csv")
 #correction factor
@@ -1061,8 +1076,7 @@ mass.df <- mass.df %>%
 #Now we have to subset by deployment site and treatment.
 ```
 
-
-present, site a (HOK 1)
+generate **present**, site a (HOK 1)
 ```{r}
 mass.p.hoko1.df=mass.df%>%
   filter(treatment == "P" & deploy=="HOK" & site_num=="1")
@@ -1107,8 +1121,7 @@ mass.p.hoko1.df$ayres.eq <- ifelse(mass.p.hoko1.df$ayres.tree %in% paste("Aa.", 
   #Brmla = species B rml at a
 ```
 
-
-present, site b (SEK 1)
+generate **present**, site b (SEK 1)
 ```{r}
 mass.p.sek1.df=mass.df%>%
   filter(treatment == "P" & deploy=="SEK" & site_num=="1")
@@ -1154,12 +1167,30 @@ mass.p.sek1.df$ayres.eq <- ifelse(mass.p.sek1.df$ayres.tree %in% paste("Ab.", tr
   #Brmlb= species B rml at b
 ```
 
-merge present, site a and b (aka HOK 1 and SEK 1) dataframes 
+merge **present**, site a and b (aka HOK 1 and SEK 1) dataframes 
 ```{r}
 #merge both present site 1 dataframes
 mass.p.site1.df=rbind(mass.p.hoko1.df, mass.p.sek1.df)
 
-#HFAI
+# Create an empty data frame to store the results
+hfai.df <- data.frame(hfai = numeric(0))
+# Loop through each set of equations and calculate the values
+for (i in 1:5) {
+  armla <- mass.p.site1.df[mass.p.site1.df$ayres.eq == paste0("Armla.", i), ]$rml
+  brmlb <- mass.p.site1.df[mass.p.site1.df$ayres.eq == paste0("Brmlb.", i), ]$rml
+  armlb <- mass.p.site1.df[mass.p.site1.df$ayres.eq == paste0("Armlb.", i), ]$rml
+  brmla <- mass.p.site1.df[mass.p.site1.df$ayres.eq == paste0("Brmla.", i), ]$rml
+  
+  result <- (((armla + brmlb / 2) / (armlb + brmla / 2)) * 100) - 100
+  
+  # Get the treatment associated with the current index
+  treatment <- mass.p.site1.df[mass.p.site1.df$ayres.eq == paste0("Armla.", i), ]$treatment
+  
+  # Append the result, label, and treatment to the data frame
+  hfai.df <- rbind(hfai.df, data.frame(hfai = result, label = LETTERS[i], treatment = treatment))
+}
+
+#HFAI (this is a stop and check to verify that values are correct!)
 (((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armla.1",]$rml) + 
   (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmlb.1",]$rml) / 2) /
   ((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armlb.1",]$rml) + 
@@ -1187,24 +1218,543 @@ mass.p.site1.df=rbind(mass.p.hoko1.df, mass.p.sek1.df)
    (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmla.5",]$rml) / 2)) * 100 - 100
     
 
+```
 
-# Create an empty data frame to store the results
-hfai.df <- data.frame(hfai = numeric(0))
+## Now we'll tackle absent:
+generate **absent**, site a (HOK 1)
+```{r}
+mass.ab.hoko1.df=mass.df%>%
+  filter(treatment == "AB" & deploy=="HOK" & site_num=="1")
+#now create a new column to have some reference to the Ayres paper (species A= hoko trees, species B = sekiu trees)
+mass.ab.hoko1.df <- mass.ab.hoko1.df %>%
+  mutate(ayres = ifelse(hfa == "H", "Aa", ifelse(hfa == "A", "Ba", NA)))
+  #since we're at site a, the notation follows species A at a (Aa) or species B at a (Ba)
+
+###tree numbers are used for pairwise relative mass loss (RML) calculation (e.g., HOK 1-1 with SEK 1-1; this follows similar logic as Ayres Species A to B comparison)
+
+# Define the values you want to loop through
+ayres_values <- c("Aa", "Ba")
+tree_num_values <- c("1", "2", "3", "4", "5")
+
+# Initialize an empty vector to store the results
+rml_values <- numeric()
+
+# Loop through the combinations and calculate rml values
+for (ayres in ayres_values) {
+  for (tree_num in tree_num_values) {
+    hok_mass_loss <- mass.ab.hoko1.df$mass_loss[mass.ab.hoko1.df$tree_id == "HOK" & mass.ab.hoko1.df$tree_num == tree_num]
+    sek_mass_loss <- mass.ab.hoko1.df$mass_loss[mass.ab.hoko1.df$tree_id == "SEK" & mass.ab.hoko1.df$tree_num == tree_num]
+    
+    rml <- ifelse(ayres == "Aa", hok_mass_loss / (hok_mass_loss + sek_mass_loss),
+                  ifelse(ayres == "Ba", sek_mass_loss / (sek_mass_loss + hok_mass_loss),
+                         NA))
+    
+    rml_values <- c(rml_values, rml * 100)
+  }
+}
+# Add the rml values to the dataframe
+mass.ab.hoko1.df$rml <- rml_values
+# Create a new column combining tree_num and ayres with a period in between
+mass.ab.hoko1.df$ayres.tree <- paste(mass.ab.hoko1.df$ayres, mass.ab.hoko1.df$tree_num, sep = ".")
+# Create a new column based on Ayres HFAI equation 
+mass.ab.hoko1.df$ayres.eq <- ifelse(mass.ab.hoko1.df$ayres.tree %in% paste("Aa.", tree_num_values, sep = ""), 
+                                     paste("Armla", tree_num_values, sep = "."), 
+                                     ifelse(mass.p.hoko1.df$ayres.tree %in% paste("Ba.", tree_num_values, sep = ""), 
+                                            paste("Brmla", tree_num_values, sep = "."), 
+                                            NA))
+  #Armla = species A rml at a 
+  #Brmla = species B rml at a
+```
+
+generate **absent**, site b (SEK 1)
+```{r}
+mass.ab.sek1.df=mass.df%>%
+  filter(treatment == "AB" & deploy=="SEK" & site_num=="1")
+#now create a new column to have some reference to the Ayres paper (species A= hoko trees, species B = sekiu trees)
+mass.ab.sek1.df <- mass.ab.sek1.df %>%
+  mutate(ayres = ifelse(hfa == "H", "Bb", ifelse(hfa == "A", "Ab", NA)))
+  #since we're at site b now, the notation follows species A at b (Ab) or species B at b (Bb)
+
+
+###tree numbers are used for pairwise relative mass loss (RML) calculation (e.g., HOK 1-1 with SEK 1-1; this follows similar logic as Ayres Species A to B comparison)
+
+# Define the values you want to loop through
+ayres_values <- c("Ab", "Bb")
+tree_num_values <- c("1", "2", "3", "4", "5")
+
+# Initialize an empty vector to store the results
+rml_values <- numeric()
+
+# Loop through the combinations and calculate rml values
+for (ayres in ayres_values) {
+  for (tree_num in tree_num_values) {
+    hok_mass_loss <- mass.ab.sek1.df$mass_loss[mass.ab.sek1.df$tree_id == "HOK" & mass.ab.sek1.df$tree_num == tree_num]
+    sek_mass_loss <- mass.ab.sek1.df$mass_loss[mass.ab.sek1.df$tree_id == "SEK" & mass.ab.sek1.df$tree_num == tree_num]
+    
+    rml <- ifelse(ayres == "Ab", hok_mass_loss / (hok_mass_loss + sek_mass_loss),
+                  ifelse(ayres == "Bb", sek_mass_loss / (sek_mass_loss + hok_mass_loss),
+                         NA))
+    
+    rml_values <- c(rml_values, rml * 100)
+  }
+}
+# Add the rml values to the dataframe
+mass.ab.sek1.df$rml <- rml_values
+# Create a new column combining tree_num and ayres with a period in between
+mass.ab.sek1.df$ayres.tree <- paste(mass.ab.sek1.df$ayres, mass.ab.sek1.df$tree_num, sep = ".")
+# Create a new column based on Ayres HFAI equation 
+mass.ab.sek1.df$ayres.eq <- ifelse(mass.ab.sek1.df$ayres.tree %in% paste("Ab.", tree_num_values, sep = ""), 
+                                     paste("Armlb", tree_num_values, sep = "."), 
+                                     ifelse(mass.p.sek1.df$ayres.tree %in% paste("Bb.", tree_num_values, sep = ""), 
+                                            paste("Brmlb", tree_num_values, sep = "."), 
+                                            NA))
+  #Armlb = species A rml at b
+  #Brmlb= species B rml at b
+```
+
+merge **asbent**, site a and b (aka HOK 1 and SEK 1) dataframes 
+```{r}
+#merge both present site 1 dataframes
+mass.ab.site1.df=rbind(mass.ab.hoko1.df, mass.ab.sek1.df)
+
+# Calculate the last letter index based on the existing data frame
+last_label <- tail(hfai.df$label, 1)
+last_letter_index <- match(last_label, LETTERS)
 
 # Loop through each set of equations and calculate the values
 for (i in 1:5) {
-  armla <- mass.p.site1.df[mass.p.site1.df$ayres.eq == paste0("Armla.", i), ]$rml
-  brmlb <- mass.p.site1.df[mass.p.site1.df$ayres.eq == paste0("Brmlb.", i), ]$rml
-  armlb <- mass.p.site1.df[mass.p.site1.df$ayres.eq == paste0("Armlb.", i), ]$rml
-  brmla <- mass.p.site1.df[mass.p.site1.df$ayres.eq == paste0("Brmla.", i), ]$rml
+  armla <- mass.ab.site1.df[mass.ab.site1.df$ayres.eq == paste0("Armla.", i), ]$rml
+  brmlb <- mass.ab.site1.df[mass.ab.site1.df$ayres.eq == paste0("Brmlb.", i), ]$rml
+  armlb <- mass.ab.site1.df[mass.ab.site1.df$ayres.eq == paste0("Armlb.", i), ]$rml
+  brmla <- mass.ab.site1.df[mass.ab.site1.df$ayres.eq == paste0("Brmla.", i), ]$rml
   
   result <- (((armla + brmlb / 2) / (armlb + brmla / 2)) * 100) - 100
   
-  # Append the result to the data frame
-  hfai.df <- rbind(hfai.df, data.frame(hfai = result))
+  # Get the treatment associated with the current index
+  treatment <- mass.ab.site1.df[mass.ab.site1.df$ayres.eq == paste0("Armla.", i), ]$treatment
+  
+  # Determine the next label based on the last label index
+  next_label <- LETTERS[last_letter_index + i]
+  
+  # Append the result, label, and treatment to the data frame
+  hfai.df <- rbind(hfai.df, data.frame(hfai = result, label = next_label, treatment = treatment))
 }
 
+
+#HFAI (this is a stop and check to verify that values are correct!)
+(((mass.ab.site1.df[mass.ab.site1.df$ayres.eq=="Armla.1",]$rml) + 
+  (mass.ab.site1.df[mass.ab.site1.df$ayres.eq=="Brmlb.1",]$rml) / 2) /
+  ((mass.ab.site1.df[mass.ab.site1.df$ayres.eq=="Armlb.1",]$rml) + 
+   (mass.ab.site1.df[mass.ab.site1.df$ayres.eq=="Brmla.1",]$rml) / 2)) * 100 - 100
+    
+
+(((mass.ab.site1.df[mass.ab.site1.df$ayres.eq=="Armla.2",]$rml) + 
+  (mass.ab.site1.df[mass.ab.site1.df$ayres.eq=="Brmlb.2",]$rml) / 2) /
+  ((mass.ab.site1.df[mass.ab.site1.df$ayres.eq=="Armlb.2",]$rml) + 
+   (mass.ab.site1.df[mass.ab.site1.df$ayres.eq=="Brmla.2",]$rml) / 2)) * 100 - 100
+    
+(((mass.ab.site1.df[mass.ab.site1.df$ayres.eq=="Armla.3",]$rml) + 
+  (mass.ab.site1.df[mass.ab.site1.df$ayres.eq=="Brmlb.3",]$rml) / 2) /
+  ((mass.ab.site1.df[mass.ab.site1.df$ayres.eq=="Armlb.3",]$rml) + 
+   (mass.ab.site1.df[mass.ab.site1.df$ayres.eq=="Brmla.3",]$rml) / 2)) * 100 - 100
+
+(((mass.ab.site1.df[mass.ab.site1.df$ayres.eq=="Armla.4",]$rml) + 
+  (mass.ab.site1.df[mass.ab.site1.df$ayres.eq=="Brmlb.4",]$rml) / 2) /
+  ((mass.ab.site1.df[mass.ab.site1.df$ayres.eq=="Armlb.4",]$rml) + 
+   (mass.ab.site1.df[mass.ab.site1.df$ayres.eq=="Brmla.4",]$rml) / 2)) * 100 - 100
+
+(((mass.ab.site1.df[mass.ab.site1.df$ayres.eq=="Armla.5",]$rml) + 
+  (mass.ab.site1.df[mass.ab.site1.df$ayres.eq=="Brmlb.5",]$rml) / 2) /
+  ((mass.ab.site1.df[mass.ab.site1.df$ayres.eq=="Armlb.5",]$rml) + 
+   (mass.ab.site1.df[mass.ab.site1.df$ayres.eq=="Brmla.5",]$rml) / 2)) * 100 - 100
+    
+
 ```
+
+plot check
+```{r}
+
+ggplot(hfai.df, aes(x = label, y = hfai)) +
+  geom_bar(stat = "identity",
+           show.legend = FALSE) + # Remove the legend
+  facet_grid(~treatment)+
+  xlab("Group") +
+  ylab("Value")+
+  coord_flip()
+
+
+
+
+```
+
+generate **present**, site a (HOK 2)
+```{r}
+mass.p.hoko2.df=mass.df%>%
+  filter(treatment == "P" & deploy=="HOK" & site_num=="2")
+#now create a new column to have some reference to the Ayres et al. (2009) paper (species A= hoko trees, species B = sekiu trees)
+mass.p.hoko2.df <- mass.p.hoko2.df %>%
+  mutate(ayres = ifelse(hfa == "H", "Aa", ifelse(hfa == "A", "Ba", NA)))
+  #since we're at site a, the notation follows species A at a (Aa) or species B at a (Ba)
+
+###tree numbers are used for pairwise relative mass loss (RML) calculation (e.g., HOK 2-1 with SEK 2-1; this follows similar logic as Ayres et al. (2009) Species A to B comparison)
+
+# Define the values you want to loop through
+ayres_values <- c("Aa", "Ba")
+tree_num_values <- c("1", "2", "3", "4", "5")
+
+# Initialize an empty vector to store the results
+rml_values <- numeric()
+
+# Loop through the combinations and calculate rml values
+for (ayres in ayres_values) {
+  for (tree_num in tree_num_values) {
+    hok_mass_loss <- mass.p.hoko2.df$mass_loss[mass.p.hoko2.df$tree_id == "HOK" & mass.p.hoko2.df$tree_num == tree_num]
+    sek_mass_loss <- mass.p.hoko2.df$mass_loss[mass.p.hoko2.df$tree_id == "SEK" & mass.p.hoko2.df$tree_num == tree_num]
+    
+    rml <- ifelse(ayres == "Aa", hok_mass_loss / (hok_mass_loss + sek_mass_loss),
+                  ifelse(ayres == "Ba", sek_mass_loss / (sek_mass_loss + hok_mass_loss),
+                         NA))
+    
+    rml_values <- c(rml_values, rml * 100)
+  }
+}
+# Add the rml values to the dataframe
+mass.p.hoko2.df$rml <- rml_values
+# Create a new column combining tree_num and ayres with a period in between
+mass.p.hoko2.df$ayres.tree <- paste(mass.p.hoko2.df$ayres, mass.p.hoko2.df$tree_num, sep = ".")
+# Create a new column based on Ayres HFAI equation 
+mass.p.hoko2.df$ayres.eq <- ifelse(mass.p.hoko2.df$ayres.tree %in% paste("Aa.", tree_num_values, sep = ""), 
+                                     paste("Armla", tree_num_values, sep = "."), 
+                                     ifelse(mass.p.hoko1.df$ayres.tree %in% paste("Ba.", tree_num_values, sep = ""), 
+                                            paste("Brmla", tree_num_values, sep = "."), 
+                                            NA))
+  #Armla = species A rml at a 
+  #Brmla = species B rml at a
+```
+
+generate **present**, site b (SEK 2)
+```{r}
+mass.p.sek2.df=mass.df%>%
+  filter(treatment == "P" & deploy=="SEK" & site_num=="2")
+#now create a new column to have some reference to the Ayres et al. (2009) paper (species A= hoko trees, species B = sekiu trees)
+mass.p.sek2.df <- mass.p.sek2.df %>%
+  mutate(ayres = ifelse(hfa == "H", "Bb", ifelse(hfa == "A", "Ab", NA)))
+  #since we're at site b now, the notation follows species A at b (Ab) or species B at b (Bb)
+
+
+###tree numbers are used for pairwise relative mass loss (RML) calculation (e.g., HOK 2-1 with SEK 2-1; this follows similar logic as Ayres Species A to B comparison)
+
+# Define the values you want to loop through
+ayres_values <- c("Ab", "Bb")
+tree_num_values <- c("1", "2", "3", "4", "5")
+
+# Initialize an empty vector to store the results
+rml_values <- numeric()
+
+# Loop through the combinations and calculate rml values
+for (ayres in ayres_values) {
+  for (tree_num in tree_num_values) {
+    hok_mass_loss <- mass.p.sek2.df$mass_loss[mass.p.sek2.df$tree_id == "HOK" & mass.p.sek2.df$tree_num == tree_num]
+    sek_mass_loss <- mass.p.sek2.df$mass_loss[mass.p.sek2.df$tree_id == "SEK" & mass.p.sek2.df$tree_num == tree_num]
+    
+    rml <- ifelse(ayres == "Ab", hok_mass_loss / (hok_mass_loss + sek_mass_loss),
+                  ifelse(ayres == "Bb", sek_mass_loss / (sek_mass_loss + hok_mass_loss),
+                         NA))
+    
+    rml_values <- c(rml_values, rml * 100)
+  }
+}
+# Add the rml values to the dataframe
+mass.p.sek2.df$rml <- rml_values
+# Create a new column combining tree_num and ayres with a period in between
+mass.p.sek2.df$ayres.tree <- paste(mass.p.sek2.df$ayres, mass.p.sek2.df$tree_num, sep = ".")
+# Create a new column based on Ayres HFAI equation 
+mass.p.sek2.df$ayres.eq <- ifelse(mass.p.sek2.df$ayres.tree %in% paste("Ab.", tree_num_values, sep = ""), 
+                                     paste("Armlb", tree_num_values, sep = "."), 
+                                     ifelse(mass.p.sek1.df$ayres.tree %in% paste("Bb.", tree_num_values, sep = ""), 
+                                            paste("Brmlb", tree_num_values, sep = "."), 
+                                            NA))
+  #Armlb = species A rml at b
+  #Brmlb= species B rml at b
+```
+
+merge **present**, site a and b (aka HOK 2 and SEK 2) dataframes 
+```{r}
+#merge both present site 1 dataframes
+mass.p.site2.df=rbind(mass.p.hoko2.df, mass.p.sek2.df)
+
+# Calculate the last letter index based on the existing data frame
+last_label <- tail(hfai.df$label, 1)
+last_letter_index <- match(last_label, LETTERS)
+
+# Loop through each set of equations and calculate the values
+for (i in 1:5) {
+  armla <- mass.p.site2.df[mass.p.site2.df$ayres.eq == paste0("Armla.", i), ]$rml
+  brmlb <- mass.p.site2.df[mass.p.site2.df$ayres.eq == paste0("Brmlb.", i), ]$rml
+  armlb <- mass.p.site2.df[mass.p.site2.df$ayres.eq == paste0("Armlb.", i), ]$rml
+  brmla <- mass.p.site2.df[mass.p.site2.df$ayres.eq == paste0("Brmla.", i), ]$rml
+  
+  result <- (((armla + brmlb / 2) / (armlb + brmla / 2)) * 100) - 100
+  
+  # Get the treatment associated with the current index
+  treatment <- mass.p.site2.df[mass.p.site2.df$ayres.eq == paste0("Armla.", i), ]$treatment
+  
+  # Determine the next label based on the last label index
+  next_label <- LETTERS[last_letter_index + i]
+  
+  # Append the result, label, and treatment to the data frame
+  hfai.df <- rbind(hfai.df, data.frame(hfai = result, label = next_label, treatment = treatment))
+}
+
+#HFAI (this is a stop and check to verify that values are correct!)
+(((mass.p.site2.df[mass.p.site2.df$ayres.eq=="Armla.1",]$rml) + 
+  (mass.p.site2.df[mass.p.site2.df$ayres.eq=="Brmlb.1",]$rml) / 2) /
+  ((mass.p.site2.df[mass.p.site2.df$ayres.eq=="Armlb.1",]$rml) + 
+   (mass.p.site2.df[mass.p.site2.df$ayres.eq=="Brmla.1",]$rml) / 2)) * 100 - 100
+    
+
+(((mass.p.site2.df[mass.p.site2.df$ayres.eq=="Armla.2",]$rml) + 
+  (mass.p.site2.df[mass.p.site2.df$ayres.eq=="Brmlb.2",]$rml) / 2) /
+  ((mass.p.site2.df[mass.p.site2.df$ayres.eq=="Armlb.2",]$rml) + 
+   (mass.p.site2.df[mass.p.site2.df$ayres.eq=="Brmla.2",]$rml) / 2)) * 100 - 100
+    
+(((mass.p.site2.df[mass.p.site2.df$ayres.eq=="Armla.3",]$rml) + 
+  (mass.p.site2.df[mass.p.site2.df$ayres.eq=="Brmlb.3",]$rml) / 2) /
+  ((mass.p.site2.df[mass.p.site2.df$ayres.eq=="Armlb.3",]$rml) + 
+   (mass.p.site2.df[mass.p.site2.df$ayres.eq=="Brmla.3",]$rml) / 2)) * 100 - 100
+
+(((mass.p.site2.df[mass.p.site2.df$ayres.eq=="Armla.4",]$rml) + 
+  (mass.p.site2.df[mass.p.site2.df$ayres.eq=="Brmlb.4",]$rml) / 2) /
+  ((mass.p.site2.df[mass.p.site2.df$ayres.eq=="Armlb.4",]$rml) + 
+   (mass.p.site2.df[mass.p.site2.df$ayres.eq=="Brmla.4",]$rml) / 2)) * 100 - 100
+
+(((mass.p.site2.df[mass.p.site2.df$ayres.eq=="Armla.5",]$rml) + 
+  (mass.p.site2.df[mass.p.site2.df$ayres.eq=="Brmlb.5",]$rml) / 2) /
+  ((mass.p.site2.df[mass.p.site2.df$ayres.eq=="Armlb.5",]$rml) + 
+   (mass.p.site2.df[mass.p.site2.df$ayres.eq=="Brmla.5",]$rml) / 2)) * 100 - 100
+    
+
+```
+
+## Now we'll tackle absent:
+generate **absent**, site a (HOK 2)
+```{r}
+mass.ab.hoko2.df=mass.df%>%
+  filter(treatment == "AB" & deploy=="HOK" & site_num=="2")
+#now create a new column to have some reference to the Ayres paper (species A= hoko trees, species B = sekiu trees)
+mass.ab.hoko2.df <- mass.ab.hoko2.df %>%
+  mutate(ayres = ifelse(hfa == "H", "Aa", ifelse(hfa == "A", "Ba", NA)))
+  #since we're at site a, the notation follows species A at a (Aa) or species B at a (Ba)
+
+# Define the values you want to loop through
+ayres_values <- c("Aa", "Ba")
+tree_num_values <- c("1", "2", "3", "4", "5")
+
+# Initialize an empty vector to store the results
+rml_values <- numeric()
+
+# Loop through the combinations and calculate rml values
+for (ayres in ayres_values) {
+  for (tree_num in tree_num_values) {
+    hok_mass_loss <- mass.ab.hoko2.df$mass_loss[mass.ab.hoko2.df$tree_id == "HOK" & mass.ab.hoko2.df$tree_num == tree_num]
+    sek_mass_loss <- mass.ab.hoko2.df$mass_loss[mass.ab.hoko2.df$tree_id == "SEK" & mass.ab.hoko2.df$tree_num == tree_num]
+    
+    rml <- ifelse(ayres == "Aa", hok_mass_loss / (hok_mass_loss + sek_mass_loss),
+                  ifelse(ayres == "Ba", sek_mass_loss / (sek_mass_loss + hok_mass_loss),
+                         NA))
+    
+    rml_values <- c(rml_values, rml * 100)
+  }
+}
+# Add the rml values to the dataframe
+mass.ab.hoko2.df$rml <- rml_values
+# Create a new column combining tree_num and ayres with a period in between
+mass.ab.hoko2.df$ayres.tree <- paste(mass.ab.hoko2.df$ayres, mass.ab.hoko2.df$tree_num, sep = ".")
+# Create a new column based on Ayres HFAI equation 
+mass.ab.hoko2.df$ayres.eq <- ifelse(mass.ab.hoko2.df$ayres.tree %in% paste("Aa.", tree_num_values, sep = ""), 
+                                     paste("Armla", tree_num_values, sep = "."), 
+                                     ifelse(mass.p.hoko1.df$ayres.tree %in% paste("Ba.", tree_num_values, sep = ""), 
+                                            paste("Brmla", tree_num_values, sep = "."), 
+                                            NA))
+  #Armla = species A rml at a 
+  #Brmla = species B rml at a
+```
+
+generate **absent**, site b (SEK 1)
+```{r}
+mass.ab.sek2.df=mass.df%>%
+  filter(treatment == "AB" & deploy=="SEK" & site_num=="2")
+#now create a new column to have some reference to the Ayres paper (species A= hoko trees, species B = sekiu trees)
+mass.ab.sek2.df <- mass.ab.sek2.df %>%
+  mutate(ayres = ifelse(hfa == "H", "Bb", ifelse(hfa == "A", "Ab", NA)))
+  #since we're at site b now, the notation follows species A at b (Ab) or species B at b (Bb)
+
+# Define the values you want to loop through
+ayres_values <- c("Ab", "Bb")
+tree_num_values <- c("1", "2", "3", "4", "5")
+
+# Initialize an empty vector to store the results
+rml_values <- numeric()
+
+# Loop through the combinations and calculate rml values
+for (ayres in ayres_values) {
+  for (tree_num in tree_num_values) {
+    hok_mass_loss <- mass.ab.sek2.df$mass_loss[mass.ab.sek2.df$tree_id == "HOK" & mass.ab.sek2.df$tree_num == tree_num]
+    sek_mass_loss <- mass.ab.sek2.df$mass_loss[mass.ab.sek2.df$tree_id == "SEK" & mass.ab.sek2.df$tree_num == tree_num]
+    
+    rml <- ifelse(ayres == "Ab", hok_mass_loss / (hok_mass_loss + sek_mass_loss),
+                  ifelse(ayres == "Bb", sek_mass_loss / (sek_mass_loss + hok_mass_loss),
+                         NA))
+    
+    rml_values <- c(rml_values, rml * 100)
+  }
+}
+# Add the rml values to the dataframe
+mass.ab.sek2.df$rml <- rml_values
+# Create a new column combining tree_num and ayres with a period in between
+mass.ab.sek2.df$ayres.tree <- paste(mass.ab.sek2.df$ayres, mass.ab.sek2.df$tree_num, sep = ".")
+# Create a new column based on Ayres HFAI equation 
+mass.ab.sek2.df$ayres.eq <- ifelse(mass.ab.sek2.df$ayres.tree %in% paste("Ab.", tree_num_values, sep = ""), 
+                                     paste("Armlb", tree_num_values, sep = "."), 
+                                     ifelse(mass.p.sek1.df$ayres.tree %in% paste("Bb.", tree_num_values, sep = ""), 
+                                            paste("Brmlb", tree_num_values, sep = "."), 
+                                            NA))
+  #Armlb = species A rml at b
+  #Brmlb= species B rml at b
+```
+
+merge **asbent**, site a and b (aka HOK 1 and SEK 1) dataframes 
+```{r}
+#merge both present site 1 dataframes
+mass.ab.site2.df=rbind(mass.ab.hoko2.df, mass.ab.sek2.df)
+
+# Calculate the last letter index based on the existing data frame
+last_label <- tail(hfai.df$label, 1)
+last_letter_index <- match(last_label, LETTERS)
+
+# Loop through each set of equations and calculate the values
+for (i in 1:5) {
+  armla <- mass.ab.site2.df[mass.ab.site2.df$ayres.eq == paste0("Armla.", i), ]$rml
+  brmlb <- mass.ab.site2.df[mass.ab.site2.df$ayres.eq == paste0("Brmlb.", i), ]$rml
+  armlb <- mass.ab.site2.df[mass.ab.site2.df$ayres.eq == paste0("Armlb.", i), ]$rml
+  brmla <- mass.ab.site2.df[mass.ab.site2.df$ayres.eq == paste0("Brmla.", i), ]$rml
+  
+  result <- (((armla + brmlb / 2) / (armlb + brmla / 2)) * 100) - 100
+  
+  # Get the treatment associated with the current index
+  treatment <- mass.ab.site2.df[mass.ab.site2.df$ayres.eq == paste0("Armla.", i), ]$treatment
+  
+  # Determine the next label based on the last label index
+  next_label <- LETTERS[last_letter_index + i]
+  
+  # Append the result, label, and treatment to the data frame
+  hfai.df <- rbind(hfai.df, data.frame(hfai = result, label = next_label, treatment = treatment))
+}
+
+#HFAI (this is a stop and check to verify that values are correct!)
+(((mass.ab.site2.df[mass.ab.site2.df$ayres.eq=="Armla.1",]$rml) + 
+  (mass.ab.site2.df[mass.ab.site2.df$ayres.eq=="Brmlb.1",]$rml) / 2) /
+  ((mass.ab.site2.df[mass.ab.site2.df$ayres.eq=="Armlb.1",]$rml) + 
+   (mass.ab.site2.df[mass.ab.site2.df$ayres.eq=="Brmla.1",]$rml) / 2)) * 100 - 100
+    
+
+(((mass.ab.site2.df[mass.ab.site2.df$ayres.eq=="Armla.2",]$rml) + 
+  (mass.ab.site2.df[mass.ab.site2.df$ayres.eq=="Brmlb.2",]$rml) / 2) /
+  ((mass.ab.site2.df[mass.ab.site2.df$ayres.eq=="Armlb.2",]$rml) + 
+   (mass.ab.site2.df[mass.ab.site2.df$ayres.eq=="Brmla.2",]$rml) / 2)) * 100 - 100
+    
+(((mass.ab.site2.df[mass.ab.site2.df$ayres.eq=="Armla.3",]$rml) + 
+  (mass.ab.site2.df[mass.ab.site2.df$ayres.eq=="Brmlb.3",]$rml) / 2) /
+  ((mass.ab.site2.df[mass.ab.site2.df$ayres.eq=="Armlb.3",]$rml) + 
+   (mass.ab.site2.df[mass.ab.site2.df$ayres.eq=="Brmla.3",]$rml) / 2)) * 100 - 100
+
+(((mass.ab.site2.df[mass.ab.site2.df$ayres.eq=="Armla.4",]$rml) + 
+  (mass.ab.site2.df[mass.ab.site2.df$ayres.eq=="Brmlb.4",]$rml) / 2) /
+  ((mass.ab.site2.df[mass.ab.site2.df$ayres.eq=="Armlb.4",]$rml) + 
+   (mass.ab.site2.df[mass.ab.site2.df$ayres.eq=="Brmla.4",]$rml) / 2)) * 100 - 100
+
+(((mass.ab.site2.df[mass.ab.site2.df$ayres.eq=="Armla.5",]$rml) + 
+  (mass.ab.site2.df[mass.ab.site2.df$ayres.eq=="Brmlb.5",]$rml) / 2) /
+  ((mass.ab.site2.df[mass.ab.site2.df$ayres.eq=="Armlb.5",]$rml) + 
+   (mass.ab.site2.df[mass.ab.site2.df$ayres.eq=="Brmla.5",]$rml) / 2)) * 100 - 100
+    
+
+```
+
+another plot check
+```{r}
+ggplot(hfai.df, aes(x = reorder(label, hfai), y = hfai, fill = treatment)) +
+  geom_bar(stat = "identity") +
+  xlab("") +
+  ylab("Home-field advantage (% faster decomposition at home)") +
+  coord_flip() +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_blank(),
+    legend.position = "right",
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    plot.background = element_blank()
+  )
+
+# Filter out outliers
+filtered.hfai.data <- hfai.df %>%
+  filter(hfai >= -300, hfai <= 300)
+
+#final plot looks good
+  #no color, but shading with slight opacity
+hfai.plot=ggplot(filtered.hfai.data, aes(x = reorder(label, hfai), y = hfai)) +
+  geom_bar(stat = "identity", fill = "white", color = "black") +
+  geom_col_pattern(
+    aes(pattern = treatment),
+    colour = "black",
+    pattern_fill = "black",
+    pattern_angle = 45,
+    pattern_density = 0.1,
+    pattern_spacing = 0.01,
+    position = position_dodge2(preserve = 'single'),
+    alpha = 0.2  # Adjust the alpha value to control transparency
+  ) +
+  scale_pattern_manual(
+    values = c("none", "stripe"),
+    guide = guide_legend(override.aes = list(fill = "grey70")) # <- make lighter
+  ) +
+  xlab("") +
+  ylab("Home-field advantage (% faster decomposition at home)") +
+coord_flip() +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_blank(),
+    legend.position = "right",
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    plot.background = element_blank()
+  )
+
+hfai.plot
+ggsave("figures/hfai.plot.pdf", hfai.plot, width = 26, height = 8)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ```{r}
@@ -1354,6 +1904,11 @@ mass.merged.df$hfa=as.factor(as.character(mass.merged.df$hfa))
 
 max(mass.merged.df[mass.merged.df$treatment=="P",]$z_score)
 ```
+
+
+
+
+
 Ayres HFA index
 ```{r}
 #the calculations for arml and brml are different, dependent on "relative to"
@@ -1505,45 +2060,7 @@ ggsave("figures/leaf.mass.z.plot.pdf", leaf.mass.z.plot, width = 10, height = 6)
 
 ```
 
-Ayres HFA index
-```{r}
-# Calculate the Ayres Home Field Advantage index for each combination of treatments
-treatment_combinations <- unique(mass.merged.df$treatment)
-hfa_indices <- c()
 
-for (treatment in treatment_combinations) {
-  hfa_present.home <- mean(mass.merged.df$z_score[mass.merged.df$treatment == "P" & mass.merged.df$hfa == "H"])
-  hfa_present.away <- mean(mass.merged.df$z_score[mass.merged.df$treatment == "P" & mass.merged.df$hfa == "A"])
-  hfa_absent.home <- mean(mass.merged.df$z_score[mass.merged.df$treatment == "AB" & mass.merged.df$hfa == "H"])
-  hfa_absent.away <- mean(mass.merged.df$z_score[mass.merged.df$treatment == "AB" & mass.merged.df$hfa == "A"])
-  hfa_indices <- c(hfa_indices, (hfa_present.home + hfa_present.away) - (hfa_absent.home + hfa_absent.away))
-}
-
-# Create a dataframe with treatment combinations and HFA indices
-hfa_data <- data.frame(treatment_combinations, hfa_indices)
-
-# Create the ggplot visualization
-ggplot(mass.merged.df, aes(x = treatment, y = z_score, fill = factor(hfa))) +
-  geom_boxplot() +
-  geom_point(aes(x = treatment, shape = factor(hfa)), position = position_jitter(width = 0.2), alpha = 0.5) +
-  coord_cartesian(ylim = c(-2, 2)) +
-  labs(x = "treatment", y = "mass loss (z score)") +
-  Fig.formatting +
-  theme(legend.position = "right") +
-  scale_fill_viridis_d() +
-  scale_shape_manual(values = c(16, 17)) +
-  geom_hline(data = mass.merged.df,
-             aes(yintercept = mean(z_score),
-                 linetype = "Average"),
-             color = "red",
-             linetype = "dotted") +
-  geom_text(data = hfa_data,
-            aes(x = treatment_combinations, y = hfa_indices, label = round(hfa_indices, 2)),
-            vjust = -0.5, size = 3) +  # Add text labels for HFA indices
-  theme(plot.title = element_text(size = 12)) +
-  Fig.formatting
-
-```
 
 
 
