@@ -1069,7 +1069,6 @@ Load mass data (Ayres et al.(2009) HFA index)
 library(stringr)
 library(purrr)
 mass.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/leaf_mass.csv")
-mass.df2=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/leaf_mass2.csv")
 ###check for any white spaces clean up
 columns_with_whitespace <- map_lgl(mass.df2, ~ any(str_detect(.x, "^\\s+|\\s+$")))
 columns_with_whitespace
@@ -1080,17 +1079,11 @@ mass.df= mass.df%>%
 
 # calculate % mass loss 
 mass.df <- mass.df %>%
-  mutate(mass_loss = ((initial_mass - final_correct) / initial_mass)*100)
+  mutate(perc.mass_loss = ((initial_mass - final_correct) / initial_mass)*100)
 
-# calculate abs mass loss 
-mass.df <- mass.df %>%
-  mutate(abs.mass_loss = abs(initial_mass - final_correct))
-
-
-##create subset of all positive values
-mass.df=(mass.df[mass.df$mass_loss > 0,])
-mass.df2=(mass.df2[mass.df2$mass_loss > 0,])
-
+#subset P treatment for "true" HFA only 
+mass.present.df=mass.df %>%
+  filter(treatment == "P")
 
 #calculate a k constant
 mass.df <- mass.df %>%
@@ -1100,31 +1093,56 @@ mass.df <- mass.df %>%
 
 
 Subset dataframes to z score by deployment site
+This controls for site variability, and allows for a better comparision of treatments 
 ```{r}
 
-#P HOK 1 subset
+#HOK 1 subset
 mass.hok1.df <- data.frame(mass.df[mass.df$deploy == "HOK" & mass.df$site_num == "1", ])
 # Calculate z-scores 
 mass.hok1.df=mass.hok1.df%>%
-  mutate(z_score= (mass_loss - mean(mass_loss))/sd(mass_loss))
+  mutate(z_score= (perc.mass_loss - mean(perc.mass_loss))/sd(perc.mass_loss))
+
+#HOK 1 P subset
+mass.hok1.present.df = data.frame(mass.present.df[mass.present.df$deploy == "HOK" & mass.present.df$site_num == "1", ])
+# Calculate z-scores 
+mass.hok1.present.df=mass.hok1.present.df%>%
+  mutate(z_score= (perc.mass_loss - mean(perc.mass_loss))/sd(perc.mass_loss))
 
 #HOK 2 subset
 mass.hok2.df <- data.frame(mass.df[mass.df$deploy == "HOK" & mass.df$site_num == "2", ])
 # Calculate z-scores 
 mass.hok2.df=mass.hok2.df%>%
-  mutate(z_score= (mass_loss - mean(mass_loss))/sd(mass_loss))
+  mutate(z_score= (perc.mass_loss - mean(perc.mass_loss))/sd(perc.mass_loss))
+
+#HOK 2 P subset
+mass.hok2.present.df = data.frame(mass.present.df[mass.present.df$deploy == "HOK" & mass.present.df$site_num == "2", ])
+# Calculate z-scores 
+mass.hok2.present.df=mass.hok2.present.df%>%
+  mutate(z_score= (perc.mass_loss - mean(perc.mass_loss))/sd(perc.mass_loss))
 
 #SEK 1 subset
 mass.sek1.df <- data.frame(mass.df[mass.df$deploy == "SEK" & mass.df$site_num == "1", ])
 # Calculate z-scores 
 mass.sek1.df=mass.sek1.df%>%
-  mutate(z_score= (mass_loss - mean(mass_loss))/sd(mass_loss))
+  mutate(z_score= (perc.mass_loss - mean(perc.mass_loss))/sd(perc.mass_loss))
+
+#SEK 1 P subset
+mass.sek1.present.df = data.frame(mass.present.df[mass.present.df$deploy == "SEK" & mass.present.df$site_num == "1", ])
+# Calculate z-scores 
+mass.sek1.present.df=mass.sek1.present.df%>%
+  mutate(z_score= (perc.mass_loss - mean(perc.mass_loss))/sd(perc.mass_loss))
 
 #SEK 2 subset
 mass.sek2.df <- data.frame(mass.df[mass.df$deploy == "SEK" & mass.df$site_num == "2", ])
 # Calculate z-scores 
 mass.sek2.df=mass.sek2.df%>%
-  mutate(z_score= (mass_loss - mean(mass_loss))/sd(mass_loss))
+  mutate(z_score= (perc.mass_loss - mean(perc.mass_loss))/sd(perc.mass_loss))
+
+#SEK 2 P subset
+mass.sek2.present.df = data.frame(mass.present.df[mass.present.df$deploy == "SEK" & mass.present.df$site_num == "2", ])
+# Calculate z-scores 
+mass.sek2.present.df=mass.sek2.present.df%>%
+  mutate(z_score= (perc.mass_loss - mean(perc.mass_loss))/sd(perc.mass_loss))
 
 ##merge all sites
 mass.deploy.merged.df=rbind(mass.hok1.df, mass.hok2.df, mass.sek1.df, mass.sek2.df)
@@ -1134,70 +1152,174 @@ mass.deploy.merged.df$tree_id=as.factor(as.character(mass.deploy.merged.df$tree_
 mass.deploy.merged.df$deploy=as.factor(as.character(mass.deploy.merged.df$deploy))
 mass.deploy.merged.df$hfa=as.factor(as.character(mass.deploy.merged.df$hfa))
 
+#merge all P treatment sites 
+mass.present.deploy.merged.df=rbind(mass.hok1.present.df, mass.hok2.present.df, mass.sek1.present.df, mass.sek2.present.df)
+mass.present.deploy.merged.df$treatment=as.factor(as.character(mass.present.deploy.merged.df$treatment))
+mass.present.deploy.merged.df$tree_id=as.factor(as.character(mass.present.deploy.merged.df$tree_id))
+mass.present.deploy.merged.df$tree_id=as.factor(as.character(mass.present.deploy.merged.df$tree_id))
+mass.present.deploy.merged.df$deploy=as.factor(as.character(mass.present.deploy.merged.df$deploy))
+mass.present.deploy.merged.df$hfa=as.factor(as.character(mass.present.deploy.merged.df$hfa))
+
+
 ```
 
 leaf % mass loss with z score by deployment site plot
 ```{r}
 # Combine treatment and hfa into one group
 mass.deploy.merged.df$combined_group <- paste(mass.deploy.merged.df$treatment, mass.deploy.merged.df$hfa, sep = "-")
-mass.deploy.merged.df$combined_site <- paste("site", mass.deploy.merged.df$site_num, sep = "")
 
 # Create a custom order for the combined groups
 combined_group_order <- c("AB-A", "AB-H", "P-A","P-H")
 
 # Plot with combined groups but no combo site
-leaf.mass.combo.group.zsite.plot=ggplot(mass.deploy.merged.df, aes(x = combined_group, y = z_score, fill = combined_group)) +
+leaf.mass.bothtreatments.plot=ggplot(mass.deploy.merged.df, aes(x = combined_group, y = z_score, fill = combined_group)) +
   geom_boxplot(alpha= 0.3) +
   scale_x_discrete(limits = combined_group_order)+
-  geom_point(aes(shape = combined_group), position = position_jitter(width = 0.2), alpha = 0.5) +
+  geom_point(aes(shape = as.factor(deploy)), position = position_jitter(width = 0.2), alpha = 0.7) +
   labs(x = "treatment", y = "mass loss (z score)") +
   theme(legend.position = "right") +
   scale_fill_manual(values = custom_palette, guide = "none") +
-  scale_shape_manual(values = c(21, 22, 23, 24), guide = "none") +
+  scale_shape_manual(values = c(15, 16), name ="site") +
   geom_hline(data = mass.merged.df, aes(yintercept = mean(z_score), linetype = "Average"), color = "red", linetype = "dotted") +
   theme(plot.title = element_text(size = 12)) +
   Fig.formatting
+leaf.mass.combo.group.zsite.plot
 
-# Plot with combined groups but no combo site
-leaf.mass.combo.all.zsite.plot=ggplot(mass.deploy.merged.df, aes(x = combined_group, y = z_score, fill = interaction(combined_site, combined_group))) +
-  geom_boxplot(alpha= 0.3) +
-  scale_x_discrete(limits = combined_group_order)+
-  geom_point(aes(shape = interaction(combined_site, combined_group)), position = position_jitter(width = 0.2), alpha = 0.5) +
-  labs(x = "treatment", y = "mass loss (z score)") +
-  theme(legend.position = "right") +
-  scale_fill_manual(values = custom_palette, name = "") +
-  scale_shape_manual(values = c(0, 1, 2, 3, 4, 5, 6, 7), name = "") +
-  geom_hline(data = mass.merged.df, aes(yintercept = mean(z_score), linetype = "Average"), color = "red", linetype = "dotted") +
-  theme(plot.title = element_text(size = 12)) +
-  Fig.formatting
-
-
-#plots
 # Define your custom color palette
-custom_palette <- c("#1F77B4", "#FF7F0E")
+custom_palette.hfa <- c("#1F77B4", "#FF7F0E")
 
-
-#z score plot
-leaf.mass.z.plot=
-  ggplot(mass.deploy.merged.df, aes(x = treatment, y = z_score, fill = hfa)) +
-  geom_boxplot() +
-  geom_point(aes(x = treatment, shape = hfa), position = position_jitter(width = 0.2), alpha = 0.5) +  # Adding jittered data points
+ggplot(mass.present.deploy.merged.df, aes(x = combined_site, y = z_score)) +
+  geom_boxplot(alpha= 0.3) +
+  geom_point(aes(shape = interaction(hfa)), position = position_jitter(width = 0.2)) +
   labs(x = "treatment", y = "mass loss (z score)") +
-  Fig.formatting +
   theme(legend.position = "right") +
-scale_fill_manual(values = custom_palette) + 
-  scale_shape_manual(values = c(16, 17)) +  # Defining shapes for data points
-  geom_hline(data = mass.merged.df,
-             aes(yintercept = mean(z_score),
-                 linetype = "Average"),
-             color = "red",
-             linetype = "dotted") +
+  scale_fill_manual(values = custom_palette) +
+  scale_shape_manual(values = c(15, 16)) +
+  geom_hline(data = mass.present.deploy.merged.df, aes(yintercept = mean(z_score), linetype = "Average"), color = "red", linetype = "dotted") +
   theme(plot.title = element_text(size = 12)) +
   Fig.formatting
 
-ggsave("figures/leaf.mass.combo.all.zsite.plot.pdf", leaf.mass.combo.all.zsite.plot, width = 8, height = 6)
+###P treatment only to see HFA effects
+#create a "site" column
+mass.present.deploy.merged.df$combined_site <- paste("site", mass.present.deploy.merged.df$site_num, sep = "")
+
+leaf.mass.presentonly.plot=ggplot(mass.present.deploy.merged.df, aes(x = hfa, y = z_score)) +
+  geom_boxplot(alpha= 0.3) +
+  geom_point(aes(shape = as.factor(combined_site)), position = position_jitter(width = 0.2)) +
+  labs(x = "", y = "mass loss (z score)") +
+  theme(legend.position = "right") +
+  scale_x_discrete(labels = c("away", "home")) +
+  scale_fill_manual(values = custom_palette) +
+  scale_shape_manual(values = c(7,10), name= "site") +
+  geom_hline(data = mass.present.deploy.merged.df, aes(yintercept = mean(z_score), linetype = "Average"), color = "red", linetype = "dotted") +
+  theme(plot.title = element_text(size = 12)) +
+  Fig.formatting
+
+
+ggplot(mass.present.deploy.merged.df, aes(x = hfa, y = perc.mass_loss)) +
+  geom_boxplot(alpha= 0.3) +
+  geom_point(aes(shape = as.factor(combined_site)), position = position_jitter(width = 0.2)) +
+  labs(x = "", y = "mass loss (%)") +
+  theme(legend.position = "right") +
+  scale_x_discrete(labels = c("away", "home")) +
+  scale_fill_manual(values = custom_palette) +
+  scale_shape_manual(values = c(7,10), name= "site") +
+  geom_hline(data = mass.present.deploy.merged.df, aes(yintercept = mean(perc.mass_loss), linetype = "Average"), color = "red", linetype = "dotted") +
+  theme(plot.title = element_text(size = 12)) +
+  Fig.formatting
+
+
+
+#looking at away outliers
+mass.present.deploy.merged.filtered.df=mass.present.deploy.merged.df %>%
+  filter(hfa != "A" | (z_score >= -1.2 & z_score <= 1))
+#remove the outliers
+# Remove rows with ID 39 and 33
+mass.present.deploy.merged.filtered.df
+
+#replot
+ggplot(mass.present.deploy.merged.filtered.df, aes(x = hfa, y = z_score)) +
+  geom_boxplot(alpha= 0.3) +
+  geom_point(aes(shape = as.factor(combined_site)), position = position_jitter(width = 0.2)) +
+  labs(x = "treatment", y = "mass loss (z score)") +
+  theme(legend.position = "right") +
+  scale_x_discrete(labels = c("away", "home")) +
+  scale_fill_manual(values = custom_palette) +
+  scale_shape_manual(values = c(16,17), name= "site") +
+  geom_hline(data = mass.present.deploy.merged.df, aes(yintercept = mean(z_score), linetype = "Average"), color = "red", linetype = "dotted") +
+  theme(plot.title = element_text(size = 12)) +
+  Fig.formatting
+
+
+ggsave("figures/leaf.mass.presentonly.plot.pdf", leaf.mass.presentonly.plot, width = 8, height = 8)
 
 ```
+
+Analysis for present only dataframe
+```{r}
+library(lme4)
+library(stats)
+
+##### Fit the ANOVA model using z score
+m1 <- aov(z_score ~ hfa, data = mass.present.deploy.merged.df)
+
+# Print summary of the ANOVA
+summary(m1)
+Anova(m1)
+
+# Visualize the residuals using a QQ plot
+qqnorm(m1$residuals)
+qqline(m1$residuals)
+
+#quantified normality
+shapiro.test(m1$residuals)
+  #p= 0.41
+
+# Create a histogram of the residuals
+hist(m1$residuals)
+
+
+
+##### Fit the ANOVA model using percent mass loss
+#create proportional mass loss column
+mass.present.deploy.merged.df=mass.present.deploy.merged.df%>%
+  mutate(dec.mass_loss = perc.mass_loss/100)
+
+#find min of mass loss
+min_value= min(mass.present.deploy.merged.df$dec.mass_loss)
+    #min = -0.358
+
+#find max of mass loss
+max_value= max(mass.present.deploy.merged.df$dec.mass_loss)
+    #max = 0.258
+
+# Perform min-max scaling
+mass.present.deploy.merged.df$scaled_values <- (mass.present.deploy.merged.df$dec.mass_loss - min_value) / (max_value - min_value)
+
+#apply arcsine transformation
+mass.present.deploy.merged.df=mass.present.deploy.merged.df%>%
+  mutate(arcsine_trans = asin(sqrt(scaled_values)))
+
+#new model
+m2 <- aov(arcsine_trans ~ hfa, data = mass.present.deploy.merged.df)
+
+# Print summary of the ANOVA
+summary(m2)
+Anova(m2)
+
+# Visualize the residuals using a QQ plot
+qqnorm(m2$residuals)
+qqline(m2$residuals)
+
+shapiro.test(m2$residuals)
+
+
+# Create a histogram of the residuals
+hist(m2$residuals)
+
+
+```
+
 
 Subset dataframes to z score by deployment site and treatment
 ```{r}
@@ -1333,9 +1455,6 @@ ggplot(mass.deploy.treat.merged.df, aes(x = combined_group, y = z_score, fill = 
 
 
 
-
-
-
 #basic HFA
 ggplot(mass.deploy.treat.merged.df, aes(x = combined_group, y = z_score)) +
   geom_boxplot(alpha = 0.3) +
@@ -1352,6 +1471,27 @@ ggplot(mass.deploy.treat.merged.df, aes(x = combined_group, y = z_score)) +
 
  leaf.mass.z.plot
 ggsave("figures/leaf.mass.combo.group.plot.pdf", leaf.mass.combo.group.plot, width = 8, height = 6)
+
+
+
+```
+analysis for z score by treatment and site
+```{r}
+
+#RICE & GAINES CORRECTION
+save<-aggregate(as.numeric(z.new.deal1), list(new.decomp$LOCATION_CODE), mean) #use the z standardized data
+save
+save$Rank<-c(2,2,2,1,1)                                   
+save #(Away River=2,Away River =2,SameRiveraway=2, SameRiverHOme=1, Home=1)
+cor.test(x=save$x, y=save$Rank, method = 'spearman',exact=FALSE)
+#RsPc= 0.8660254*(1-0.03953) = 0.831, so p ~ 0.01* significant ???
+RSPC<- (-0.5773503)*(1-2.723e-06)
+
+
+
+
+
+
 
 
 
