@@ -1091,11 +1091,33 @@ mass.df <- mass.df %>%
 
 ```
 
+**Subset dataframes to z score by deployment site (all HOK 1, all HOK 2, etc...)**
 
-Subset dataframes to z score by deployment site
-This controls for site variability, and allows for a better comparision of treatments 
+Z scoring controls for site variability, and allows for a better comparison of treatments. But how exactly?
+
+Z-scoring is a statistical measure that quantifies how far away a particular data point is from the mean of a dataset in terms of standard deviations (i.e., the spread of the data points from the mean). It's a way to standardize data and make it more comparable across different scales or distributions. Here's how z-scoring works:
+
+1) calculate the mean and standard deviation: for the variable you want to z-score (in this case mass loss by deployment site), calculate its mean (average) and standard deviation. These values provide information about the central tendency (i.e., the center/midpoint of the data or a value around which the data clusters) and the spread of the data.
+
+2) subtract the mean: for each data point, subtract the mean of the variable. This step shifts the data so that the new mean becomes 0.
+
+3) divide by the standard deviation: after subtracting the mean, divide the result by the standard deviation. This step scales the data based on the spread of the original data, so that the new data points are expressed in terms of standard deviations from the mean.
+
+Mathematically, the z-score (Z) for a data point (X) with mean (μ) and standard deviation (σ) is calculated using the formula:
+
+Z = (X - μ) / σ
+
+The resulting z-score indicates how many standard deviations the original data point is away from the mean. If the z-score is positive, it means the data point is above the mean, and if it's negative, it's below the mean.
+
+Note: z-scoring assumes a roughly normal distribution of the data.
+
+Below, the percent mass loss for each deployment site is z scored. Additionally, the larger dataframe has been subset to only include P treatments so that the "true" HFA can be calculated.
 ```{r}
+#check for distribution of mass loss
+hist(mass.df$perc.mass_loss)
+  #roughly normal...that's good!
 
+#####Begin z scoring
 #HOK 1 subset
 mass.hok1.df <- data.frame(mass.df[mass.df$deploy == "HOK" & mass.df$site_num == "1", ])
 # Calculate z-scores 
@@ -1159,9 +1181,393 @@ mass.present.deploy.merged.df$tree_id=as.factor(as.character(mass.present.deploy
 mass.present.deploy.merged.df$tree_id=as.factor(as.character(mass.present.deploy.merged.df$tree_id))
 mass.present.deploy.merged.df$deploy=as.factor(as.character(mass.present.deploy.merged.df$deploy))
 mass.present.deploy.merged.df$hfa=as.factor(as.character(mass.present.deploy.merged.df$hfa))
+```
+
+Let's first look at the P only to see if HFA is there
+```{r}
+###P treatment only to see HFA effects
+#create a proper "site" column for the figure
+mass.present.deploy.merged.df$combined_site <- paste("site", mass.present.deploy.merged.df$site_num, sep = "")
+
+#plot
+leaf.mass.presentonly.plot=ggplot(mass.present.deploy.merged.df, aes(x = hfa, y = z_score)) +
+  geom_boxplot(alpha= 0.3) +
+  geom_point(aes(shape = as.factor(combined_site)), position = position_jitter(width = 0.2)) +
+  labs(x = "", y = "mass loss (z score)") +
+  theme(legend.position = "right") +
+  scale_x_discrete(labels = c("away", "home")) +
+  scale_fill_manual(values = custom_palette) +
+  scale_shape_manual(values = c(7,10), name= "site") +
+  geom_hline(data = mass.present.deploy.merged.df, aes(yintercept = mean(z_score), linetype = "Average"), color = "red", linetype = "dotted") +
+  theme(plot.title = element_text(size = 12)) +
+  Fig.formatting
+
+leaf.mass.presentonly.plot
+  #looks pretty good, but stats must be incorporated
+
+#looking at away outliers
+mass.present.deploy.merged.filtered.df=mass.present.deploy.merged.df %>%
+  filter(hfa != "A" | (z_score >= -1.2 & z_score <= 1))
+#remove the outliers
+# Remove rows with ID 39 and 33
+mass.present.deploy.merged.filtered.df
+
+#replot
+ggplot(mass.present.deploy.merged.filtered.df, aes(x = hfa, y = z_score)) +
+  geom_boxplot(alpha= 0.3) +
+  geom_point(aes(shape = as.factor(combined_site)), position = position_jitter(width = 0.2)) +
+  labs(x = "treatment", y = "mass loss (z score)") +
+  theme(legend.position = "right") +
+  scale_x_discrete(labels = c("away", "home")) +
+  scale_fill_manual(values = custom_palette) +
+  scale_shape_manual(values = c(16,17), name= "site") +
+  geom_hline(data = mass.present.deploy.merged.df, aes(yintercept = mean(z_score), linetype = "Average"), color = "red", linetype = "dotted") +
+  theme(plot.title = element_text(size = 12)) +
+  Fig.formatting
+
+
+ggsave("figures/leaf.mass.presentonly.plot.pdf", leaf.mass.presentonly.plot, width = 8, height = 8)
+
+```
+Analysis for **present only** dataframe
+There are two ways to go about model exploration: using z scored mass loss or arcsine squareroot transforming percent mass loss. These are outlined below...
+
+First: model exploration using z scored data using parametric tests 
+```{r}
+library(lme4)
+library(stats)
+
+#check distribution of raw z scored mass loss
+hist(mass.present.deploy.merged.df$z_score)
+  #seems pretty good, but model residuals are what counts
+
+##### Fit the models using z score
+#ANOVA
+m1 <- aov(z_score ~ hfa, data = mass.present.deploy.merged.df)
+
+
+#LMER
+m2 <- lmer(z_score ~ hfa + (1 | tree_id) , data = mass.present.deploy.merged.df)
+m3 <- lmer(z_score ~ hfa + (1 | tree_id) + (1 | deploy), data = mass.present.deploy.merged.df)
+m4 <- lmer(z_score ~ hfa + (1 | tree_id) + (1 | deploy / site_num), data = mass.present.deploy.merged.df)
+m5 <- lmer(z_score ~ hfa + (1 | tree_id / tree_num) + (1 | deploy / site_num), data = mass.present.deploy.merged.df)
+
+# QQ plot of residuals
+qqnorm(residuals(m2))
+qqline(residuals(m2))
+
+AIC(m2, m3, m4, m5)
+
+# Calculate Cook's distances
+cook_d <- cooks.distance(m2)
+# Plot Cook's distances
+plot(cook_d, type = "p", pch = 19, frame.plot = FALSE,
+     xlab = "Observation Number", ylab = "Cook's Distance")
+abline(h = 4 / length(cook_d), col = "red", lty = 2) # Threshold for influential points
+
+
+# Fit glm model
+m6 <- glm(z_score ~ hfa, family = gaussian(), data = mass.present.deploy.merged.df)
+summary(m6)
+m6.resid= residuals(m6)
+```
+
+
+A t-test is more appropriate given that there are only 2 groups!
+```{r}
+### Visualize the data distributions
+#z score
+hist(mass.present.deploy.merged.df$z_score[mass.present.deploy.merged.df$hfa == "A"], main = "Group Away")
+hist(mass.present.deploy.merged.df$z_score[mass.present.deploy.merged.df$hfa == "H"], main = "Group Home")
+
+# arcsine
+hist(mass.present.deploy.merged.df$arcsine_trans[mass.present.deploy.merged.df$hfa == "A"], main = "Group Away")
+hist(mass.present.deploy.merged.df$arcsine_trans[mass.present.deploy.merged.df$hfa == "H"], main = "Group Home")
+
+# rice and gaines
+hist(mass.present.deploy.merged.df$rice_gaines_corrected[mass.present.deploy.merged.df$hfa == "A"], main = "Group Away")
+hist(mass.present.deploy.merged.df$rice_gaines_corrected[mass.present.deploy.merged.df$hfa == "H"], main = "Group Home")
+
+
+# Check normality using Q-Q plots
+qqnorm(mass.present.deploy.merged.df$z_score[mass.present.deploy.merged.df$hfa == "A"])
+qqline(mass.present.deploy.merged.df$z_score[mass.present.deploy.merged.df$hfa == "A"])
+qqnorm(mass.present.deploy.merged.df$z_score[mass.present.deploy.merged.df$hfa == "H"])
+qqline(mass.present.deploy.merged.df$z_score[mass.present.deploy.merged.df$hfa == "H"])
+
+qqnorm(mass.present.deploy.merged.df$arcsine_trans[mass.present.deploy.merged.df$hfa == "A"])
+qqline(mass.present.deploy.merged.df$arcsine_trans[mass.present.deploy.merged.df$hfa == "A"])
+qqnorm(mass.present.deploy.merged.df$arcsine_trans[mass.present.deploy.merged.df$hfa == "H"])
+qqline(mass.present.deploy.merged.df$arcsine_trans[mass.present.deploy.merged.df$hfa == "H"])
+
+qqnorm(mass.present.deploy.merged.df$rice_gaines_corrected[mass.present.deploy.merged.df$hfa == "A"])
+qqline(mass.present.deploy.merged.df$rice_gaines_corrected[mass.present.deploy.merged.df$hfa == "A"])
+qqnorm(mass.present.deploy.merged.df$rice_gaines_corrected[mass.present.deploy.merged.df$hfa == "H"])
+qqline(mass.present.deploy.merged.df$rice_gaines_corrected[mass.present.deploy.merged.df$hfa == "H"])
+
+# Perform Shapiro-Wilk test for normality
+shapiro.test(mass.present.deploy.merged.df$z_score[mass.present.deploy.merged.df$hfa == "A"])
+shapiro.test(mass.present.deploy.merged.df$z_score[mass.present.deploy.merged.df$hfa == "H"])
+  #both groups p > 0.05
+
+shapiro.test(mass.present.deploy.merged.df$arcsine_trans[mass.present.deploy.merged.df$hfa == "A"])
+shapiro.test(mass.present.deploy.merged.df$arcsine_trans[mass.present.deploy.merged.df$hfa == "H"])
+  #fail
+shapiro.test(mass.present.deploy.merged.df$rice_gaines_corrected[mass.present.deploy.merged.df$hfa == "A"])
+shapiro.test(mass.present.deploy.merged.df$rice_gaines_corrected[mass.present.deploy.merged.df$hfa == "H"])
+
+
+# Check equal variance
+leveneTest(z_score ~ hfa, data = mass.present.deploy.merged.df)
+    # p= 0.64, assumption of equal variance is met
+
+# perform t-test with z score
+m.t1 <- t.test(z_score ~ hfa, data = mass.present.deploy.merged.df)
+# Fit a linear regression model (t-test equivalent)
+lm1 <- lm(z_score ~ hfa, data = mass.present.deploy.merged.df)
+lm1.res=residuals(lm1)
+# Check assumptions
+par(mfrow = c(2, 2))
+plot(lm1)
+
+# perform t-test with arcsine
+m.t2 <- t.test(arcsine_trans ~ hfa, data = mass.present.deploy.merged.df)
+# Fit a linear regression model (t-test equivalent)
+lm2 <- lm(arcsine_trans ~ hfa, data = mass.present.deploy.merged.df)
+# Check assumptions
+par(mfrow = c(2, 2))
+plot(lm2)
+
+# perform t test with rice and gaines
+m.t3 <- t.test(rice_gaines_corrected ~ hfa, data = mass.present.deploy.merged.df)
+# Fit a linear regression model (t-test equivalent)
+lm3 <- lm(rice_gaines_corrected ~ hfa, data = mass.present.deploy.merged.df)
+
+# Check assumptions
+par(mfrow = c(2, 2)) # Set up 2x2 plot grid
+plot(lm3)
+
+# Calculate AIC for each model
+AIC_lm1 <- AIC(lm1)
+AIC_lm2 <- AIC(lm2)
+AIC_lm3 <- AIC(lm3)
+
+AIC(lm1, lm2, lm3)
+
+# Compare AIC values
+if (AIC_lm1 < AIC_lm2 && AIC_lm1 < AIC_lm3) {
+  cat("Model 1 is preferred with lower AIC:", AIC_lm1, "\n")
+} else if (AIC_lm2 < AIC_lm1 && AIC_lm2 < AIC_lm3) {
+  cat("Model 2 is preferred with lower AIC:", AIC_lm2, "\n")
+} else {
+  cat("Model 3 is preferred with lower AIC:", AIC_lm3, "\n")
+}
+
+#cohen's D
+library("ggpubr")
+library(rstatix)
+mass.present.deploy.merged.df %>%  cohens_d(z_score ~ hfa, var.equal = TRUE, hedges.correction = T)
+mass.present.deploy.merged.df %>%  cohens_d(arcsine_trans ~ hfa, var.equal = TRUE, hedges.correction = T)
+mass.present.deploy.merged.df %>%  cohens_d(rice_gaines_corrected ~ hfa, var.equal = TRUE, hedges.correction = T)
+
+#Note that, for small sample size (< 50), the Cohen’s d tends to over-inflate results. There exists a Hedge’s Corrected version of the Cohen’s d (Hedges and Olkin 1985), which reduces effect sizes for small samples by a few percentage points. Small effect size -0.23 with hedges correction. 
+
+# the lm1 and t test will use z score values
+stat.test <- mass.present.deploy.merged.df %>% 
+  t_test(z_score ~ hfa) %>%
+  add_significance()
+stat.test
+
+```
+
+add t test result to P treatment only boxplot
+```{r}
+library(tidyverse)
+
+# Create the box plot with original elements as ggplot from above
+leaf.mass.presentonly.plot= ggboxplot(
+  mass.present.deploy.merged.df, x = "hfa", y = "z_score", 
+  ylab = "mass loss (z score)", xlab = "") + 
+  stat_pvalue_manual(stat.test, tip.length = 0) +
+  labs(subtitle = get_test_label(stat.test, detailed = TRUE)) +
+    scale_x_discrete(labels = c("away", "home"))+
+    geom_point(aes(shape = as.factor(combined_site)), position = position_jitter(width = 0.2))+
+    scale_shape_manual(values = c(7,10), name= "site")+
+    geom_hline(data = mass.present.deploy.merged.df, aes(yintercept = mean(z_score), linetype = "Average"), color = "red", linetype = "dotted") +
+    theme(legend.position = "right",
+          legend.text = element_text(size=16),
+          legend.title = element_text(size = 16),
+          text = element_text(size =16)) 
+
+leaf.mass.presentonly.plot
+
+ggsave("figures/leaf.mass.presentonly.plot.pdf", leaf.mass.presentonly.plot, width = 10, height = 8)
 
 
 ```
+
+
+
+
+
+
+```{r}
+# Residuals vs. Fitted Values Plot
+plot(m6$fitted.values, m6.resid, xlab = "Fitted Values", ylab = "Residuals",
+     main = "Residuals vs. Fitted")
+
+# Q-Q Plot
+qqnorm(m6.resid)
+qqline(m6.resid)
+
+# Scale-Location Plot
+plot(sqrt(abs(m6.resid)) ~ m6$fitted.values, xlab = "Fitted Values",
+     ylab = "Sqrt(|Residuals|)", main = "Scale-Location")
+
+# Calculate AIC for each model
+AIC_m1 <- AIC(m1)
+AIC_m2 <- AIC(m2)
+AIC_m3 = AIC (m3)
+
+AIC(m1, m2, m3, m4, m5, m6)
+
+# Compare AIC values
+lowest_AIC <- min(AIC_m1, AIC_m2, AIC_m3)
+
+if (lowest_AIC == AIC_m1) {
+  cat("Model 1 (aov) is preferred with the lowest AIC:", AIC_m1, "\n")
+} else if (lowest_AIC == AIC_m2) {
+  cat("Model 2 (lmer) is preferred with the lowest AIC:", AIC_m2, "\n")
+} else if (lowest_AIC == AIC_m3) {
+  cat("Model 3 (glm) is preferred with the lowest AIC:", AIC_m3, "\n")
+} 
+    #Model 3 and (aov) is preferred with the lowest AIC: 114.7048
+
+### among the models list, model 1 has the lowest AIC and warrants further investigation
+# Check assumptions of model 1
+par(mfrow = c(2, 2)) # Set up 2x2 plot grid
+plot(resid(lmer_model))
+#The "Residuals vs Fitted" in the top left panel displays the residuals (eij= γij - γ̂ij) on the y-axis and the fitted values (γ̂ij) on the x-axis. This allows you to see if the variability of the observations differs across the groups because all observations in the same group get the same fitted value. In this plot, the points seem to have fairly similar spreads at the fitted values for the 2 groups. The "Scale-Location" plot in the lower left panel has the same x-axis but the y-axis contains the square-root of the absolute value of the standardized residuals. The absolute value transforms all the residuals into a magnitude scale (removing direction) and the square-root helps you see differences in variability more accurately. The usage is similar in the two plots - you want to assess whether it appears that the groups have somewhat similar or noticeably different amounts of variability. If you see a clear funnel shape in the Residuals vs Fitted or an increase or decrease in the edge of points in the Scale-Location plot, that may indicate a violation of the constant variance assumption. Remember that some variation across the groups is expected and is ok...
+
+
+```
+
+Mode 1 (aov) further exploration
+```{r}
+##### exploration of model 1
+
+# Linearity and Homoscedasticity
+plot(m1)
+
+# Normality of Residuals - Q-Q plot
+qqnorm(m1$residuals)
+qqline(m1$residuals)
+
+# Normality of Residuals - Shapiro-Wilk test
+shapiro.test(m1$residuals)
+  # p=0.41; does not violate normality assumption
+
+#residual distribution
+eij=residuals(m1)
+hist(eij,main="Histogram of residuals")
+plot(density(eij),main="Density plot of residuals",ylab="Density",xlab="Residuals")
+
+```
+**Exploration of nonparametric models**
+Non-parametric tests are more robust to deviations from normality and heteroscedasticity, but they do have their own assumptions. For example, the Mann-Whitney U test assumes that the distributions of the two groups are similar in shape. The Kruskal-Wallis test assumes that the distributions of all groups are similar and that the differences in the distributions are due to location shifts. 
+
+Scenario 1: comparing two treatments and the data seems to cluster at the extremes, the Mann-Whitney U test (also known as the Wilcoxon rank-sum test) could be a suitable choice. This test is used to compare the distribution of a continuous variable between two groups, i.e., comparing the "home" and "away" treatments (HFA).
+
+```{r}
+# Visual inspection of box plots
+boxplot(z_score ~ hfa, data = mass.present.deploy.merged.df)
+
+# Perform Mann-Whitney U test
+mw_test <- wilcox.test(z_score ~ hfa, data = mass.present.deploy.merged.df)
+
+# Calculate effect size (r) from U statistic
+n1 <- sum(mass.present.deploy.merged.df$hfa == "H")
+n2 <- sum(mass.present.deploy.merged.df$hfa == "A")
+U <- mw_test$statistic
+r <- (2 * U) / (n1 * n2) - 1
+
+# Print effect size
+cat("Effect size (r) for Mann-Whitney U test:", r, "\n")
+
+#The calculated effect size (r) for the Mann-Whitney U test is -0.1. Effect size values range from -1 to 1, with 0 indicating no effect and values closer to -1 or 1 indicating stronger effects. In this case, a value of -0.1 suggests a small negative effect. Keep in mind that effect size interpretation can vary depending on the context and the field of study.
+
+```
+Scenario 2: the Kruskal-Wallis test can be an alternative. This test is an extension of the Wilcoxon rank-sum test for comparing more than two independent groups.
+
+```{r}
+# Perform Kruskal-Wallis test
+kw_test <- kruskal.test(z_score ~ hfa, data = mass.present.deploy.merged.df)
+
+# Calculate effect size (Eta-squared) from Kruskal-Wallis test
+H <- kw_test$statistic
+df <- kw_test$parameter
+N <- sum(table(mass.present.deploy.merged.df$hfa))
+eta_squared <- (H - df) / (N - df)
+
+# Print effect size
+cat("Effect size (Eta-squared) for Kruskal-Wallis test:", eta_squared, "\n")
+
+#The calculated effect size (Eta-squared) for the Kruskal-Wallis test is -0.01813634. Eta-squared is a measure of the proportion of variance explained by a factor in non-parametric tests, similar to how R-squared works in linear regression. The negative value suggests a very small effect, but it's important to note that Eta-squared can range from 0 to 1, with higher values indicating larger effects. In this case, the small negative value indicates that the factor (hfa) is not explaining much variance in the data.
+
+
+```
+
+
+
+Model exploration using percent mass loss data
+Arcsine sqaure root transformations help to stabilize the variance in proportional data which can sometimes "clump" around the extremes (i.e., 0 and 1). The transformation essentially spreads the data, adjusting for potential heteroscedasticity (or non-normal distributions) which violates most statistical models. Ideally, after being transformed the data will no longer violate assumptions of homoscedasticity.
+
+```{r}
+##### Fit the ANOVA model using percent mass loss
+#create proportional mass loss column
+mass.present.deploy.merged.df=mass.present.deploy.merged.df%>%
+  mutate(dec.mass_loss = perc.mass_loss/100)
+
+#find min of mass loss
+min_value= min(mass.present.deploy.merged.df$dec.mass_loss)
+    #min = -0.358
+
+#find max of mass loss
+max_value= max(mass.present.deploy.merged.df$dec.mass_loss)
+    #max = 0.258
+
+# Perform min-max scaling
+mass.present.deploy.merged.df$scaled_values <- (mass.present.deploy.merged.df$dec.mass_loss - min_value) / (max_value - min_value)
+
+#apply arcsine transformation and rice and gaines 
+mass.present.deploy.merged.df=mass.present.deploy.merged.df%>%
+  mutate(arcsine_trans = asin(sqrt(scaled_values)))%>%
+  mutate(rice_gaines_corrected = asin(sqrt(scaled_values)) - (3/8) * sin(2 * asin(sqrt(scaled_values))))
+
+
+#new model
+m2 <- aov(arcsine_trans ~ hfa, data = mass.present.deploy.merged.df)
+
+# Print summary of the ANOVA
+summary(m2)
+Anova(m2)
+
+# Visualize the residuals using a QQ plot
+qqnorm(m2$residuals)
+qqline(m2$residuals)
+
+qqnorm(mass.present.deploy.merged.df$rice_gaines_corrected)
+qqline(mass.present.deploy.merged.df$rice_gaines_corrected)
+
+shapiro.test(m2$residuals) 
+
+
+# Create a histogram of the residuals
+hist(m2$residuals)
+
+
+```
+
 
 leaf % mass loss with z score by deployment site plot
 ```{r}
@@ -1198,127 +1604,10 @@ ggplot(mass.present.deploy.merged.df, aes(x = combined_site, y = z_score)) +
   geom_hline(data = mass.present.deploy.merged.df, aes(yintercept = mean(z_score), linetype = "Average"), color = "red", linetype = "dotted") +
   theme(plot.title = element_text(size = 12)) +
   Fig.formatting
-
-###P treatment only to see HFA effects
-#create a "site" column
-mass.present.deploy.merged.df$combined_site <- paste("site", mass.present.deploy.merged.df$site_num, sep = "")
-
-leaf.mass.presentonly.plot=ggplot(mass.present.deploy.merged.df, aes(x = hfa, y = z_score)) +
-  geom_boxplot(alpha= 0.3) +
-  geom_point(aes(shape = as.factor(combined_site)), position = position_jitter(width = 0.2)) +
-  labs(x = "", y = "mass loss (z score)") +
-  theme(legend.position = "right") +
-  scale_x_discrete(labels = c("away", "home")) +
-  scale_fill_manual(values = custom_palette) +
-  scale_shape_manual(values = c(7,10), name= "site") +
-  geom_hline(data = mass.present.deploy.merged.df, aes(yintercept = mean(z_score), linetype = "Average"), color = "red", linetype = "dotted") +
-  theme(plot.title = element_text(size = 12)) +
-  Fig.formatting
-
-
-ggplot(mass.present.deploy.merged.df, aes(x = hfa, y = perc.mass_loss)) +
-  geom_boxplot(alpha= 0.3) +
-  geom_point(aes(shape = as.factor(combined_site)), position = position_jitter(width = 0.2)) +
-  labs(x = "", y = "mass loss (%)") +
-  theme(legend.position = "right") +
-  scale_x_discrete(labels = c("away", "home")) +
-  scale_fill_manual(values = custom_palette) +
-  scale_shape_manual(values = c(7,10), name= "site") +
-  geom_hline(data = mass.present.deploy.merged.df, aes(yintercept = mean(perc.mass_loss), linetype = "Average"), color = "red", linetype = "dotted") +
-  theme(plot.title = element_text(size = 12)) +
-  Fig.formatting
-
-
-
-#looking at away outliers
-mass.present.deploy.merged.filtered.df=mass.present.deploy.merged.df %>%
-  filter(hfa != "A" | (z_score >= -1.2 & z_score <= 1))
-#remove the outliers
-# Remove rows with ID 39 and 33
-mass.present.deploy.merged.filtered.df
-
-#replot
-ggplot(mass.present.deploy.merged.filtered.df, aes(x = hfa, y = z_score)) +
-  geom_boxplot(alpha= 0.3) +
-  geom_point(aes(shape = as.factor(combined_site)), position = position_jitter(width = 0.2)) +
-  labs(x = "treatment", y = "mass loss (z score)") +
-  theme(legend.position = "right") +
-  scale_x_discrete(labels = c("away", "home")) +
-  scale_fill_manual(values = custom_palette) +
-  scale_shape_manual(values = c(16,17), name= "site") +
-  geom_hline(data = mass.present.deploy.merged.df, aes(yintercept = mean(z_score), linetype = "Average"), color = "red", linetype = "dotted") +
-  theme(plot.title = element_text(size = 12)) +
-  Fig.formatting
-
-
-ggsave("figures/leaf.mass.presentonly.plot.pdf", leaf.mass.presentonly.plot, width = 8, height = 8)
-
 ```
 
-Analysis for present only dataframe
-```{r}
-library(lme4)
-library(stats)
-
-##### Fit the ANOVA model using z score
-m1 <- aov(z_score ~ hfa, data = mass.present.deploy.merged.df)
-
-# Print summary of the ANOVA
-summary(m1)
-Anova(m1)
-
-# Visualize the residuals using a QQ plot
-qqnorm(m1$residuals)
-qqline(m1$residuals)
-
-#quantified normality
-shapiro.test(m1$residuals)
-  #p= 0.41
-
-# Create a histogram of the residuals
-hist(m1$residuals)
 
 
-
-##### Fit the ANOVA model using percent mass loss
-#create proportional mass loss column
-mass.present.deploy.merged.df=mass.present.deploy.merged.df%>%
-  mutate(dec.mass_loss = perc.mass_loss/100)
-
-#find min of mass loss
-min_value= min(mass.present.deploy.merged.df$dec.mass_loss)
-    #min = -0.358
-
-#find max of mass loss
-max_value= max(mass.present.deploy.merged.df$dec.mass_loss)
-    #max = 0.258
-
-# Perform min-max scaling
-mass.present.deploy.merged.df$scaled_values <- (mass.present.deploy.merged.df$dec.mass_loss - min_value) / (max_value - min_value)
-
-#apply arcsine transformation
-mass.present.deploy.merged.df=mass.present.deploy.merged.df%>%
-  mutate(arcsine_trans = asin(sqrt(scaled_values)))
-
-#new model
-m2 <- aov(arcsine_trans ~ hfa, data = mass.present.deploy.merged.df)
-
-# Print summary of the ANOVA
-summary(m2)
-Anova(m2)
-
-# Visualize the residuals using a QQ plot
-qqnorm(m2$residuals)
-qqline(m2$residuals)
-
-shapiro.test(m2$residuals)
-
-
-# Create a histogram of the residuals
-hist(m2$residuals)
-
-
-```
 
 
 Subset dataframes to z score by deployment site and treatment
