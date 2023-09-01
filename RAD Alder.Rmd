@@ -1081,9 +1081,13 @@ mass.df= mass.df%>%
 mass.df <- mass.df %>%
   mutate(perc.mass_loss = ((initial_mass - final_correct) / initial_mass)*100)
 
-#subset P treatment for "true" HFA only 
+#subset P treatment only for "true" HFA  
 mass.present.df=mass.df %>%
   filter(treatment == "P")
+
+#subset AB treatment only for HFA  
+mass.absent.df=mass.df %>%
+  filter(treatment == "AB")
 
 #calculate a k constant
 mass.df <- mass.df %>%
@@ -1130,6 +1134,12 @@ mass.hok1.present.df = data.frame(mass.present.df[mass.present.df$deploy == "HOK
 mass.hok1.present.df=mass.hok1.present.df%>%
   mutate(z_score= (perc.mass_loss - mean(perc.mass_loss))/sd(perc.mass_loss))
 
+#HOK 1 AB subset
+mass.hok1.absent.df = data.frame(mass.absent.df[mass.absent.df$deploy == "HOK" & mass.absent.df$site_num == "1", ])
+# Calculate z-scores 
+mass.hok1.absent.df=mass.hok1.absent.df%>%
+  mutate(z_score= (perc.mass_loss - mean(perc.mass_loss))/sd(perc.mass_loss))
+
 #HOK 2 subset
 mass.hok2.df <- data.frame(mass.df[mass.df$deploy == "HOK" & mass.df$site_num == "2", ])
 # Calculate z-scores 
@@ -1141,6 +1151,13 @@ mass.hok2.present.df = data.frame(mass.present.df[mass.present.df$deploy == "HOK
 # Calculate z-scores 
 mass.hok2.present.df=mass.hok2.present.df%>%
   mutate(z_score= (perc.mass_loss - mean(perc.mass_loss))/sd(perc.mass_loss))
+
+#HOK 2 AB subset
+mass.hok2.absent.df = data.frame(mass.absent.df[mass.absent.df$deploy == "HOK" & mass.absent.df$site_num == "2", ])
+# Calculate z-scores 
+mass.hok2.absent.df=mass.hok2.absent.df%>%
+  mutate(z_score= (perc.mass_loss - mean(perc.mass_loss))/sd(perc.mass_loss))
+
 
 #SEK 1 subset
 mass.sek1.df <- data.frame(mass.df[mass.df$deploy == "SEK" & mass.df$site_num == "1", ])
@@ -1154,6 +1171,12 @@ mass.sek1.present.df = data.frame(mass.present.df[mass.present.df$deploy == "SEK
 mass.sek1.present.df=mass.sek1.present.df%>%
   mutate(z_score= (perc.mass_loss - mean(perc.mass_loss))/sd(perc.mass_loss))
 
+#SEK 1 AB subset
+mass.sek1.absent.df = data.frame(mass.absent.df[mass.absent.df$deploy == "SEK" & mass.absent.df$site_num == "1", ])
+# Calculate z-scores 
+mass.sek1.absent.df=mass.sek1.absent.df%>%
+  mutate(z_score= (perc.mass_loss - mean(perc.mass_loss))/sd(perc.mass_loss))
+
 #SEK 2 subset
 mass.sek2.df <- data.frame(mass.df[mass.df$deploy == "SEK" & mass.df$site_num == "2", ])
 # Calculate z-scores 
@@ -1165,6 +1188,13 @@ mass.sek2.present.df = data.frame(mass.present.df[mass.present.df$deploy == "SEK
 # Calculate z-scores 
 mass.sek2.present.df=mass.sek2.present.df%>%
   mutate(z_score= (perc.mass_loss - mean(perc.mass_loss))/sd(perc.mass_loss))
+
+#SEK 2 AB subset
+mass.sek2.absent.df = data.frame(mass.absent.df[mass.absent.df$deploy == "SEK" & mass.absent.df$site_num == "2", ])
+# Calculate z-scores 
+mass.sek2.absent.df=mass.sek2.absent.df%>%
+  mutate(z_score= (perc.mass_loss - mean(perc.mass_loss))/sd(perc.mass_loss))
+
 
 ##merge all sites
 mass.deploy.merged.df=rbind(mass.hok1.df, mass.hok2.df, mass.sek1.df, mass.sek2.df)
@@ -1181,6 +1211,14 @@ mass.present.deploy.merged.df$tree_id=as.factor(as.character(mass.present.deploy
 mass.present.deploy.merged.df$tree_id=as.factor(as.character(mass.present.deploy.merged.df$tree_id))
 mass.present.deploy.merged.df$deploy=as.factor(as.character(mass.present.deploy.merged.df$deploy))
 mass.present.deploy.merged.df$hfa=as.factor(as.character(mass.present.deploy.merged.df$hfa))
+
+#merge all P treatment sites 
+mass.absent.deploy.merged.df=rbind(mass.hok1.absent.df, mass.hok2.absent.df, mass.sek1.absent.df, mass.sek2.absent.df)
+mass.absent.deploy.merged.df$treatment=as.factor(as.character(mass.absent.deploy.merged.df$treatment))
+mass.absent.deploy.merged.df$tree_id=as.factor(as.character(mass.absent.deploy.merged.df$tree_id))
+mass.absent.deploy.merged.df$tree_id=as.factor(as.character(mass.absent.deploy.merged.df$tree_id))
+mass.absent.deploy.merged.df$deploy=as.factor(as.character(mass.absent.deploy.merged.df$deploy))
+mass.absent.deploy.merged.df$hfa=as.factor(as.character(mass.absent.deploy.merged.df$hfa))
 ```
 
 Let's first look at the P only to see if HFA is there
@@ -1230,170 +1268,428 @@ ggsave("figures/leaf.mass.presentonly.plot.pdf", leaf.mass.presentonly.plot, wid
 
 ```
 Analysis for **present only** dataframe
-There are two ways to go about model exploration: using z scored mass loss or arcsine squareroot transforming percent mass loss. These are outlined below...
+There are two ways to go about model exploration: using z scored mass loss or arcsine square root transforming percent mass loss. These are outlined below...
 
-First: model exploration using z scored data using parametric tests 
-```{r}
-library(lme4)
-library(stats)
-
-#check distribution of raw z scored mass loss
-hist(mass.present.deploy.merged.df$z_score)
-  #seems pretty good, but model residuals are what counts
-
-##### Fit the models using z score
-#ANOVA
-m1 <- aov(z_score ~ hfa, data = mass.present.deploy.merged.df)
-
-
-#LMER
-m2 <- lmer(z_score ~ hfa + (1 | tree_id) , data = mass.present.deploy.merged.df)
-m3 <- lmer(z_score ~ hfa + (1 | tree_id) + (1 | deploy), data = mass.present.deploy.merged.df)
-m4 <- lmer(z_score ~ hfa + (1 | tree_id) + (1 | deploy / site_num), data = mass.present.deploy.merged.df)
-m5 <- lmer(z_score ~ hfa + (1 | tree_id / tree_num) + (1 | deploy / site_num), data = mass.present.deploy.merged.df)
-
-# QQ plot of residuals
-qqnorm(residuals(m2))
-qqline(residuals(m2))
-
-AIC(m2, m3, m4, m5)
-
-# Calculate Cook's distances
-cook_d <- cooks.distance(m2)
-# Plot Cook's distances
-plot(cook_d, type = "p", pch = 19, frame.plot = FALSE,
-     xlab = "Observation Number", ylab = "Cook's Distance")
-abline(h = 4 / length(cook_d), col = "red", lty = 2) # Threshold for influential points
-
-
-# Fit glm model
-m6 <- glm(z_score ~ hfa, family = gaussian(), data = mass.present.deploy.merged.df)
-summary(m6)
-m6.resid= residuals(m6)
-```
-
-
-A t-test is more appropriate given that there are only 2 groups!
-```{r}
-### Visualize the data distributions
-#z score
-hist(mass.present.deploy.merged.df$z_score[mass.present.deploy.merged.df$hfa == "A"], main = "Group Away")
-hist(mass.present.deploy.merged.df$z_score[mass.present.deploy.merged.df$hfa == "H"], main = "Group Home")
-
-# arcsine
-hist(mass.present.deploy.merged.df$arcsine_trans[mass.present.deploy.merged.df$hfa == "A"], main = "Group Away")
-hist(mass.present.deploy.merged.df$arcsine_trans[mass.present.deploy.merged.df$hfa == "H"], main = "Group Home")
-
-# rice and gaines
-hist(mass.present.deploy.merged.df$rice_gaines_corrected[mass.present.deploy.merged.df$hfa == "A"], main = "Group Away")
-hist(mass.present.deploy.merged.df$rice_gaines_corrected[mass.present.deploy.merged.df$hfa == "H"], main = "Group Home")
-
-
-# Check normality using Q-Q plots
-qqnorm(mass.present.deploy.merged.df$z_score[mass.present.deploy.merged.df$hfa == "A"])
-qqline(mass.present.deploy.merged.df$z_score[mass.present.deploy.merged.df$hfa == "A"])
-qqnorm(mass.present.deploy.merged.df$z_score[mass.present.deploy.merged.df$hfa == "H"])
-qqline(mass.present.deploy.merged.df$z_score[mass.present.deploy.merged.df$hfa == "H"])
-
-qqnorm(mass.present.deploy.merged.df$arcsine_trans[mass.present.deploy.merged.df$hfa == "A"])
-qqline(mass.present.deploy.merged.df$arcsine_trans[mass.present.deploy.merged.df$hfa == "A"])
-qqnorm(mass.present.deploy.merged.df$arcsine_trans[mass.present.deploy.merged.df$hfa == "H"])
-qqline(mass.present.deploy.merged.df$arcsine_trans[mass.present.deploy.merged.df$hfa == "H"])
-
-qqnorm(mass.present.deploy.merged.df$rice_gaines_corrected[mass.present.deploy.merged.df$hfa == "A"])
-qqline(mass.present.deploy.merged.df$rice_gaines_corrected[mass.present.deploy.merged.df$hfa == "A"])
-qqnorm(mass.present.deploy.merged.df$rice_gaines_corrected[mass.present.deploy.merged.df$hfa == "H"])
-qqline(mass.present.deploy.merged.df$rice_gaines_corrected[mass.present.deploy.merged.df$hfa == "H"])
-
-# Perform Shapiro-Wilk test for normality
-shapiro.test(mass.present.deploy.merged.df$z_score[mass.present.deploy.merged.df$hfa == "A"])
-shapiro.test(mass.present.deploy.merged.df$z_score[mass.present.deploy.merged.df$hfa == "H"])
-  #both groups p > 0.05
-
-shapiro.test(mass.present.deploy.merged.df$arcsine_trans[mass.present.deploy.merged.df$hfa == "A"])
-shapiro.test(mass.present.deploy.merged.df$arcsine_trans[mass.present.deploy.merged.df$hfa == "H"])
-  #fail
-shapiro.test(mass.present.deploy.merged.df$rice_gaines_corrected[mass.present.deploy.merged.df$hfa == "A"])
-shapiro.test(mass.present.deploy.merged.df$rice_gaines_corrected[mass.present.deploy.merged.df$hfa == "H"])
-
-
-# Check equal variance
-leveneTest(z_score ~ hfa, data = mass.present.deploy.merged.df)
-    # p= 0.64, assumption of equal variance is met
-
-# perform t-test with z score
-m.t1 <- t.test(z_score ~ hfa, data = mass.present.deploy.merged.df)
-# Fit a linear regression model (t-test equivalent)
-lm1 <- lm(z_score ~ hfa, data = mass.present.deploy.merged.df)
-lm1.res=residuals(lm1)
-# Check assumptions
-par(mfrow = c(2, 2))
-plot(lm1)
-
-# perform t-test with arcsine
-m.t2 <- t.test(arcsine_trans ~ hfa, data = mass.present.deploy.merged.df)
-# Fit a linear regression model (t-test equivalent)
-lm2 <- lm(arcsine_trans ~ hfa, data = mass.present.deploy.merged.df)
-# Check assumptions
-par(mfrow = c(2, 2))
-plot(lm2)
-
-# perform t test with rice and gaines
-m.t3 <- t.test(rice_gaines_corrected ~ hfa, data = mass.present.deploy.merged.df)
-# Fit a linear regression model (t-test equivalent)
-lm3 <- lm(rice_gaines_corrected ~ hfa, data = mass.present.deploy.merged.df)
-
-# Check assumptions
-par(mfrow = c(2, 2)) # Set up 2x2 plot grid
-plot(lm3)
-
-# Calculate AIC for each model
-AIC_lm1 <- AIC(lm1)
-AIC_lm2 <- AIC(lm2)
-AIC_lm3 <- AIC(lm3)
-
-AIC(lm1, lm2, lm3)
-
-# Compare AIC values
-if (AIC_lm1 < AIC_lm2 && AIC_lm1 < AIC_lm3) {
-  cat("Model 1 is preferred with lower AIC:", AIC_lm1, "\n")
-} else if (AIC_lm2 < AIC_lm1 && AIC_lm2 < AIC_lm3) {
-  cat("Model 2 is preferred with lower AIC:", AIC_lm2, "\n")
-} else {
-  cat("Model 3 is preferred with lower AIC:", AIC_lm3, "\n")
-}
-
-#cohen's D
-library("ggpubr")
-library(rstatix)
-mass.present.deploy.merged.df %>%  cohens_d(z_score ~ hfa, var.equal = TRUE, hedges.correction = T)
-mass.present.deploy.merged.df %>%  cohens_d(arcsine_trans ~ hfa, var.equal = TRUE, hedges.correction = T)
-mass.present.deploy.merged.df %>%  cohens_d(rice_gaines_corrected ~ hfa, var.equal = TRUE, hedges.correction = T)
-
-#Note that, for small sample size (< 50), the Cohen’s d tends to over-inflate results. There exists a Hedge’s Corrected version of the Cohen’s d (Hedges and Olkin 1985), which reduces effect sizes for small samples by a few percentage points. Small effect size -0.23 with hedges correction. 
-
-# the lm1 and t test will use z score values
-stat.test <- mass.present.deploy.merged.df %>% 
-  t_test(z_score ~ hfa) %>%
-  add_significance()
-stat.test
-
-```
-
-add t test result to P treatment only boxplot
+perform t-test and add result to P treatment only plot
 ```{r}
 library(tidyverse)
+library(ggpubr)
+library(rstatix)
+# Create a histogram
+hist_data <- hist(mass.present.deploy.merged.df$z_score, plot = FALSE)
+
+# Create a density plot
+density_data <- density(mass.present.deploy.merged.df$z_score)
+
+# Plot histogram with density overlay
+hist(mass.present.deploy.merged.df$z_score, freq = F, main = "")
+lines(density_data, col = "red")
+  #normal
+
+shapiro.test(mass.present.deploy.merged.df$z_score)
+  # p= 0.52, normal
+
+# Q-Q Plots
+qqnorm(mass.present.deploy.merged.df$z_score, main = "Q-Q Plot")
+qqline(mass.present.deploy.merged.df$z_score)
+  #normal
+
+
+# Levene's Test
+leveneTest(z_score ~ hfa, data = mass.present.deploy.merged.df)
+  # p= 0.64, variances between H and A are equal (i.e., the homogeneity assumption of the variance is met)
+
+# Interaction Effects (if applicable)
+interaction.plot(
+  mass.present.deploy.merged.df$hfa,
+  mass.present.deploy.merged.df$tree_id,
+  mass.present.deploy.merged.df$z_score,
+  type = "b",  # Use "b" for both lines and points
+  legend = TRUE
+)
+
+interaction.plot(
+  mass.present.deploy.merged.df$tree_id,
+  mass.present.deploy.merged.df$deploy,
+  mass.present.deploy.merged.df$z_score,
+  type = "b",  # Use "b" for both lines and points
+  legend = TRUE
+)
+
+
+# the t test will use z score values
+stat.test.z <- mass.present.deploy.merged.df %>% 
+  t_test(z_score ~ hfa, var.equal = T) %>%
+  add_significance() %>%
+  add_xy_position(x = "combined_group")
+stat.test.z
 
 # Create the box plot with original elements as ggplot from above
 leaf.mass.presentonly.plot= ggboxplot(
   mass.present.deploy.merged.df, x = "hfa", y = "z_score", 
-  ylab = "mass loss (z score)", xlab = "") + 
-  stat_pvalue_manual(stat.test, tip.length = 0) +
-  labs(subtitle = get_test_label(stat.test, detailed = TRUE)) +
+  ylab = "mass loss (z score)", xlab = "", fill="hfa", alpha= 0.4) + 
+  scale_fill_manual(values = c("grey", "grey0"), guide = "none")+
+  stat_pvalue_manual(stat.test, y.position = 2.5, tip.length = c(0.15, 0.02)) +
+  labs(subtitle = get_test_label(stat.test.z, detailed = T)) +
     scale_x_discrete(labels = c("away", "home"))+
     geom_point(aes(shape = as.factor(combined_site)), position = position_jitter(width = 0.2))+
     scale_shape_manual(values = c(7,10), name= "site")+
     geom_hline(data = mass.present.deploy.merged.df, aes(yintercept = mean(z_score), linetype = "Average"), color = "red", linetype = "dotted") +
+    theme(legend.position = "right",
+          legend.text = element_text(size=16),
+          legend.title = element_text(size = 16),
+          text = element_text(size =16),
+          plot.background = element_blank()) 
+
+leaf.mass.presentonly.plot
+
+ggsave("figures/leaf.mass.presentonly.plot.pdf", leaf.mass.presentonly.plot, width = 6, height = 6)
+
+
+```
+Analysis for **all treatment** dataframe
+There are two ways to go about model exploration: using z scored mass loss or arcsine square root transforming percent mass loss. These are outlined below...
+
+visualize the 4 treatments
+```{r}
+# Combine treatment and hfa into one group
+mass.deploy.merged.df$combined_group <- paste(mass.deploy.merged.df$treatment, mass.deploy.merged.df$hfa, sep = "-")
+
+# Create a custom order for the combined groups
+combined_group_order <- c("P-H", "P-A","AB-H", "AB-A")
+custom_palette <- c("#1F77B4", "#FF7F0E", "#2CA02C", "#D62728")
+
+
+# Plot with combined groups but no combo site
+leaf.mass.bothtreatments.plot=ggplot(mass.deploy.merged.df, aes(x = combined_group, y = z_score, fill = combined_group)) +
+  geom_boxplot(alpha= 0.3) +
+  scale_x_discrete(limits = combined_group_order)+
+  geom_point(aes(shape = as.factor(deploy)), position = position_jitter(width = 0.2), alpha = 0.7) +
+  labs(x = "treatment", y = "mass loss (z score)") +
+  theme(legend.position = "right") +
+  scale_fill_manual(values = custom_palette, guide = "none") +
+  scale_shape_manual(values = c(15, 16), name ="site") +
+  geom_hline(data = mass.deploy.merged.df, aes(yintercept = mean(z_score), linetype = "Average"), color = "red", linetype = "dotted") +
+  theme(plot.title = element_text(size = 12)) +
+  Fig.formatting
+
+leaf.mass.bothtreatments.plot
+
+
+```
+model exploration of all treatment
+```{r}
+# Create a histogram
+hist_data=hist(mass.deploy.merged.df$z_score, plot = FALSE)
+
+# Create a density plot
+density_data <- density(mass.deploy.merged.df$z_score)
+
+# Plot histogram with density overlay
+hist(mass.deploy.merged.df$z_score, freq = F, main = "")
+lines(density_data, col = "red")
+  #normal
+
+shapiro.test(mass.deploy.merged.df$z_score)
+  # p= 0.82, normal
+
+# Q-Q Plots
+qqnorm(mass.deploy.merged.df$z_score, main = "Q-Q Plot")
+qqline(mass.deploy.merged.df$z_score)
+  #normal
+
+
+# Levene's Test
+leveneTest(z_score ~ hfa, data = mass.deploy.merged.df)
+  # p= 0.96, variances between H and A are equal (i.e., the homogeneity assumption of the variance is met)
+
+##### Fit the ANOVA model using percent mass loss
+#create proportional mass loss column
+mass.deploy.merged.df=mass.deploy.merged.df%>%
+  mutate(dec.mass_loss = perc.mass_loss/100)
+
+#find min of mass loss
+min_value= min(mass.deploy.merged.df$dec.mass_loss)
+    #min = -0.358
+
+#find max of mass loss
+max_value= max(mass.deploy.merged.df$dec.mass_loss)
+    #max = 0.258
+
+# Perform min-max scaling
+mass.deploy.merged.df$scaled_values <- (mass.deploy.merged.df$dec.mass_loss - min_value) / (max_value - min_value)
+
+#apply arcsine transformation and rice and gaines 
+mass.deploy.merged.df=mass.deploy.merged.df%>%
+  mutate(arcsine_trans = asin(sqrt(scaled_values)))%>%
+  mutate(rice_gaines_corrected = asin(sqrt(scaled_values)) - (3/8) * sin(2 * asin(sqrt(scaled_values))))
+
+###### anova with z score mass
+
+aov1 <- aov(z_score ~ as.factor(combined_group), data = mass.deploy.merged.df)
+aov2 <- aov(z_score ~ as.factor(combined_group), data = mass.deploy.merged.df)
+aov3 <- aov(z_score ~ as.factor(combined_group) + Error(tree_id / tree_num), data = mass.deploy.merged.df)
+aov4 <- aov(z_score ~ as.factor(combined_group) + Error(tree_id /tree_num / site_num), data = mass.deploy.merged.df)
+
+
+summary(aov1)
+#checking anova assumptions are met
+#normality
+qqnorm(aov1$residuals)
+qqline(aov1$residuals)
+
+shapiro.test(aov1$residuals)
+
+# Histogram
+hist(aov1$Within$residuals)
+
+#homogeneity (i.e., homoscedasticity)
+plot(aov1$Within$fitted.values, aov1$Within$residuals, xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, col = "red")
+
+leveneTest(z_score ~ combined_group, data = mass.deploy.merged.df)
+
+####### lmer with z score mass
+library(lme4)
+
+# model1
+lmer1 <- lmer(z_score ~ as.factor(combined_group) + (1 | tree_id), data = mass.deploy.merged.df)
+lmer2 <- lmer(z_score ~ treatment * hfa  + (1 | tree_id), data = mass.deploy.merged.df)
+summary(lmer2)
+### this violates the model assumptions
+
+
+kw1 <- kruskal.test(z_score ~ combined_group, data = mass.deploy.merged.df)
+print(kw1)
+
+
+dunn.test.z.res=mass.deploy.merged.df %>% dunn_test(z_score ~ combined_group) %>% add_xy_position(x = "combined_group")
+
+# Create a function to format p-values and add stars for significance
+format_p_value <- function(p_value) {
+  if (p_value < 0.001) {
+    return("***")
+  } else if (p_value < 0.01) {
+    return("**")
+  } else if (p_value < 0.05) {
+    return("*")
+  } else {
+    return("ns")
+  }
+}
+
+# Apply the formatting function to the p-values
+dunn.test.z.res$formatted_p_value <- sapply(dunn.test.z.res$p.adj, format_p_value)
+##this plot works
+leaf.mass.all.plot=ggboxplot(
+  mass.deploy.merged.df, x = "combined_group", y = "z_score", 
+  ylab = "mass loss (z score)", xlab = "", fill="combined_group", alpha= 0.4) + 
+    scale_x_discrete(limits = combined_group_order)+
+  scale_fill_manual(values = custom_palette, guide = "none")+
+  stat_pvalue_manual(dunn.test.z.res, step.increase = 0.03, step.group.by = "group2", tip.length = 0.01) +
+    labs( x= "treatment", y="mass loss (z score)") +
+  geom_point(aes(shape = deploy), position = position_jitter(width = 0.2), alpha = 0.7) +
+  scale_shape_manual(values = c(15, 16), name ="site") +
+     geom_hline(data = mass.deploy.merged.df, aes(yintercept = mean(z_score), linetype = "Average"), color = "red", linetype = "dotted") +
+    theme(legend.position = "right",
+          legend.text = element_text(size=16),
+          legend.title = element_text(size = 16),
+          text = element_text(size =16),
+          plot.background = element_blank(),
+          axis.text.x = element_text(angle = 22, hjust = 0.5, vjust = 0.5)) 
+
+leaf.mass.all.plot
+count(mass.deploy.merged.df$combined_group)
+
+ggsave("figures/leaf.mass.all.plot.pdf", leaf.mass.all.plot, width = 8, height = 6)
+
+```
+
+
+```{r}
+##########
+ggplot(mass.deploy.merged.df, aes(x = combined_group, y = z_score)) +
+  geom_boxplot(alpha= 0.3, aes( fill = combined_group)) +
+  scale_x_discrete(limits = combined_group_order)+
+  stat_pvalue_manual(dunn.test.z.res, step.increase = 0.03, step.group.by = "group2", tip.length = 0.01) +
+    labs( x= "treatment", y="mass loss (z score)") +
+  geom_point(aes(shape = as.factor(deploy)), position = position_jitter(width = 0.2), alpha = 0.7) +
+  labs(x = "treatment", y = "mass loss (z score)") +
+  theme(legend.position = "right") +
+  scale_fill_manual(values = custom_palette, guide = "none") +
+  scale_shape_manual(values = c(15, 16), name ="site") +
+  geom_hline(data = mass.deploy.merged.df, aes(yintercept = mean(z_score), linetype = "Average"), color = "red", linetype = "dotted") +
+  theme(legend.position = "right",
+        legend.box.background = element_blank(),
+          legend.text = element_text(size=16),
+          legend.title = element_text(size = 16),
+          text = element_text(size =16),
+          plot.background = element_blank(),
+            panel.background = element_rect(fill = "white", color = "black")) 
+
+ggsave("figures/leaf.mass.all.plot.pdf", leaf.mass.all.plot, width = 8, height = 6)
+
+```
+
+
+```{r}
+dunn.test.res$formatted_p_value <- sapply(dunn.test.res$p.adj, format_p_value)
+
+ggplot(mass.deploy.merged.df, aes(x = combined_group, y = z_score, color = combined_group)) +
+  geom_boxplot(alpha = 0.3) +
+  stat_pvalue_manual(dunn.test.res, tip.length = 0, label = "p.adj" ) +
+  labs(x = "treatment", y = "mass loss (z score)") +
+  scale_x_discrete(limits = combined_group_order) +
+  scale_color_manual(values = custom_palette, guide = "none") +
+  geom_point(aes(shape = as.factor(deploy)), position = position_jitter(width = 0.2), alpha = 0.7) +
+  scale_shape_manual(values = c(15, 16), name = "site") +
+  geom_hline(data = mass.deploy.merged.df, aes(yintercept = mean(z_score), linetype = "Average"), color = "red", linetype = "dotted") +
+  theme(
+    legend.position = "right",
+    legend.text = element_text(size = 16),
+    legend.title = element_text(size = 16),
+    text = element_text(size = 16)
+  ) +
+  theme_minimal()
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
+
+```{r}
+# Print the post hoc test results
+print(posthoc_result)
+
+plot(lmer1.resid, ylab = "Residuals", xlab = "Observation Index")
+abline(h = 0, col = "red", lty = 2)  # Add a horizontal line at y = 0
+
+qqnorm(lmer1.resid)
+qqline(lmer1.resid)
+
+#model 2
+lmer2 <- lmer(arcsine_trans ~ as.factor(combined_group) + (1 | tree_id), data = mass.deploy.merged.df)
+
+lmer2.resid <- residuals(lmer2)
+
+# Plot the residuals
+plot(lmer2.resid, ylab = "Residuals", xlab = "Observation Index")
+abline(h = 0, col = "red", lty = 2)  # Add a horizontal line at y = 0
+
+qqnorm(lmer2.resid)
+qqline(lmer2.resid)
+
+#model 2
+lmer3 <- lmer(rice_gaines_corrected ~ as.factor(combined_group) + (1 | tree_id), data = mass.deploy.merged.df)
+
+lmer3.resid <- residuals(lmer3)
+
+# Plot the residuals
+plot(lmer3.resid, ylab = "Residuals", xlab = "Observation Index")
+abline(h = 0, col = "red", lty = 2)  # Add a horizontal line at y = 0
+
+qqnorm(lmer3.resid)
+qqline(lmer3.resid)
+
+shapiro.test(lmer1.resid)
+shapiro.test(lmer2.resid)
+shapiro.test(lmer3.resid)
+
+
+
+AIC(lmer1, lmer2)
+BIC(lmer1, lmer2)
+
+# View the model summary
+summary(lmer1)
+summary(lmer2)
+
+```
+
+
+
+
+
+
+
+
+
+Analysis for **absent only** dataframe
+There are two ways to go about model exploration: using z scored mass loss or arcsine square root transforming percent mass loss. These are outlined below...
+
+perform t-test and add result to AB treatment only plot
+```{r}
+library(tidyverse)
+library(ggpubr)
+library(rstatix)
+#plot
+mass.absent.deploy.merged.df$combined_site <- paste("site", mass.absent.deploy.merged.df$site_num, sep = "")
+
+leaf.mass.absentonly.plot=ggplot(mass.absent.deploy.merged.df, aes(x = hfa, y = z_score)) +
+  geom_boxplot(alpha= 0.3) +
+  geom_point(aes(shape = as.factor(combined_site)), position = position_jitter(width = 0.2)) +
+  labs(x = "", y = "mass loss (z score)") +
+  theme(legend.position = "right") +
+  scale_x_discrete(labels = c("away", "home")) +
+  scale_fill_manual(values = custom_palette) +
+  scale_shape_manual(values = c(7,10), name= "site") +
+  geom_hline(data = mass.absent.deploy.merged.df, aes(yintercept = mean(z_score), linetype = "Average"), color = "red", linetype = "dotted") +
+  theme(plot.title = element_text(size = 12)) +
+  Fig.formatting
+
+leaf.mass.absentonly.plot
+# Create a histogram
+hist_data <- hist(mass.absent.deploy.merged.df$z_score, plot = FALSE)
+
+# Create a density plot
+density_data <- density(mass.absent.deploy.merged.df$z_score)
+
+# Plot histogram with density overlay
+hist(mass.absent.deploy.merged.df$z_score, freq = F, main = "")
+lines(density_data, col = "red")
+  #normal
+
+shapiro.test(mass.absent.deploy.merged.df$z_score)
+  # p= 0.39, normal
+
+# Q-Q Plots
+qqnorm(mass.absent.deploy.merged.df$z_score, main = "Q-Q Plot")
+qqline(mass.absent.deploy.merged.df$z_score)
+  #normal
+
+
+# Levene's Test
+leveneTest(z_score ~ hfa, data = mass.absent.deploy.merged.df)
+  # p= 0.63, variances between H and A are equal (i.e., the homogeneity assumption of the variance is met)
+
+
+
+# the t test will use z score values
+stat.ab.test.z <- mass.absent.deploy.merged.df %>% 
+  t_test(z_score ~ hfa, var.equal = T) %>%
+  add_significance()
+stat.ab.test.z
+
+# Create the box plot with original elements as ggplot from above
+ggboxplot(
+  mass.absent.deploy.merged.df, x = "hfa", y = "z_score", 
+  ylab = "mass loss (z score)", xlab = "") + 
+  stat_pvalue_manual(stat.ab.test.z, tip.length = 0) +
+  labs(subtitle = get_test_label(stat.ab.test.z, detailed = TRUE)) +
+    scale_x_discrete(labels = c("away", "home"))+
+    geom_point(aes(shape = as.factor(combined_site)), position = position_jitter(width = 0.2))+
+    scale_shape_manual(values = c(7,10), name= "site")+
+    geom_hline(data = mass.absent.deploy.merged.df, aes(yintercept = mean(z_score), linetype = "Average"), color = "red", linetype = "dotted") +
     theme(legend.position = "right",
           legend.text = element_text(size=16),
           legend.title = element_text(size = 16),
@@ -1405,54 +1701,7 @@ ggsave("figures/leaf.mass.presentonly.plot.pdf", leaf.mass.presentonly.plot, wid
 
 
 ```
-
-
-
-
-
-
-```{r}
-# Residuals vs. Fitted Values Plot
-plot(m6$fitted.values, m6.resid, xlab = "Fitted Values", ylab = "Residuals",
-     main = "Residuals vs. Fitted")
-
-# Q-Q Plot
-qqnorm(m6.resid)
-qqline(m6.resid)
-
-# Scale-Location Plot
-plot(sqrt(abs(m6.resid)) ~ m6$fitted.values, xlab = "Fitted Values",
-     ylab = "Sqrt(|Residuals|)", main = "Scale-Location")
-
-# Calculate AIC for each model
-AIC_m1 <- AIC(m1)
-AIC_m2 <- AIC(m2)
-AIC_m3 = AIC (m3)
-
-AIC(m1, m2, m3, m4, m5, m6)
-
-# Compare AIC values
-lowest_AIC <- min(AIC_m1, AIC_m2, AIC_m3)
-
-if (lowest_AIC == AIC_m1) {
-  cat("Model 1 (aov) is preferred with the lowest AIC:", AIC_m1, "\n")
-} else if (lowest_AIC == AIC_m2) {
-  cat("Model 2 (lmer) is preferred with the lowest AIC:", AIC_m2, "\n")
-} else if (lowest_AIC == AIC_m3) {
-  cat("Model 3 (glm) is preferred with the lowest AIC:", AIC_m3, "\n")
-} 
-    #Model 3 and (aov) is preferred with the lowest AIC: 114.7048
-
-### among the models list, model 1 has the lowest AIC and warrants further investigation
-# Check assumptions of model 1
-par(mfrow = c(2, 2)) # Set up 2x2 plot grid
-plot(resid(lmer_model))
-#The "Residuals vs Fitted" in the top left panel displays the residuals (eij= γij - γ̂ij) on the y-axis and the fitted values (γ̂ij) on the x-axis. This allows you to see if the variability of the observations differs across the groups because all observations in the same group get the same fitted value. In this plot, the points seem to have fairly similar spreads at the fitted values for the 2 groups. The "Scale-Location" plot in the lower left panel has the same x-axis but the y-axis contains the square-root of the absolute value of the standardized residuals. The absolute value transforms all the residuals into a magnitude scale (removing direction) and the square-root helps you see differences in variability more accurately. The usage is similar in the two plots - you want to assess whether it appears that the groups have somewhat similar or noticeably different amounts of variability. If you see a clear funnel shape in the Residuals vs Fitted or an increase or decrease in the edge of points in the Scale-Location plot, that may indicate a violation of the constant variance assumption. Remember that some variation across the groups is expected and is ok...
-
-
-```
-
-Mode 1 (aov) further exploration
+Mode 1 (t test) further exploration
 ```{r}
 ##### exploration of model 1
 
@@ -1569,233 +1818,231 @@ hist(m2$residuals)
 ```
 
 
-leaf % mass loss with z score by deployment site plot
+Calculate HFA using ADD, HDD, ADH, etc.
+HDD (Home Decomposition Difference): HDD represents the difference in decomposition (e.g., litter mass loss or microbial breakdown) of a species when it is at home compared to when it is away. In your case, HDDi refers to the home decomposition difference for species i. It's calculated using equation (2) in your provided information:
+
+HDDi = (DiI - DjI) + (DiI - DkI)
+
+DiI: Measure of decomposition for species i at site I (home)
+DjI: Measure of decomposition for species j at site I (home)
+DkI: Measure of decomposition for species k at site I (home)
+
+ADD (Away Decomposition Difference): ADD represents the difference in decomposition of a species when it is away from home. Similarly to HDD, ADDi refers to the away decomposition difference for species i. It's calculated using equation (3):
+
+
+ADDi = (DiJ - DjJ) + (DiK - DkJ)
+DiJ: Measure of decomposition for species i at site J (away)
+DjJ: Measure of decomposition for species j at site J (away)
+DiK: Measure of decomposition for species i at site K (away)
+DkJ: Measure of decomposition for species k at site K (away)
+
+ADH (Additional Decomposition at Home): ADH is the specific advantage or disadvantage a species experiences when decomposing at home compared to away. It indicates whether a species decomposes faster than expected (positive ADH), as expected (ADH = 0), or slower than expected (negative ADH) when at home. It's calculated using equation (1):
+
+
+ADHi = HDDi - ADDi - H
+HDDi: Home Decomposition Difference for species i
+ADDi: Away Decomposition Difference for species i
+H: Total HFA for all species combined
 ```{r}
-# Combine treatment and hfa into one group
-mass.deploy.merged.df$combined_group <- paste(mass.deploy.merged.df$treatment, mass.deploy.merged.df$hfa, sep = "-")
 
-# Create a custom order for the combined groups
-combined_group_order <- c("AB-A", "AB-H", "P-A","P-H")
+#Calculate HDDi and ADDi values for each species (row) in your dataframe based on equations (2) and (3) respectively.
 
-# Plot with combined groups but no combo site
-leaf.mass.bothtreatments.plot=ggplot(mass.deploy.merged.df, aes(x = combined_group, y = z_score, fill = combined_group)) +
-  geom_boxplot(alpha= 0.3) +
-  scale_x_discrete(limits = combined_group_order)+
-  geom_point(aes(shape = as.factor(deploy)), position = position_jitter(width = 0.2), alpha = 0.7) +
-  labs(x = "treatment", y = "mass loss (z score)") +
-  theme(legend.position = "right") +
-  scale_fill_manual(values = custom_palette, guide = "none") +
-  scale_shape_manual(values = c(15, 16), name ="site") +
-  geom_hline(data = mass.merged.df, aes(yintercept = mean(z_score), linetype = "Average"), color = "red", linetype = "dotted") +
-  theme(plot.title = element_text(size = 12)) +
-  Fig.formatting
-leaf.mass.combo.group.zsite.plot
+#Calculate the total H value using equation (4), where HDDi represents the home decomposition difference for species i.
 
-# Define your custom color palette
-custom_palette.hfa <- c("#1F77B4", "#FF7F0E")
+#Calculate ADHi for each species using equation (1), where HDDi represents home decomposition difference for species i and ADDi represents away decomposition difference for species i.
 
-ggplot(mass.present.deploy.merged.df, aes(x = combined_site, y = z_score)) +
-  geom_boxplot(alpha= 0.3) +
-  geom_point(aes(shape = interaction(hfa)), position = position_jitter(width = 0.2)) +
-  labs(x = "treatment", y = "mass loss (z score)") +
-  theme(legend.position = "right") +
-  scale_fill_manual(values = custom_palette) +
-  scale_shape_manual(values = c(15, 16)) +
-  geom_hline(data = mass.present.deploy.merged.df, aes(yintercept = mean(z_score), linetype = "Average"), color = "red", linetype = "dotted") +
-  theme(plot.title = element_text(size = 12)) +
-  Fig.formatting
+# Initialize vectors to store calculated values
+HDDi <- numeric()
+ADDi <- numeric()
+H <- numeric()
+ADHi <- numeric()
+
+# Loop through each genotype within each deployment scenario
+for (tree_id in unique(mass.present.site1.df$tree_id)) {
+  for (deploy in c("HOK", "SEK")) {
+    mass.present.site1.df <- mass.present.site1.df[mass.present.site1.df$tree_id == tree_id & mass.present.site1.df$deploy == deploy, ]
+
+    DiI <- mass.present.site1.df$perc.mass_loss
+    DjI <- mass.present.site1.df$perc.mass_loss[mass.present.site1.df$tree_num != mass.present.site1.df$tree_num[1]]
+    DkI <- mass.present.site1.df$perc.mass_loss[mass.present.site1.df$tree_num != mass.present.site1.df$tree_num[1]]
+    DiJ <- mass.present.site1.df$perc.mass_loss[mass.present.site1.df$deploy != deploy]
+    DjJ <- mass.present.site1.df$perc.mass_loss[(mass.present.site1.df$tree_num != mass.present.site1.df$tree_num[1]) & (mass.present.site1.df$deploy != deploy)]
+    DkK <- mass.present.site1.df$perc.mass_loss[(mass.present.site1.df$tree_num != mass.present.site1.df$tree_num[1]) & (mass.present.site1.df$deploy != deploy)]
+
+    # Calculate HDDi and ADDi
+    HDDi_i <- (DiI - DjI) + (DiI - DkI)
+    ADDi_i <- (DiJ - DjJ) + (DiJ - DkK)
+
+    # Calculate H
+    H_i <- (sum(HDDi_i) + sum(HDDi)) / nrow(mass.present.site1.df)
+
+    # Calculate ADHi
+    ADHi_i <- HDDi_i - ADDi_i - H_i
+
+    # Append calculated values to vectors
+    HDDi <- c(HDDi, HDDi_i)
+    ADDi <- c(ADDi, ADDi_i)
+    H <- c(H, H_i)
+    ADHi <- c(ADHi, ADHi_i)
+  }
+}
+
+# Add calculated values to the subset dataframe
+mass.present.site1.df$HDDi <- HDDi
+mass.present.site1.df$ADDi <- ADDi
+mass.present.site1.df$H <- H
+mass.present.site1.df$ADHi <- ADHi
+
+# Print the updated subset dataframe
+print(mass.present.site1.df)
+
 ```
 
 
 
+Calculating HFA Index (HFAI) from Ayres et al. (2009):
 
+There are two equations from which HFAI is dervied: the relative mass loss (rml) of species decomposing at home and away site, and the scaling equation which allows for interpretaibility of the home-field advantage. Below is a brief summary of the components found in the derivaitons:
 
-Subset dataframes to z score by deployment site and treatment
+Aa: This represents the percent mass loss of leaf litter from species A (HOK) when it's decomposing at site a (HOK, or the area dominated by species A). This value is given as a percentage.
+
+Ba: This represents the percent mass loss of leaf litter from species B (SEK) when it's decomposing at site a This value is also given as a percentage.
+
+(Aa + Ba): This is the sum of the percent mass loss of leaf litter from both species A and B when they're decomposing at site a, or HOK and SEK leaf packs at HOK.
+
+(Aa / (Aa + Ba) * 100): This is the full equation that calculates the proportion of the mass loss contributed by species A at site a, relative to the **total mass** loss by both species A and B combined at that site. This percentage value indicates how much of the total mass loss at site a is due to species A.
+
+A similar equation is calculated for species B decomposing at site a. The variables are substituted accordingly.
+
+Armla and Armlb; Brlma, Brmlb: These are the relative mass loss values for species A and B, respectively, when they are decomposing at site a (dominated by species A) or site b (dominated by species B). These values are expressed as percentages of total mass loss at their respective sites.
+
+(((ARMLa + BRMLb)^2 / (ARMLb + BRMLa)^2) * 100)-100: This is the full equation that calculates the squared ratio of the combined relative mass loss of species A at site a and species B at site b (i.e., home), divided by the squared ratio of the combined relative mass loss of species A at site b and species B at site a (i.e., away).
+
+100 is subtracted from the value obtained. This is done to measure the percentage difference in mass loss at the home site (site dominated by the species) compared to the away site (site dominated by the other species). If the value is positive, it indicates that the litter decomposes faster at its home site, showing a home-field advantage. If the value is negative, it suggests that decomposition is slower at the home site, indicating a home-field disadvantage.
+
+The equation calculates the Home-Field Advantage Index (HFAI) by comparing the relative mass loss of litter from two species at their home and away sites. The result is expressed as a percentage, indicating how much faster (or slower) the decomposition occurs at the home site compared to the away site.
+
+generate **present** treatment, site a (HOK 1)
 ```{r}
-#P HOK 1 subset
-mass.p.hok1.df <- data.frame(mass.df[mass.df$deploy == "HOK" & mass.df$treatment == "P" & mass.df$site_num == "1", ])
-# Calculate z-scores 
-mass.p.hok1.df=mass.p.hok1.df%>%
-  mutate(z_score= (mass_loss - mean(mass_loss))/sd(mass_loss))
+mass.hok1.present.df <- mass.hok1.present.df %>%
+  mutate(ayres = ifelse(hfa == "H", "Aa", ifelse(hfa == "A", "Ba", NA)))
+View(mass.hok1.present.df)
+  #since we're at site a, the notation follows species A at a (Aa) or species B at a (Ba)
 
-#AB HOK 1 subset
-mass.ab.hok1.df <- data.frame(mass.df[mass.df$deploy == "HOK" & mass.df$treatment == "AB" & mass.df$site_num == "1", ])
-# Calculate z-scores 
-mass.ab.hok1.df=mass.ab.hok1.df%>%
-  mutate(z_score= (mass_loss - mean(mass_loss))/sd(mass_loss))
+###tree numbers are used for pairwise relative mass loss (RML) calculation (e.g., HOK 1-1 with SEK 1-1; this follows similar logic as Ayres Species A to B comparison)
 
-#P HOK 2 subset
-mass.p.hok2.df <- data.frame(mass.df[mass.df$deploy == "HOK" & mass.df$treatment == "P" & mass.df$site_num == "2", ])
-# Calculate z-scores 
-mass.p.hok2.df=mass.p.hok2.df%>%
-  mutate(z_score= (mass_loss - mean(mass_loss))/sd(mass_loss))
+# Define the values you want to loop through
+ayres_values <- c("Aa", "Ba")
+tree_num_values <- c("1", "2", "3", "4", "5")
 
-#AB HOK 2 subset
-mass.ab.hok2.df <- data.frame(mass.df[mass.df$deploy == "HOK" & mass.df$treatment == "AB" & mass.df$site_num == "2", ])
-# Calculate z-scores 
-mass.ab.hok2.df=mass.ab.hok2.df%>%
-  mutate(z_score= (mass_loss - mean(mass_loss))/sd(mass_loss))
+# Initialize an empty vector to store the results
+rml_values=numeric()
+length(rml_values)
 
-#P SEK 1 subset
-mass.p.sek1.df <- data.frame(mass.df[mass.df$deploy == "SEK" & mass.df$treatment == "P" & mass.df$site_num == "1", ])
-# Calculate z-scores 
-mass.p.sek1.df=mass.p.sek1.df%>%
-  mutate(z_score= (mass_loss - mean(mass_loss))/sd(mass_loss))
+# Loop through the combinations and calculate rml values
+for (ayres in ayres_values) {
+  for (tree_num in tree_num_values) {
+    hok_z_loss <- mass.hok1.present.df$z_score[mass.hok1.present.df$tree_id == "HOK" & mass.hok1.present.df$tree_num == tree_num]
+    sek_z_loss <- mass.hok1.present.df$z_score[mass.hok1.present.df$tree_id == "SEK" & mass.hok1.present.df$tree_num == tree_num]
+    
+    rml <- ifelse(ayres == "Aa", hok_z_loss / (hok_z_loss + sek_z_loss),
+                  ifelse(ayres == "Ba", sek_z_loss / (sek_z_loss + hok_z_loss),
+                         NA))
+    
+    rml_values <- c(rml_values, rml * 100)
+    
+  
+  }
+}
 
-#AB SEK 1 subset
-mass.ab.sek1.df <- data.frame(mass.df[mass.df$deploy == "SEK" & mass.df$treatment == "AB" & mass.df$site_num == "1", ])
-# Calculate z-scores 
-mass.ab.sek1.df=mass.ab.sek1.df%>%
-  mutate(z_score= (mass_loss - mean(mass_loss))/sd(mass_loss))
 
-#P SEK 2 subset
-mass.p.sek2.df <- data.frame(mass.df[mass.df$deploy == "SEK" & mass.df$treatment == "P" & mass.df$site_num == "2", ])
-# Calculate z-scores 
-mass.p.sek2.df=mass.p.sek2.df%>%
-  mutate(z_score= (mass_loss - mean(mass_loss))/sd(mass_loss))
-
-#AB SEK 2 subset
-mass.ab.sek2.df <- data.frame(mass.df[mass.df$deploy == "SEK" & mass.df$treatment == "AB" & mass.df$site_num == "2", ])
-# Calculate z-scores 
-mass.ab.sek2.df=mass.ab.sek2.df%>%
-  mutate(z_score= (mass_loss - mean(mass_loss))/sd(mass_loss))
+# Initialize empty vectors to store the results
+rml_values.z <- numeric()
+rml_values.mass <- numeric()
 
 
 
-##merge all sites
-mass.deploy.treat.merged.df=rbind(mass.p.hok1.df, mass.ab.hok1.df, mass.p.hok2.df, mass.ab.hok2.df, mass.p.sek1.df, mass.ab.sek1.df, mass.p.sek2.df, mass.ab.sek2.df)
-mass.deploy.treat.merged.df$treatment=as.factor(as.character(mass.deploy.treat.merged.df$treatment))
-mass.deploy.treat.merged.df$tree_id=as.factor(as.character(mass.deploy.treat.merged.df$tree_id))
-mass.deploy.treat.merged.df$tree_id=as.factor(as.character(mass.deploy.treat.merged.df$tree_id))
-mass.deploy.treat.merged.df$deploy=as.factor(as.character(mass.deploy.treat.merged.df$deploy))
-mass.deploy.treat.merged.df$hfa=as.factor(as.character(mass.deploy.treat.merged.df$hfa))
+# Loop through the combinations and calculate rml values
+for (ayres in ayres_values) {
+  for (tree_num in tree_num_values) {
+    # Extract z_scores for HOK and SEK based on tree_id and tree_num
+    hok_z_loss <- mass.hok1.present.df$z_score[
+      mass.hok1.present.df$tree_id == "HOK" & mass.hok1.present.df$tree_num == tree_num]
+    sek_z_loss <- mass.hok1.present.df$z_score[
+      mass.hok1.present.df$tree_id == "SEK" & mass.hok1.present.df$tree_num == tree_num]
+    
+    # Calculate rml.z
+    rml.z <- ifelse(ayres == "Aa", hok_z_loss / (hok_z_loss + sek_z_loss),
+                    ifelse(ayres == "Ba", sek_z_loss / (sek_z_loss + hok_z_loss),
+                           NA))
+    
+    
+    # Extract perc.mass_loss for HOK and SEK based on tree_id and tree_num
+    hok_mass_loss <- mass.hok1.present.df$perc.mass_loss[
+      mass.hok1.present.df$tree_id == "HOK" & mass.hok1.present.df$tree_num == tree_num]
+    sek_mass_loss <- mass.hok1.present.df$perc.mass_loss[
+      mass.hok1.present.df$tree_id == "SEK" & mass.hok1.present.df$tree_num == tree_num]
+    
+    # Calculate rml
+    rml <- ifelse(ayres == "Aa", hok_mass_loss / (hok_mass_loss + sek_mass_loss),
+                  ifelse(ayres == "Ba", sek_mass_loss / (sek_mass_loss + hok_mass_loss),
+                         NA))
+    
+    # Append to the result vector
+    rml_values.mass <- c(rml_values.mass, rml * 100)
+    # Append to the result vector
+    rml_values.z <- c(rml_values.z, rml.z * 100)
+  }
+}
 
+
+length(rml_values.z)
+length(rml_values.mass)
+nrow(mass.hok1.present.df)
+str(mass.hok1.present.df)
+
+
+
+
+# Add the rml values to the dataframe
+mass.hok1.present.df$rml.z <- rml_values.z
+mass.hok1.present.df$rml <- rml_values.mass
+
+# Create a new column combining tree_num and ayres with a period in between
+mass.hok1.present.df$ayres.tree <- paste(mass.hok1.present.df$ayres, mass.hok1.present.df$tree_num, sep = ".")
+
+# Create a new column based on Ayres HFAI equation
+mass.hok1.present.df$ayres.eq <- ifelse(
+  mass.hok1.present.df$ayres.tree %in% paste("Aa.", tree_num_values, sep = ""),
+  paste("Armla", tree_num_values, sep = "."),
+  ifelse(
+    mass.hok1.present.df$ayres.tree %in% paste("Ba.", tree_num_values, sep = ""),
+    paste("Brmla", tree_num_values, sep = "."),
+    NA
+  )
+)
+# Add the rml values to the dataframe
+mass.hok1.present.df$rml <- rml_values
+mass.hok1.present.df$rml <- rml_values.mass
+
+# Create a new column combining tree_num and ayres with a period in between
+mass.hok1.present.df$ayres.tree <- paste(mass.hok1.present.df$ayres, mass.hok1.present.df$tree_num, sep = ".")
+# Create a new column based on Ayres HFAI equation 
+mass.hok1.present.df$ayres.eq <- ifelse(mass.hok1.present.df$ayres.tree %in% paste("Aa.", tree_num_values, sep = ""), 
+                                     paste("Armla", tree_num_values, sep = "."), 
+                                     ifelse(mass.hok1.present.df$ayres.tree %in% paste("Ba.", tree_num_values, sep = ""), 
+                                            paste("Brmla", tree_num_values, sep = "."), 
+                                            NA))
+  #Armla = species A rml at a 
+  #Brmla = species B rml at a
 ```
 
 
-leaf % mass loss as z score by deployment site AND treatment
-```{r}
-# Combine treatment and hfa into one group
-mass.deploy.treat.merged.df$combined_group <- paste(mass.deploy.treat.merged.df$treatment, mass.deploy.treat.merged.df$hfa, sep = "-")
-mass.deploy.treat.merged.df$combined_site <- paste("site", mass.deploy.treat.merged.df$site_num, sep = "")
-
-
-# Create a custom order for the combined groups
-combined_group_order <- c("AB-A", "AB-H", "P-A","P-H")
-
-
-custom_palette <- c("#1F77B4", "#FF7F0E", "#2CA02C", "#D62728")
-
-custom_palette <- c("#1F77B4", "#FF7F0E", "#2CA02C", "#D62728", "#9467BD", "#8C564B", "#E377C2", "#7F7F7F")
-
-
-# Plot with combined groups and site 
-leaf.mass.combo.site.plot=ggplot(mass.deploy.treat.merged.df, aes(x = combined_group, y = z_score, fill= interaction(combined_site, combined_group))) +
-  geom_boxplot(alpha = 0.3) +
-  scale_x_discrete(limits = combined_group_order) +
-  geom_point(aes(shape = interaction(combined_site, combined_group)), position = position_jitter(width = 0.2), alpha = 0.5) +
-  labs(x = "treatment", y = "mass loss (z score)") +
-  theme(legend.position = "none",
-axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_shape_manual(values = c(0,1,2,3,4,5,6,7), name = "") +
-   scale_fill_manual(values = custom_palette, name = "")+
-  geom_hline(data = mass.merged.df, aes(yintercept = mean(z_score), linetype = "Average"), color = "red", linetype = "dotted") +
-  Fig.formatting
-leaf.mass.combo.site.plot
-
-# Plot with combined groups but no combo site 
-leaf.mass.combo.group.plot=ggplot(mass.deploy.treat.merged.df, aes(x = combined_group, y = z_score, fill= combined_group)) +
-  geom_boxplot(alpha = 0.3) +
-  scale_x_discrete(limits = combined_group_order) +
-  geom_point(aes(shape = combined_group), position = position_jitter(width = 0.2), alpha = 0.5) +
-  labs(x = "treatment", y = "mass loss (z score)") +
-  theme(legend.position = "none",
-axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_shape_manual(values = c(21, 22, 23, 24), name = "") +
-   scale_fill_manual(values = custom_palette, name = "")+
-  geom_hline(data = mass.merged.df, aes(yintercept = mean(z_score), linetype = "Average"), color = "red", linetype = "dotted") +
-  Fig.formatting
-
-leaf.mass.combo.group.plot
-
-#trying to shade with different shapes
-ggplot(mass.deploy.treat.merged.df, aes(x = combined_group, y = z_score, fill = combined_group)) +
-  geom_boxplot_pattern(
-    aes(pattern = combined_group),
-    colour = "black",
-    pattern_fill = "black",
-    pattern_angle = 45,
-    pattern_density = 0.1,
-    pattern_spacing = 0.01,
-    position = position_dodge2(preserve = 'single'),
-    alpha = 0.2  # Adjust the alpha value to control transparency
-  ) +
-    geom_point(aes(shape = interaction(site_num, combined_group)), position = position_jitter(width = 0.2), alpha = 0.5)+
-  geom_boxplot(alpha = 0.3) +
-  scale_x_discrete(limits = combined_group_order) +
-  labs(x = "Treatment Group", y = "Mass Loss (z score)") +
-  theme(legend.position = "bottom",  # Move legend to the bottom
-        axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_shape_manual(values = c(16, 17, 18, 19, 20, 21, 22, 23)) +
-  scale_fill_manual(values = custom_palette) +
-  geom_hline(data = mass.merged.df, aes(yintercept = mean(z_score), linetype = "Average"), color = "red", linetype = "dotted") +
-  guides(fill = guide_legend(override.aes = list(shape = c(16, 17, 18, 19, 20, 21, 22, 23)))) +  # Specify the shape order
-  Fig.formatting
-
-
-
-#basic HFA
-ggplot(mass.deploy.treat.merged.df, aes(x = combined_group, y = z_score)) +
-  geom_boxplot(alpha = 0.3) +
-  scale_x_discrete(limits = combined_group_order) +
-  geom_point(aes(shape = interaction(site_num, hfa)), position = position_jitter(width = 0.2), alpha = 0.5) +
-  labs(x = "Treatment Group", y = "Mass Loss (z score)") +
-  theme(legend.position = "none",
-        axis.text.x = element_text(angle = 45, hjust = 1),
-        legend.title = "Treatment") +
-  scale_shape_manual(values = c(16, 17, 18, 19)) +
-  geom_hline(data = mass.merged.df, aes(yintercept = mean(z_score), linetype = "Average"), color = "red", linetype = "dotted") +
-  Fig.formatting
-
-
- leaf.mass.z.plot
-ggsave("figures/leaf.mass.combo.group.plot.pdf", leaf.mass.combo.group.plot, width = 8, height = 6)
-
-
-
-```
-analysis for z score by treatment and site
-```{r}
-
-#RICE & GAINES CORRECTION
-save<-aggregate(as.numeric(z.new.deal1), list(new.decomp$LOCATION_CODE), mean) #use the z standardized data
-save
-save$Rank<-c(2,2,2,1,1)                                   
-save #(Away River=2,Away River =2,SameRiveraway=2, SameRiverHOme=1, Home=1)
-cor.test(x=save$x, y=save$Rank, method = 'spearman',exact=FALSE)
-#RsPc= 0.8660254*(1-0.03953) = 0.831, so p ~ 0.01* significant ???
-RSPC<- (-0.5773503)*(1-2.723e-06)
-
-
-
-
-
-
-
-
-
-```
-
-
-maybe try z scoring by site and using the z score percent mass loss for HFAI?
-
-
+This is the proper dataframe with for loop
 generate **present**, site a (HOK 1)
 ```{r}
-mass.p.hoko1.df=mass.df%>%
-  filter(treatment == "P" & deploy=="HOK" & site_num=="1")
-#now create a new column to have some reference to the Ayres paper (species A= hoko trees, species B = sekiu trees)
-mass.p.hoko1.df <- mass.p.hoko1.df %>%
+########################
+mass.hok1.present.df <- mass.hok1.present.df %>%
   mutate(ayres = ifelse(hfa == "H", "Aa", ifelse(hfa == "A", "Ba", NA)))
   #since we're at site a, the notation follows species A at a (Aa) or species B at a (Ba)
 
@@ -1806,92 +2053,631 @@ ayres_values <- c("Aa", "Ba")
 tree_num_values <- c("1", "2", "3", "4", "5")
 
 # Initialize an empty vector to store the results
-rml_values <- numeric()
+rml_values_z <- numeric()
+rml_values_mass <- numeric()
 
 # Loop through the combinations and calculate rml values
 for (ayres in ayres_values) {
   for (tree_num in tree_num_values) {
-    hok_mass_loss <- mass.p.hoko1.df$mass_loss[mass.p.hoko1.df$tree_id == "HOK" & mass.p.hoko1.df$tree_num == tree_num]
-    sek_mass_loss <- mass.p.hoko1.df$mass_loss[mass.p.hoko1.df$tree_id == "SEK" & mass.p.hoko1.df$tree_num == tree_num]
+    hok_z_loss <- mass.hok1.present.df$z_score[
+      mass.hok1.present.df$tree_id == "HOK" & mass.hok1.present.df$tree_num == tree_num
+    ]
+    sek_z_loss <- mass.hok1.present.df$z_score[
+      mass.hok1.present.df$tree_id == "SEK" & mass.hok1.present.df$tree_num == tree_num
+    ]
     
-    rml <- ifelse(ayres == "Aa", hok_mass_loss / (hok_mass_loss + sek_mass_loss),
-                  ifelse(ayres == "Ba", sek_mass_loss / (sek_mass_loss + hok_mass_loss),
-                         NA))
+    rml.z <- ifelse(
+      ayres == "Aa", hok_z_loss / (hok_z_loss + sek_z_loss),
+      ifelse(ayres == "Ba", sek_z_loss / (sek_z_loss + hok_z_loss), NA)
+    )
     
-    rml_values <- c(rml_values, rml * 100)
+    rml_values_z <- c(rml_values_z, rml.z * 100)
+    
+    hok_mass_loss <- mass.hok1.present.df$perc.mass_loss[
+      mass.hok1.present.df$tree_id == "HOK" & mass.hok1.present.df$tree_num == tree_num
+    ]
+    sek_mass_loss <- mass.hok1.present.df$perc.mass_loss[
+      mass.hok1.present.df$tree_id == "SEK" & mass.hok1.present.df$tree_num == tree_num
+    ]
+    
+    rml.mass <- ifelse(
+      ayres == "Aa", hok_mass_loss / (hok_mass_loss + sek_mass_loss),
+      ifelse(ayres == "Ba", sek_mass_loss / (sek_mass_loss + hok_mass_loss), NA)
+    )
+    
+    rml_values_mass <- c(rml_values_mass, rml.mass * 100)
   }
 }
 
+# Add the rml values to the dataframe
+mass.hok1.present.df$rml.z <- rml_values_z
+mass.hok1.present.df$rml.mass <- rml_values_mass
+
+# Create a new column combining tree_num and ayres with a period in between
+mass.hok1.present.df$ayres.tree <- paste(mass.hok1.present.df$ayres, mass.hok1.present.df$tree_num, sep = ".")
+
+# Create a new column based on Ayres HFAI equation 
+mass.hok1.present.df$ayres.eq <- ifelse(
+  mass.hok1.present.df$ayres.tree %in% paste("Aa.", tree_num_values, sep = ""),
+  paste("Armla", tree_num_values, sep = "."),
+  ifelse(
+    mass.hok1.present.df$ayres.tree %in% paste("Ba.", tree_num_values, sep = ""),
+    paste("Brmla", tree_num_values, sep = "."),
+    NA
+  )
+)
+
+############### STOP ######################
 ##check the calculations (Armla.1-Armla.5)
-((mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.1",]$mass_loss) /
-  (mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.1",]$mass_loss +
-   mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.1",]$mass_loss)) * 100
+((mass.hok1.present.df[mass.hok1.present.df$ayres.tree == "Aa.1",]$z_score) /
+  (mass.hok1.present.df[mass.hok1.present.df$ayres.tree == "Aa.1",]$z_score +
+   mass.hok1.present.df[mass.hok1.present.df$ayres.tree == "Ba.1",]$z_score)) * 100
 
-((mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.2",]$mass_loss) /
-  (mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.2",]$mass_loss +
-   mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.2",]$mass_loss)) * 100
-
-
-((mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.3",]$mass_loss) /
-  (mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.3",]$mass_loss +
-   mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.3",]$mass_loss)) * 100
-
-((mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.4",]$mass_loss) /
-  (mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.4",]$mass_loss +
-   mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.4",]$mass_loss)) * 100
+((mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.2",]$z_score) /
+  (mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.2",]$z_score +
+   mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.2",]$z_score)) * 100
 
 
-((mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.5",]$mass_loss) /
-  (mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.5",]$mass_loss +
-   mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.5",]$mass_loss)) * 100
+(
+  (mass.hok1.present.df[mass.hok1.present.df$ayres.tree == "Aa.3",]$perc.mass_loss) /
+  (mass.hok1.present.df[mass.hok1.present.df$ayres.tree == "Aa.3",]$perc.mass_loss +
+   mass.hok1.present.df[mass.hok1.present.df$ayres.tree == "Ba.3",]$perc.mass_loss)
+  
+  * 100) 
+
+((mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.4",]$z_score) /
+  (mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.4",]$z_score +
+   mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.4",]$z_score)) * 100
+
+
+((mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.5",]$z_score) /
+  (mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.5",]$z_score +
+   mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.5",]$z_score)) * 100
 
 
 ##check the calculations (Brmla.1-Brmla.5)
-((mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.1",]$mass_loss) /
-  (mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.1",]$mass_loss +
-   mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.1",]$mass_loss)) * 100
+((mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.1",]$z_score) /
+  (mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.1",]$z_score +
+   mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.1",]$z_score)) * 100
 
 
-((mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.2",]$mass_loss) /
-  (mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.2",]$mass_loss +
-   mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.2",]$mass_loss)) * 100
+((mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.2",]$z_score) /
+  (mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.2",]$z_score +
+   mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.2",]$z_score)) * 100
 
 
-((mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.3",]$mass_loss) /
-  (mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.3",]$mass_loss +
-   mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.3",]$mass_loss)) * 100
+((mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.3",]$z_score) /
+  (mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.3",]$z_score +
+   mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.3",]$z_score)) * 100
 
 
-((mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.4",]$mass_loss) /
-  (mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.4",]$mass_loss +
-   mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.4",]$mass_loss)) * 100
+((mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.4",]$z_score) /
+  (mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.4",]$z_score +
+   mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.4",]$z_score)) * 100
 
 
-((mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.5",]$mass_loss) /
-  (mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.5",]$mass_loss +
-   mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.5",]$mass_loss)) * 100
+((mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.5",]$z_score) /
+  (mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.5",]$z_score +
+   mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.5",]$z_score)) * 100
 
 
-# Add the rml values to the dataframe
-mass.p.hoko1.df$rml <- rml_values
-# Create a new column combining tree_num and ayres with a period in between
-mass.p.hoko1.df$ayres.tree <- paste(mass.p.hoko1.df$ayres, mass.p.hoko1.df$tree_num, sep = ".")
-# Create a new column based on Ayres HFAI equation 
-mass.p.hoko1.df$ayres.eq <- ifelse(mass.p.hoko1.df$ayres.tree %in% paste("Aa.", tree_num_values, sep = ""), 
-                                     paste("Armla", tree_num_values, sep = "."), 
-                                     ifelse(mass.p.hoko1.df$ayres.tree %in% paste("Ba.", tree_num_values, sep = ""), 
-                                            paste("Brmla", tree_num_values, sep = "."), 
-                                            NA))
-  #Armla = species A rml at a 
-  #Brmla = species B rml at a
 ```
 
+
+
+This is also the proper dataframe
 generate **present**, site b (SEK 1)
 ```{r}
-mass.p.sek1.df=mass.df%>%
-  filter(treatment == "P" & deploy=="SEK" & site_num=="1")
-#now create a new column to have some reference to the Ayres paper (species A= hoko trees, species B = sekiu trees)
-mass.p.sek1.df <- mass.p.sek1.df %>%
+mass.sek1.present.df <- mass.sek1.present.df %>%
+  mutate(ayres = ifelse(hfa == "H", "Bb", ifelse(hfa == "A", "Ab", NA)))
+  #since we're at site a, the notation follows species A at a (Aa) or species B at a (Ba)
+
+###tree numbers are used for pairwise relative mass loss (RML) calculation (e.g., HOK 1-1 with SEK 1-1; this follows similar logic as Ayres Species A to B comparison)
+
+# Define the values you want to loop through
+ayres_values <- c("Ab", "Bb")
+tree_num_values <- c("1", "2", "3", "4", "5")
+
+# Initialize an empty vector to store the results
+rml_values_z <- numeric()
+rml_values_mass <- numeric()
+
+# Loop through the combinations and calculate rml values
+for (ayres in ayres_values) {
+  for (tree_num in tree_num_values) {
+    hok_z_loss <- mass.sek1.present.df$z_score[
+      mass.sek1.present.df$tree_id == "HOK" & mass.sek1.present.df$tree_num == tree_num
+    ]
+    sek_z_loss <- mass.sek1.present.df$z_score[
+      mass.sek1.present.df$tree_id == "SEK" & mass.sek1.present.df$tree_num == tree_num
+    ]
+    
+    rml.z <- ifelse(
+      ayres == "Ab", hok_z_loss / (hok_z_loss + sek_z_loss),
+      ifelse(ayres == "Bb", sek_z_loss / (sek_z_loss + hok_z_loss), NA)
+    )
+    
+    rml_values_z <- c(rml_values_z, rml.z * 100)
+    
+    hok_mass_loss <- mass.sek1.present.df$perc.mass_loss[
+      mass.sek1.present.df$tree_id == "HOK" & mass.sek1.present.df$tree_num == tree_num
+    ]
+    sek_mass_loss <- mass.sek1.present.df$perc.mass_loss[
+      mass.sek1.present.df$tree_id == "SEK" & mass.sek1.present.df$tree_num == tree_num
+    ]
+    
+    rml.mass <- ifelse(
+      ayres == "Ab", hok_mass_loss / (hok_mass_loss + sek_mass_loss),
+      ifelse(ayres == "Bb", sek_mass_loss / (sek_mass_loss + hok_mass_loss), NA)
+    )
+    
+    rml_values_mass <- c(rml_values_mass, rml.mass * 100)
+  }
+}
+
+# Add the rml values to the dataframe
+mass.sek1.present.df$rml.z <- rml_values_z
+mass.sek1.present.df$rml.mass <- rml_values_mass
+
+# Create a new column combining tree_num and ayres with a period in between
+mass.sek1.present.df$ayres.tree <- paste(mass.sek1.present.df$ayres, mass.sek1.present.df$tree_num, sep = ".")
+
+# Create a new column based on Ayres HFAI equation 
+mass.sek1.present.df$ayres.eq <- ifelse(
+  mass.sek1.present.df$ayres.tree %in% paste("Ab.", tree_num_values, sep = ""),
+  paste("Armlb", tree_num_values, sep = "."),
+  ifelse(
+    mass.sek1.present.df$ayres.tree %in% paste("Bb.", tree_num_values, sep = ""),
+    paste("Brmlb", tree_num_values, sep = "."),
+    NA
+  )
+)
+
+
+```
+
+
+This is the proper dataframe
+merge **present**, site a and b (aka HOK 1 and SEK 1) dataframes 
+```{r}
+#merge both present site 1 dataframes
+mass.present.site1.df=rbind(mass.hok1.present.df, mass.sek1.present.df)
+
+# Create an empty data frame to store the results
+hfai.df <- data.frame(hfai = numeric(0))
+
+# Create an empty data frame to store the results
+hfai.df <- data.frame(hfai.z = numeric(0), hfai.mass = numeric(0), label = character(0), treatment = character(0))
+
+# Create an empty list to store the data frames
+hfai_dfs <- list()
+
+# Loop through each set of equations and calculate the values
+for (i in 1:5) {
+  armla.z <- mass.present.site1.df[mass.present.site1.df$ayres.eq == paste0("Armla.", i), ]$rml.z
+  brmlb.z <- mass.present.site1.df[mass.present.site1.df$ayres.eq == paste0("Brmlb.", i), ]$rml.z
+  armlb.z <- mass.present.site1.df[mass.present.site1.df$ayres.eq == paste0("Armlb.", i), ]$rml.z
+  brmla.z <- mass.present.site1.df[mass.present.site1.df$ayres.eq == paste0("Brmla.", i), ]$rml.z
+  
+ print(paste("armla.z:", armla.z))
+  print(paste("brmlb.z:", brmlb.z))
+  print(paste("armlb.z:", armlb.z))
+  print(paste("brmla.z:", brmla.z))
+  
+  armla.mass <- mass.present.site1.df[mass.present.site1.df$ayres.eq == paste0("Armla.", i), ]$rml.mass
+  brmlb.mass <- mass.present.site1.df[mass.present.site1.df$ayres.eq == paste0("Brmlb.", i), ]$rml.mass
+  armlb.mass <- mass.present.site1.df[mass.present.site1.df$ayres.eq == paste0("Armlb.", i), ]$rml.mass
+  brmla.mass <- mass.present.site1.df[mass.present.site1.df$ayres.eq == paste0("Brmla.", i), ]$rml.mass
+ 
+  
+print(paste("armla.mass:", armla.mass))
+  print(paste("brmlb.mass:", brmlb.mass))
+  print(paste("armlb.mass:", armlb.mass))
+  print(paste("brmla.mass:", brmla.mass))
+
+
+  result.z <- (((armla.z + brmlb.z) / (armlb.z + brmla.z)) * 100) - 100
+  result.mass <- (((armla.mass + brmlb.mass) / (armlb.mass + brmla.mass)) * 100) - 100
+
+  print(paste("Length of result.z:", length(result.z)))
+  print(paste("Length of result.mass:", length(result.mass)))
+  
+  # Get the treatment associated with the current index
+  treatment <- mass.present.site1.df[mass.present.site1.df$ayres.eq == paste0("Armla.", i), ]$treatment
+  
+  # Create a data frame with the results, label, and treatment
+  hfai_df <- data.frame(hfai.z = result.z, hfai.mass = result.mass, label = LETTERS[i], treatment = treatment)
+  
+  # Append the data frame to the list
+  hfai_dfs[[i]] <- hfai_df
+}
+
+
+#HFAI (this is a stop and check to verify that values are correct!)
+(((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armla.1",]$rml) + 
+  (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmlb.1",]$rml) / 2) /
+  ((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armlb.1",]$rml) + 
+   (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmla.1",]$rml) / 2)) * 100 - 100
+    
+
+(((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armla.2",]$rml) + 
+  (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmlb.2",]$rml) / 2) /
+  ((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armlb.2",]$rml) + 
+   (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmla.2",]$rml) / 2)) * 100 - 100
+    
+(((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armla.3",]$rml) + 
+  (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmlb.3",]$rml) / 2) /
+  ((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armlb.3",]$rml) + 
+   (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmla.3",]$rml) / 2)) * 100 - 100
+
+(((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armla.4",]$rml) + 
+  (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmlb.4",]$rml) / 2) /
+  ((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armlb.4",]$rml) + 
+   (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmla.4",]$rml) / 2)) * 100 - 100
+
+(((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armla.5",]$rml) + 
+  (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmlb.5",]$rml) / 2) /
+  ((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armlb.5",]$rml) + 
+   (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmla.5",]$rml) / 2)) * 100 - 100
+    
+
+```
+
+
+This is also the proper dataframe
+generate **present**, site a (HOK 2)
+```{r}
+mass.hok2.present.df <- mass.hok2.present.df %>%
+  mutate(ayres = ifelse(hfa == "H", "Aa", ifelse(hfa == "A", "Ba", NA)))
+  #since we're at site a, the notation follows species A at a (Aa) or species B at a (Ba)
+
+###tree numbers are used for pairwise relative mass loss (RML) calculation (e.g., HOK 1-1 with SEK 1-1; this follows similar logic as Ayres Species A to B comparison)
+
+# Define the values you want to loop through
+ayres_values <- c("Aa", "Ba")
+tree_num_values <- c("1", "2", "3", "4", "5")
+
+# Initialize an empty vector to store the results
+rml_values_z <- numeric()
+rml_values_mass <- numeric()
+
+# Loop through the combinations and calculate rml values
+for (ayres in ayres_values) {
+  for (tree_num in tree_num_values) {
+    hok_z_loss <- mass.hok2.present.df$z_score[
+      mass.hok2.present.df$tree_id == "HOK" & mass.hok2.present.df$tree_num == tree_num
+    ]
+    sek_z_loss <- mass.hok2.present.df$z_score[
+      mass.hok2.present.df$tree_id == "SEK" & mass.hok2.present.df$tree_num == tree_num
+    ]
+    
+    rml.z <- ifelse(
+      ayres == "Aa", hok_z_loss / (hok_z_loss + sek_z_loss),
+      ifelse(ayres == "Ba", sek_z_loss / (sek_z_loss + hok_z_loss), NA)
+    )
+    
+    rml_values_z <- c(rml_values_z, rml.z * 100)
+    
+    hok_mass_loss <- mass.hok2.present.df$perc.mass_loss[
+      mass.hok2.present.df$tree_id == "HOK" & mass.hok2.present.df$tree_num == tree_num
+    ]
+    sek_mass_loss <- mass.hok2.present.df$perc.mass_loss[
+      mass.hok2.present.df$tree_id == "SEK" & mass.hok2.present.df$tree_num == tree_num
+    ]
+    
+    rml.mass <- ifelse(
+      ayres == "Aa", hok_mass_loss / (hok_mass_loss + sek_mass_loss),
+      ifelse(ayres == "Ba", sek_mass_loss / (sek_mass_loss + hok_mass_loss), NA)
+    )
+    
+    rml_values_mass <- c(rml_values_mass, rml.mass * 100)
+  }
+}
+
+# Add the rml values to the dataframe
+mass.hok2.present.df$rml.z <- rml_values_z
+mass.hok2.present.df$rml.mass <- rml_values_mass
+
+# Create a new column combining tree_num and ayres with a period in between
+mass.hok2.present.df$ayres.tree <- paste(mass.hok2.present.df$ayres, mass.hok2.present.df$tree_num, sep = ".")
+
+# Create a new column based on Ayres HFAI equation 
+mass.hok2.present.df$ayres.eq <- ifelse(
+  mass.hok2.present.df$ayres.tree %in% paste("Aa.", tree_num_values, sep = ""),
+  paste("Armla", tree_num_values, sep = "."),
+  ifelse(
+    mass.hok2.present.df$ayres.tree %in% paste("Ba.", tree_num_values, sep = ""),
+    paste("Brmla", tree_num_values, sep = "."),
+    NA
+  )
+)
+
+
+```
+
+
+This is also the proper dataframe
+generate **present**, site a (SEK 2)
+```{r}
+mass.sek2.present.df <- mass.sek2.present.df %>%
+  mutate(ayres = ifelse(hfa == "H", "Bb", ifelse(hfa == "A", "Ab", NA)))
+  #since we're at site a, the notation follows species A at a (Aa) or species B at a (Ba)
+
+###tree numbers are used for pairwise relative mass loss (RML) calculation (e.g., HOK 1-1 with SEK 1-1; this follows similar logic as Ayres Species A to B comparison)
+
+# Define the values you want to loop through
+ayres_values <- c("Ab", "Bb")
+tree_num_values <- c("1", "2", "3", "4", "5")
+
+# Initialize an empty vector to store the results
+rml_values_z <- numeric()
+rml_values_mass <- numeric()
+
+# Loop through the combinations and calculate rml values
+for (ayres in ayres_values) {
+  for (tree_num in tree_num_values) {
+    hok_z_loss <- mass.sek2.present.df$z_score[
+      mass.sek2.present.df$tree_id == "HOK" & mass.sek2.present.df$tree_num == tree_num
+    ]
+    sek_z_loss <- mass.sek2.present.df$z_score[
+      mass.sek2.present.df$tree_id == "SEK" & mass.sek2.present.df$tree_num == tree_num
+    ]
+    
+    rml.z <- ifelse(
+      ayres == "Ab", hok_z_loss / (hok_z_loss + sek_z_loss),
+      ifelse(ayres == "Bb", sek_z_loss / (sek_z_loss + hok_z_loss), NA)
+    )
+    
+    rml_values_z <- c(rml_values_z, rml.z * 100)
+    
+    hok_mass_loss <- mass.sek2.present.df$perc.mass_loss[
+      mass.sek2.present.df$tree_id == "HOK" & mass.sek2.present.df$tree_num == tree_num
+    ]
+    sek_mass_loss <- mass.sek2.present.df$perc.mass_loss[
+      mass.sek2.present.df$tree_id == "SEK" & mass.sek2.present.df$tree_num == tree_num
+    ]
+    
+    rml.mass <- ifelse(
+      ayres == "Ab", hok_mass_loss / (hok_mass_loss + sek_mass_loss),
+      ifelse(ayres == "Bb", sek_mass_loss / (sek_mass_loss + hok_mass_loss), NA)
+    )
+    
+    rml_values_mass <- c(rml_values_mass, rml.mass * 100)
+  }
+}
+
+# Add the rml values to the dataframe
+mass.sek2.present.df$rml.z <- rml_values_z
+mass.sek2.present.df$rml.mass <- rml_values_mass
+
+# Create a new column combining tree_num and ayres with a period in between
+mass.sek2.present.df$ayres.tree <- paste(mass.sek2.present.df$ayres, mass.sek2.present.df$tree_num, sep = ".")
+
+# Create a new column based on Ayres HFAI equation 
+mass.sek2.present.df$ayres.eq <- ifelse(
+  mass.sek2.present.df$ayres.tree %in% paste("Ab.", tree_num_values, sep = ""),
+  paste("Armlb", tree_num_values, sep = "."),
+  ifelse(
+    mass.sek2.present.df$ayres.tree %in% paste("Bb.", tree_num_values, sep = ""),
+    paste("Brmlb", tree_num_values, sep = "."),
+    NA
+  )
+)
+
+
+```
+
+
+This is the proper dataframe
+merge **present**, site a and b (aka HOK 1 and SEK 1) dataframes 
+```{r}
+#merge both present site 1 dataframes
+mass.present.site1.df=rbind(mass.hok1.present.df, mass.sek1.present.df)
+
+# Create an empty data frame to store the results
+hfai.df <- data.frame(hfai.z = numeric(0), hfai.mass = numeric(0), label = character(0), treatment = character(0))
+
+# Create an empty list to store the data frames
+hfai_dfs <- list()
+
+# Loop through each set of equations and calculate the values
+for (i in 1:5) {
+  armla.z <- mass.present.site1.df[mass.present.site1.df$ayres.eq == paste0("Armla.", i), ]$rml.z
+  brmlb.z <- mass.present.site1.df[mass.present.site1.df$ayres.eq == paste0("Brmlb.", i), ]$rml.z
+  armlb.z <- mass.present.site1.df[mass.present.site1.df$ayres.eq == paste0("Armlb.", i), ]$rml.z
+  brmla.z <- mass.present.site1.df[mass.present.site1.df$ayres.eq == paste0("Brmla.", i), ]$rml.z
+  
+ print(paste("armla.z:", armla.z))
+  print(paste("brmlb.z:", brmlb.z))
+  print(paste("armlb.z:", armlb.z))
+  print(paste("brmla.z:", brmla.z))
+  
+  armla.mass <- mass.present.site1.df[mass.present.site1.df$ayres.eq == paste0("Armla.", i), ]$rml.mass
+  brmlb.mass <- mass.present.site1.df[mass.present.site1.df$ayres.eq == paste0("Brmlb.", i), ]$rml.mass
+  armlb.mass <- mass.present.site1.df[mass.present.site1.df$ayres.eq == paste0("Armlb.", i), ]$rml.mass
+  brmla.mass <- mass.present.site1.df[mass.present.site1.df$ayres.eq == paste0("Brmla.", i), ]$rml.mass
+ 
+  
+print(paste("armla.mass:", armla.mass))
+  print(paste("brmlb.mass:", brmlb.mass))
+  print(paste("armlb.mass:", armlb.mass))
+  print(paste("brmla.mass:", brmla.mass))
+
+
+  result.z <- (((armla.z + brmlb.z) / (armlb.z + brmla.z)) * 100) - 100
+  result.mass <- (((armla.mass + brmlb.mass) / (armlb.mass + brmla.mass)) * 100) - 100
+
+  print(paste("Length of result.z:", length(result.z)))
+  print(paste("Length of result.mass:", length(result.mass)))
+  
+  # Get the treatment associated with the current index
+  treatment <- mass.present.site1.df[mass.present.site1.df$ayres.eq == paste0("Armla.", i), ]$treatment
+  
+  # Create a data frame with the results, label, and treatment
+  hfai_df <- data.frame(hfai.z = result.z, hfai.mass = result.mass, label = LETTERS[i], treatment = treatment)
+  
+  # Append the data frame to the list
+  hfai_dfs[[i]] <- hfai_df
+}
+# Combine the list of data frames into a single data frame
+hfai.df <- do.call(rbind, hfai_dfs)
+
+#HFAI (this is a stop and check to verify that values are correct!)
+(((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armla.1",]$rml) + 
+  (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmlb.1",]$rml) / 2) /
+  ((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armlb.1",]$rml) + 
+   (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmla.1",]$rml) / 2)) * 100 - 100
+    
+
+(((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armla.2",]$rml) + 
+  (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmlb.2",]$rml) / 2) /
+  ((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armlb.2",]$rml) + 
+   (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmla.2",]$rml) / 2)) * 100 - 100
+    
+(((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armla.3",]$rml) + 
+  (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmlb.3",]$rml) / 2) /
+  ((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armlb.3",]$rml) + 
+   (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmla.3",]$rml) / 2)) * 100 - 100
+
+(((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armla.4",]$rml) + 
+  (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmlb.4",]$rml) / 2) /
+  ((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armlb.4",]$rml) + 
+   (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmla.4",]$rml) / 2)) * 100 - 100
+
+(((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armla.5",]$rml) + 
+  (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmlb.5",]$rml) / 2) /
+  ((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armlb.5",]$rml) + 
+   (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmla.5",]$rml) / 2)) * 100 - 100
+    
+
+```
+
+This is the proper dataframe
+merge **present**, site a and b (aka HOK 2 and SEK 2) dataframes 
+```{r}
+#merge both present site 1 dataframes
+mass.present.site2.df=rbind(mass.hok2.present.df, mass.sek2.present.df)
+
+# Calculate the index of the last label in the existing hfai.df
+last_label <- tail(hfai.df$label, 1)
+last_letter_index <- match(last_label, LETTERS)
+
+# Create an empty list to store the new data frames
+hfai_dfs <- list()
+
+# Loop through each set of equations and calculate the values
+for (i in 1:5) {
+  armla.z <- mass.present.site2.df[mass.present.site2.df$ayres.eq == paste0("Armla.", i), ]$rml.z
+  brmlb.z <- mass.present.site2.df[mass.present.site2.df$ayres.eq == paste0("Brmlb.", i), ]$rml.z
+  armlb.z <- mass.present.site2.df[mass.present.site2.df$ayres.eq == paste0("Armlb.", i), ]$rml.z
+  brmla.z <- mass.present.site2.df[mass.present.site2.df$ayres.eq == paste0("Brmla.", i), ]$rml.z
+  
+  armla.mass <- mass.present.site2.df[mass.present.site2.df$ayres.eq == paste0("Armla.", i), ]$rml.mass
+  brmlb.mass <- mass.present.site2.df[mass.present.site2.df$ayres.eq == paste0("Brmlb.", i), ]$rml.mass
+  armlb.mass <- mass.present.site2.df[mass.present.site2.df$ayres.eq == paste0("Armlb.", i), ]$rml.mass
+  brmla.mass <- mass.present.site2.df[mass.present.site2.df$ayres.eq == paste0("Brmla.", i), ]$rml.mass
+  
+  result.z <- (((armla.z + brmlb.z) / (armlb.z + brmla.z)) * 100) - 100
+  result.mass <- (((armla.mass + brmlb.mass) / (armlb.mass + brmla.mass)) * 100) - 100
+
+  # Get the treatment associated with the current index
+  treatment <- mass.present.site2.df[mass.present.site2.df$ayres.eq == paste0("Armla.", i), ]$treatment
+  
+  # Determine the next label based on the last label index
+  next_label <- LETTERS[last_letter_index + i]
+  
+  # Create a data frame with the new results, label, and treatment
+  hfai_df <- data.frame(hfai.z = result.z, hfai.mass = result.mass, label = next_label, treatment = treatment)
+  
+  # Append the data frame to the list
+  hfai_dfs[[i]] <- hfai_df
+}
+
+# Combine the list of new data frames with the existing hfai.df
+hfai.df <- rbind(hfai.df, do.call(rbind, hfai_dfs))
+
+
+
+
+```
+
+another plot check
+```{r}
+######## using z score
+
+hfai.z.plot=ggplot(hfai.df, aes(x = reorder(label, hfai.z), y = hfai.z)) +
+  geom_bar(stat = "identity", fill = "white", color = "black") +
+  geom_col_pattern(
+    aes(pattern = treatment),
+    colour = "black",
+    pattern_fill = "black",
+    pattern_angle = 45,
+    pattern_density = 0.1,
+    pattern_spacing = 0.01,
+    position = position_dodge2(preserve = 'single'),
+    alpha = 0.2  # Adjust the alpha value to control transparency
+  ) +
+  scale_pattern_manual(
+    values = c("none", "stripe"),
+    guide = guide_legend(override.aes = list(fill = "grey70")) # <- make lighter
+  ) +
+  xlab("") +
+  ylab("Home-field advantage (% faster decomposition at home)") +
+coord_flip() +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_blank(),
+    legend.position = "right",
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    plot.background = element_blank()
+  )
+
+hfai.z.plot
+
+########### using mass loss 
+
+
+hfai.mass.plot=ggplot(hfai.df, aes(x = reorder(label, hfai.mass), y = hfai.mass)) +
+  geom_bar(stat = "identity", fill = "white", color = "black") +
+  geom_col_pattern(
+    aes(pattern = treatment),
+    colour = "black",
+    pattern_fill = "black",
+    pattern_angle = 45,
+    pattern_density = 0.1,
+    pattern_spacing = 0.01,
+    position = position_dodge2(preserve = 'single'),
+    alpha = 0.2  # Adjust the alpha value to control transparency
+  ) +
+  scale_pattern_manual(
+    values = c("none", "stripe"),
+    guide = guide_legend(override.aes = list(fill = "grey70")) # <- make lighter
+  ) +
+  xlab("") +
+  ylab("Home-field advantage (% faster decomposition at home)") +
+coord_flip() +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_blank(),
+    legend.position = "right",
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    plot.background = element_blank()
+  )
+
+hfai.mass.plot
+
+ggsave("figures/hfai.plot.pdf", hfai.plot, width = 26, height = 8)
+
+```
+
+```{r}
+mass.sek1.present.df <- mass.sek1.present.df %>%
   mutate(ayres = ifelse(hfa == "H", "Bb", ifelse(hfa == "A", "Ab", NA)))
   #since we're at site b now, the notation follows species A at b (Ab) or species B at b (Bb)
 
@@ -1908,8 +2694,8 @@ rml_values <- numeric()
 # Loop through the combinations and calculate rml values
 for (ayres in ayres_values) {
   for (tree_num in tree_num_values) {
-    hok_mass_loss <- mass.p.sek1.df$mass_loss[mass.p.sek1.df$tree_id == "HOK" & mass.p.sek1.df$tree_num == tree_num]
-    sek_mass_loss <- mass.p.sek1.df$mass_loss[mass.p.sek1.df$tree_id == "SEK" & mass.p.sek1.df$tree_num == tree_num]
+    hok_mass_loss <- mass.sek1.present.df$z_score[mass.sek1.present.df$tree_id == "HOK" & mass.sek1.present.df$tree_num == tree_num]
+    sek_mass_loss <- mass.sek1.present.df$z_score[mass.sek1.present.df$tree_id == "SEK" & mass.sek1.present.df$tree_num == tree_num]
     
     rml <- ifelse(ayres == "Ab", hok_mass_loss / (hok_mass_loss + sek_mass_loss),
                   ifelse(ayres == "Bb", sek_mass_loss / (sek_mass_loss + hok_mass_loss),
@@ -1920,9 +2706,9 @@ for (ayres in ayres_values) {
 }
 
 ##check the calculations (Armla.1-Armla.5)
-((mass.p.sek1.df[mass.p.sek1.df$ayres.tree == "Aa.1",]$mass_loss) /
-  (mass.p.sek1.df[mass.p.sek1.df$ayres.tree == "Aa.1",]$mass_loss +
-   mass.p.sek1.df[mass.p.sek1.df$ayres.tree == "Ba.1",]$mass_loss)) * 100
+((mass.sek1.present.df[mass.p.sek1.df$ayres.tree == "Aa.1",]$mass_loss) /
+  (mass.sek1.present.df[mass.p.sek1.df$ayres.tree == "Aa.1",]$mass_loss +
+   mass.sek1.present.df[mass.p.sek1.df$ayres.tree == "Ba.1",]$mass_loss)) * 100
 
 ((mass.p.sek1.df[mass.p.sek1.df$ayres.tree == "Aa.2",]$mass_loss) /
   (mass.p.sek1.df[mass.p.sek1.df$ayres.tree == "Aa.2",]$mass_loss +
@@ -1969,71 +2755,22 @@ for (ayres in ayres_values) {
    mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.5",]$mass_loss)) * 100
 
 # Add the rml values to the dataframe
-mass.p.sek1.df$rml <- rml_values
+mass.sek1.present.df$rml <- rml_values
 # Create a new column combining tree_num and ayres with a period in between
-mass.p.sek1.df$ayres.tree <- paste(mass.p.sek1.df$ayres, mass.p.sek1.df$tree_num, sep = ".")
+mass.sek1.present.df$ayres.tree <- paste(mass.sek1.present.df$ayres, mass.sek1.present.df$tree_num, sep = ".")
 # Create a new column based on Ayres HFAI equation 
-mass.p.sek1.df$ayres.eq <- ifelse(mass.p.sek1.df$ayres.tree %in% paste("Ab.", tree_num_values, sep = ""), 
+mass.sek1.present.df$ayres.eq <- ifelse(mass.sek1.present.df$ayres.tree %in% paste("Ab.", tree_num_values, sep = ""), 
                                      paste("Armlb", tree_num_values, sep = "."), 
-                                     ifelse(mass.p.sek1.df$ayres.tree %in% paste("Bb.", tree_num_values, sep = ""), 
+                                     ifelse(mass.sek1.present.df$ayres.tree %in% paste("Bb.", tree_num_values, sep = ""), 
                                             paste("Brmlb", tree_num_values, sep = "."), 
                                             NA))
   #Armlb = species A rml at b
   #Brmlb= species B rml at b
 ```
 
-merge **present**, site a and b (aka HOK 1 and SEK 1) dataframes 
-```{r}
-#merge both present site 1 dataframes
-mass.p.site1.df=rbind(mass.p.hoko1.df, mass.p.sek1.df)
 
-# Create an empty data frame to store the results
-hfai.df <- data.frame(hfai = numeric(0))
-# Loop through each set of equations and calculate the values
-for (i in 1:5) {
-  armla <- mass.p.site1.df[mass.p.site1.df$ayres.eq == paste0("Armla.", i), ]$rml
-  brmlb <- mass.p.site1.df[mass.p.site1.df$ayres.eq == paste0("Brmlb.", i), ]$rml
-  armlb <- mass.p.site1.df[mass.p.site1.df$ayres.eq == paste0("Armlb.", i), ]$rml
-  brmla <- mass.p.site1.df[mass.p.site1.df$ayres.eq == paste0("Brmla.", i), ]$rml
-  
-  result <- (((armla + brmlb / 2) / (armlb + brmla / 2)) * 100) - 100
-  
-  # Get the treatment associated with the current index
-  treatment <- mass.p.site1.df[mass.p.site1.df$ayres.eq == paste0("Armla.", i), ]$treatment
-  
-  # Append the result, label, and treatment to the data frame
-  hfai.df <- rbind(hfai.df, data.frame(hfai = result, label = LETTERS[i], treatment = treatment))
-}
 
-#HFAI (this is a stop and check to verify that values are correct!)
-(((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armla.1",]$rml) + 
-  (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmlb.1",]$rml) / 2) /
-  ((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armlb.1",]$rml) + 
-   (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmla.1",]$rml) / 2)) * 100 - 100
-    
 
-(((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armla.2",]$rml) + 
-  (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmlb.2",]$rml) / 2) /
-  ((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armlb.2",]$rml) + 
-   (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmla.2",]$rml) / 2)) * 100 - 100
-    
-(((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armla.3",]$rml) + 
-  (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmlb.3",]$rml) / 2) /
-  ((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armlb.3",]$rml) + 
-   (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmla.3",]$rml) / 2)) * 100 - 100
-
-(((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armla.4",]$rml) + 
-  (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmlb.4",]$rml) / 2) /
-  ((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armlb.4",]$rml) + 
-   (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmla.4",]$rml) / 2)) * 100 - 100
-
-(((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armla.5",]$rml) + 
-  (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmlb.5",]$rml) / 2) /
-  ((mass.p.site1.df[mass.p.site1.df$ayres.eq=="Armlb.5",]$rml) + 
-   (mass.p.site1.df[mass.p.site1.df$ayres.eq=="Brmla.5",]$rml) / 2)) * 100 - 100
-    
-
-```
 
 ## Now we'll tackle absent:
 generate **absent**, site a (HOK 1)
@@ -2252,12 +2989,12 @@ ggplot(hfai.df, aes(x = label, y = hfai)) +
 
 ```
 
+
+
 generate **present**, site a (HOK 2)
 ```{r}
-mass.p.hoko2.df=mass.df%>%
-  filter(treatment == "P" & deploy=="HOK" & site_num=="2")
 #now create a new column to have some reference to the Ayres et al. (2009) paper (species A= hoko trees, species B = sekiu trees)
-mass.p.hoko2.df <- mass.p.hoko2.df %>%
+mass.hok2.present.df <- mass.hok2.present.df %>%
   mutate(ayres = ifelse(hfa == "H", "Aa", ifelse(hfa == "A", "Ba", NA)))
   #since we're at site a, the notation follows species A at a (Aa) or species B at a (Ba)
 
@@ -2273,8 +3010,8 @@ rml_values <- numeric()
 # Loop through the combinations and calculate rml values
 for (ayres in ayres_values) {
   for (tree_num in tree_num_values) {
-    hok_mass_loss <- mass.p.hoko2.df$mass_loss[mass.p.hoko2.df$tree_id == "HOK" & mass.p.hoko2.df$tree_num == tree_num]
-    sek_mass_loss <- mass.p.hoko2.df$mass_loss[mass.p.hoko2.df$tree_id == "SEK" & mass.p.hoko2.df$tree_num == tree_num]
+    hok_mass_loss <- mass.hok2.present.df$z_score[mass.hok2.present.df$tree_id == "HOK" & mass.hok2.present.df$tree_num == tree_num]
+    sek_mass_loss <- mass.hok2.present.df$z_score[mass.hok2.present.df$tree_id == "SEK" & mass.hok2.present.df$tree_num == tree_num]
     
     rml <- ifelse(ayres == "Aa", hok_mass_loss / (hok_mass_loss + sek_mass_loss),
                   ifelse(ayres == "Ba", sek_mass_loss / (sek_mass_loss + hok_mass_loss),
@@ -2284,13 +3021,13 @@ for (ayres in ayres_values) {
   }
 }
 # Add the rml values to the dataframe
-mass.p.hoko2.df$rml <- rml_values
+mass.hok2.present.df$rml <- rml_values
 # Create a new column combining tree_num and ayres with a period in between
-mass.p.hoko2.df$ayres.tree <- paste(mass.p.hoko2.df$ayres, mass.p.hoko2.df$tree_num, sep = ".")
+mass.hok2.present.df$ayres.tree <- paste(mass.hok2.present.df$ayres, mass.hok2.present.df$tree_num, sep = ".")
 # Create a new column based on Ayres HFAI equation 
-mass.p.hoko2.df$ayres.eq <- ifelse(mass.p.hoko2.df$ayres.tree %in% paste("Aa.", tree_num_values, sep = ""), 
+mass.hok2.present.df$ayres.eq <- ifelse(mass.hok2.present.df$ayres.tree %in% paste("Aa.", tree_num_values, sep = ""), 
                                      paste("Armla", tree_num_values, sep = "."), 
-                                     ifelse(mass.p.hoko1.df$ayres.tree %in% paste("Ba.", tree_num_values, sep = ""), 
+                                     ifelse(mass.hok2.present.df$ayres.tree %in% paste("Ba.", tree_num_values, sep = ""), 
                                             paste("Brmla", tree_num_values, sep = "."), 
                                             NA))
   #Armla = species A rml at a 
@@ -2299,10 +3036,8 @@ mass.p.hoko2.df$ayres.eq <- ifelse(mass.p.hoko2.df$ayres.tree %in% paste("Aa.", 
 
 generate **present**, site b (SEK 2)
 ```{r}
-mass.p.sek2.df=mass.df%>%
-  filter(treatment == "P" & deploy=="SEK" & site_num=="2")
 #now create a new column to have some reference to the Ayres et al. (2009) paper (species A= hoko trees, species B = sekiu trees)
-mass.p.sek2.df <- mass.p.sek2.df %>%
+mass.sek2.present.df <- mass.sek2.present.df %>%
   mutate(ayres = ifelse(hfa == "H", "Bb", ifelse(hfa == "A", "Ab", NA)))
   #since we're at site b now, the notation follows species A at b (Ab) or species B at b (Bb)
 
@@ -2319,8 +3054,8 @@ rml_values <- numeric()
 # Loop through the combinations and calculate rml values
 for (ayres in ayres_values) {
   for (tree_num in tree_num_values) {
-    hok_mass_loss <- mass.p.sek2.df$mass_loss[mass.p.sek2.df$tree_id == "HOK" & mass.p.sek2.df$tree_num == tree_num]
-    sek_mass_loss <- mass.p.sek2.df$mass_loss[mass.p.sek2.df$tree_id == "SEK" & mass.p.sek2.df$tree_num == tree_num]
+    hok_mass_loss <- mass.sek2.present.df$z_score[mass.sek2.present.df$tree_id == "HOK" & mass.sek2.present.df$tree_num == tree_num]
+    sek_mass_loss <- mass.sek2.present.df$z_score[mass.sek2.present.df$tree_id == "SEK" & mass.p.sek2.df$tree_num == tree_num]
     
     rml <- ifelse(ayres == "Ab", hok_mass_loss / (hok_mass_loss + sek_mass_loss),
                   ifelse(ayres == "Bb", sek_mass_loss / (sek_mass_loss + hok_mass_loss),
@@ -2330,13 +3065,13 @@ for (ayres in ayres_values) {
   }
 }
 # Add the rml values to the dataframe
-mass.p.sek2.df$rml <- rml_values
+mass.sek2.present.df$rml <- rml_values
 # Create a new column combining tree_num and ayres with a period in between
-mass.p.sek2.df$ayres.tree <- paste(mass.p.sek2.df$ayres, mass.p.sek2.df$tree_num, sep = ".")
+mass.sek2.present.df$ayres.tree <- paste(mass.sek2.present.df$ayres, mass.sek2.present.df$tree_num, sep = ".")
 # Create a new column based on Ayres HFAI equation 
-mass.p.sek2.df$ayres.eq <- ifelse(mass.p.sek2.df$ayres.tree %in% paste("Ab.", tree_num_values, sep = ""), 
+mass.sek2.present.df$ayres.eq <- ifelse(mass.sek2.present.df$ayres.tree %in% paste("Ab.", tree_num_values, sep = ""), 
                                      paste("Armlb", tree_num_values, sep = "."), 
-                                     ifelse(mass.p.sek1.df$ayres.tree %in% paste("Bb.", tree_num_values, sep = ""), 
+                                     ifelse(mass.sek2.present.df$ayres.tree %in% paste("Bb.", tree_num_values, sep = ""), 
                                             paste("Brmlb", tree_num_values, sep = "."), 
                                             NA))
   #Armlb = species A rml at b
@@ -2346,7 +3081,7 @@ mass.p.sek2.df$ayres.eq <- ifelse(mass.p.sek2.df$ayres.tree %in% paste("Ab.", tr
 merge **present**, site a and b (aka HOK 2 and SEK 2) dataframes 
 ```{r}
 #merge both present site 1 dataframes
-mass.p.site2.df=rbind(mass.p.hoko2.df, mass.p.sek2.df)
+mass.present.site2.df=rbind(mass.hok2.present.df, mass.sek2.present.df)
 
 # Calculate the last letter index based on the existing data frame
 last_label <- tail(hfai.df$label, 1)
@@ -2354,15 +3089,15 @@ last_letter_index <- match(last_label, LETTERS)
 
 # Loop through each set of equations and calculate the values
 for (i in 1:5) {
-  armla <- mass.p.site2.df[mass.p.site2.df$ayres.eq == paste0("Armla.", i), ]$rml
-  brmlb <- mass.p.site2.df[mass.p.site2.df$ayres.eq == paste0("Brmlb.", i), ]$rml
-  armlb <- mass.p.site2.df[mass.p.site2.df$ayres.eq == paste0("Armlb.", i), ]$rml
-  brmla <- mass.p.site2.df[mass.p.site2.df$ayres.eq == paste0("Brmla.", i), ]$rml
+  armla <- mass.present.site2.df[mass.present.site2.df$ayres.eq == paste0("Armla.", i), ]$rml
+  brmlb <- mass.present.site2.df[mass.present.site2.df$ayres.eq == paste0("Brmlb.", i), ]$rml
+  armlb <- mass.present.site2.df[mass.present.site2.df$ayres.eq == paste0("Armlb.", i), ]$rml
+  brmla <- mass.present.site2.df[mass.present.site2.df$ayres.eq == paste0("Brmla.", i), ]$rml
   
   result <- (((armla + brmlb / 2) / (armlb + brmla / 2)) * 100) - 100
   
   # Get the treatment associated with the current index
-  treatment <- mass.p.site2.df[mass.p.site2.df$ayres.eq == paste0("Armla.", i), ]$treatment
+  treatment <- mass.present.site2.df[mass.present.site2.df$ayres.eq == paste0("Armla.", i), ]$treatment
   
   # Determine the next label based on the last label index
   next_label <- LETTERS[last_letter_index + i]
@@ -2400,6 +3135,7 @@ for (i in 1:5) {
     
 
 ```
+
 
 ## Now we'll tackle absent:
 generate **absent**, site a (HOK 2)
@@ -2546,64 +3282,7 @@ for (i in 1:5) {
 
 ```
 
-another plot check
-```{r}
-ggplot(hfai.df, aes(x = reorder(label, hfai), y = hfai, fill = treatment)) +
-  geom_bar(stat = "identity") +
-  xlab("") +
-  ylab("Home-field advantage (% faster decomposition at home)") +
-  coord_flip() +
-  theme_minimal() +
-  theme(
-    axis.text.y = element_blank(),
-    legend.position = "right",
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.border = element_blank(),
-    panel.background = element_blank(),
-    plot.background = element_blank()
-  )
 
-# Filter out outliers
-filtered.hfai.data <- hfai.df %>%
-  filter(hfai >= -300, hfai <= 300)
-
-#final plot looks good
-  #no color, but shading with slight opacity
-hfai.plot=ggplot(filtered.hfai.data, aes(x = reorder(label, hfai), y = hfai)) +
-  geom_bar(stat = "identity", fill = "white", color = "black") +
-  geom_col_pattern(
-    aes(pattern = treatment),
-    colour = "black",
-    pattern_fill = "black",
-    pattern_angle = 45,
-    pattern_density = 0.1,
-    pattern_spacing = 0.01,
-    position = position_dodge2(preserve = 'single'),
-    alpha = 0.2  # Adjust the alpha value to control transparency
-  ) +
-  scale_pattern_manual(
-    values = c("none", "stripe"),
-    guide = guide_legend(override.aes = list(fill = "grey70")) # <- make lighter
-  ) +
-  xlab("") +
-  ylab("Home-field advantage (% faster decomposition at home)") +
-coord_flip() +
-  theme_minimal() +
-  theme(
-    axis.text.y = element_blank(),
-    legend.position = "right",
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.border = element_blank(),
-    panel.background = element_blank(),
-    plot.background = element_blank()
-  )
-
-hfai.plot
-ggsave("figures/hfai.plot.pdf", hfai.plot, width = 26, height = 8)
-
-```
 
 
 
