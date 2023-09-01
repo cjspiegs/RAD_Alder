@@ -2887,7 +2887,7 @@ hfai.mass.all.plot=ggplot(hfai.df, aes(x = reorder(label, hfai.mass), y = hfai.m
 hfai.mass.all.plot
 
 
-ggsave("figures/hfai.mass.plot.pdf", hfai.mass.plot, width = 14, height = 10)
+ggsave("figures/hfai.mass.all.plot.pdf", hfai.mass.all.plot, width = 14, height = 10)
 ```
 
 
