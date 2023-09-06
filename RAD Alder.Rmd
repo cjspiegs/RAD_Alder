@@ -2271,7 +2271,6 @@ generate **present**, site a (HOK 2)
 mass.hok2.present.df <- mass.hok2.present.df %>%
   mutate(ayres = ifelse(hfa == "H", "Aa", ifelse(hfa == "A", "Ba", NA)))
   #since we're at site a, the notation follows species A at a (Aa) or species B at a (Ba)
-mass.hok2.present.df
 # Create a new column combining tree_num and ayres with a period in between
 mass.hok2.present.df$ayres.tree <- paste(mass.hok2.present.df$ayres, mass.hok2.present.df$tree_num, sep = ".")
 
@@ -2330,12 +2329,20 @@ for (X in X_values) {
 armla_df_2 <- data.frame(names = names_vector_armla, values = values_vector_armla, treatment = treatment_vector_armla)
 brmla_df_2 <- data.frame(names = names_vector_brmla, values = values_vector_brmla, treatment = treatment_vector_brmla)
 
+
+
 # View the resulting dataframes
 print(armla_df_2)
 print(brmla_df_2)
 
 armla.brmla.df_2=rbind(armla_df_2, brmla_df_2)
-armla.brmla.df_2
+View(armla.brmla.df_2)
+
+
+###### check the math
+
+(mass.hok2.present.df[mass.hok2.present.df$ayres.tree=="Aa.1",]$perc.mass_loss_c/(mass.hok2.present.df[mass.hok2.present.df$ayres.tree=="Aa.1",]$perc.mass_loss_c + mass.hok2.present.df[mass.hok2.present.df$ayres.tree=="Ba.3",]$perc.mass_loss_c))*100
+
 
 ```
 
@@ -2657,18 +2664,144 @@ result_ab_df_2
 NEW: use this! merging all dataframes (Sites 1 and 2; includes P and AB)
 merge all sites and plot
 ```{r}
-#combine sites 1 and 2
+#combine sites 1 and 2 including P and AB
 hfai.allsites.df=rbind(result_df_1, result_df_2, result_ab_df_1, result_ab_df_2)
-# Calculate the total number of positive and negative values
+
+
+
+####################  P ONLY ###################
+#filter P treatment only for HFA effect
+hfai.present.allsites.df=hfai.allsites.df%>%
+  filter(treatment == "P")
+hfai.present.allsites.df
+
+# Filter the dataframe to include only positive cases
+positive_present_df <- hfai.present.allsites.df[hfai.present.allsites.df$values > 0, ]
+
+# Calculate the mean and standard error (SE)
+mean_hfa <- mean(positive_present_df$values)
+se_hfa <- sd(positive_present_df$values) / sqrt(nrow(positive_present_df))
+# Perform a t-test
+t_test_present_result <- t.test(positive_present_df$values, mu = 0)
+t_test_present_result
+
+# Format the t-test result
+t_test_label <- paste("p =", formatC(t_test_present_result$p.value, format = "e", digits = 2), ",", "t-test =", round(t_test_present_result$statistic, 2))
+# Format the t-test result
+p_value <- t_test_present_result$p.value
+formatted_p_value <- if (p_value < 0.0001) {
+  "p < 0.0001"
+} else {
+  paste("p =", formatC(p_value, digits = 1))
+}
+
+
+#positive and negative values
+total_positive <- sum(hfai.present.allsites.df$values > 0)
+total_negative <- sum(hfai.present.allsites.df$values < 0)
+# Calculate the percentage of positive values relative to negative
+percentage_positive <- (total_positive / (total_positive + total_negative)) * 100
+percentage_negative <- (total_negative / (total_negative + total_positive)) * 100
+
+
+#just P treatment
+hfai.present.allsites.plot=ggplot(hfai.present.allsites.df, aes(x = reorder(names, values), y = values, fill = treatment)) +
+  geom_bar(stat = "identity", position ="dodge", alpha = 0.3) +
+  scale_fill_viridis_d()+
+    labs(subtitle = formatted_p_value) +  # Use the formatted t-test result in the subtitle
+  xlab("reciprocated pairs") +
+  ylab("home-field advantage (% faster decomposition at home)") +
+  theme_minimal() +
+  theme(text = element_text(size =20), 
+    axis.text.x = element_blank(),
+    legend.position = "right",
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    plot.background = element_blank())+  
+  geom_vline(xintercept = 14.5, linetype = "dashed", color = "red") +
+scale_y_continuous(limits = c(-20, 70), breaks = seq(-20, 70, by = 10))
+
+#just P treatment with coord_flip
+hfai.present.allsites.plot_flipped=ggplot(hfai.present.allsites.df, aes(x = reorder(names, values), y = values, fill = treatment)) +
+  scale_fill_manual(values = "grey")+
+  geom_bar(stat = "identity", position ="dodge", alpha = 0.6) +
+  coord_flip()+
+  xlab("") +
+  ylab("home-field advantage (% faster decomposition at home)") +
+  theme_minimal() +
+  theme(text = element_text(size =20), 
+    axis.text.y = element_blank(),
+    legend.position = "right",
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    plot.background = element_blank())+  
+  geom_vline(xintercept = 14.5, linetype = "dashed", color = "red") +
+scale_y_continuous(limits = c(-20, 70), breaks = seq(-20, 70, by = 10))
+
+ggsave("figures/hfai.present.allsites.plot_flipped.pdf", hfai.present.allsites.plot_flipped, width = 14, height = 10)
+
+
+######################### BOTH P and AB #########################################
+
+# Filter the dataframe to include only positive cases
+positive_all_df <- hfai.allsites.df[hfai.allsites.df$values > 0, ]
+
+# Calculate the mean and standard error (SE)
+mean_hfa <- mean(positive_all_df$values)
+se_hfa <- sd(positive_all_df$values) / sqrt(nrow(positive_all_df))
+# Perform a t-test
+t_test_present_result <- t.test(positive_all_df$values, mu = 0)
+t_test_present_result
+
+# Format the t-test result
+t_test_label <- paste("p =", formatC(t_test_present_result$p.value, format = "e", digits = 2), ",", "t-test =", round(t_test_present_result$statistic, 2))
+# Format the t-test result
+p_value <- t_test_present_result$p.value
+formatted_p_value <- if (p_value < 0.0001) {
+  "p < 0.0001"
+} else {
+  paste("p =", formatC(p_value, digits = 1))
+}
+
+
+# Filter the dataframe for "AB" and "P" treatments
+ab_p_subset <- hfai.allsites.df[hfai.allsites.df$treatment %in% c("AB", "P"), ]
+
+# Further filter to include only rows where values are greater than 0
+positive_values_subset <- ab_p_subset[ab_p_subset$values > 0, ]
+
+# Calculate the proportion of values greater than 0 for "AB"
+prop_positive_ab <- sum(positive_values_subset$treatment == "AB") / nrow(positive_values_subset)
+
+# Calculate the proportion of values greater than 0 for "P"
+prop_positive_p <- sum(positive_values_subset$treatment == "P") / nrow(positive_values_subset)
+
+# Calculate mean and SE for 'AB' and 'P' values individually
+mean_ab <- mean(positive_values_subset[positive_values_subset$treatment == "AB", "values"])
+se_ab <- sd(positive_values_subset[positive_values_subset$treatment == "AB", "values"]) / sqrt(sum(positive_values_subset$treatment == "AB"))
+
+mean_p <- mean(positive_values_subset[positive_values_subset$treatment == "P", "values"])
+se_p <- sd(positive_values_subset[positive_values_subset$treatment == "P", "values"]) / sqrt(sum(positive_values_subset$treatment == "P"))
+
+
+# Perform a t-test
+t_test_result <- t.test(positive_values_subset[positive_values_subset$treatment == "AB", "values"], mu = 0)
+t_test_result
+
+#positive and negative values
 total_positive <- sum(hfai.allsites.df$values > 0)
 total_negative <- sum(hfai.allsites.df$values < 0)
 # Calculate the percentage of positive values relative to negative
 percentage_positive <- (total_positive / (total_positive + total_negative)) * 100
 percentage_negative <- (total_negative / (total_negative + total_positive)) * 100
 
-percentage_positive
 
-hfai.allsites.plot=ggplot(hfai.allsites.df, aes(x = reorder(names, values), y = values, fill = treatment)) +
+#both P and AB treatments
+ggplot(hfai.allsites.df, aes(x = reorder(names, values), y = values, fill = treatment)) +
   geom_bar(stat = "identity", position ="dodge", alpha = 0.5) +
   scale_fill_viridis_d()+
   xlab("reciprocated pairs") +
@@ -2681,63 +2814,62 @@ hfai.allsites.plot=ggplot(hfai.allsites.df, aes(x = reorder(names, values), y = 
     panel.grid.minor = element_blank(),
     panel.border = element_blank(),
     panel.background = element_blank(),
-    plot.background = element_blank()
-  )+  geom_vline(xintercept = 45, linetype = "dashed", color = "red") +
-  annotate(geom = "text", x = 60, y = 50, label = paste(round(percentage_positive), "% decompose faster at home"), color = "black", size = 5)
+    plot.background = element_blank())+  
+  geom_vline(xintercept = 45, linetype = "dashed", color = "red") 
 
-######## using mass loss
-min(hfai.allsites.df$values)
+#just P treatment with coord_flip
+min(hfai.allsites.df$values) 
 max(hfai.allsites.df$values)
-
-# Calculate the total number of positive and negative values
-total_positive <- sum(hfai.allsites.df_filtered$values > 0)
-total_negative <- sum(hfai.allsites.df_filtered$values < 0)
-
-#filter outlier
-hfai.allsites.df_filtered= data.frame(hfai.allsites.df[hfai.allsites.df$values > -46 & hfai.allsites.df$values <70, ])
-# Calculate the total number of positive and negative values
-total_positive <- sum(hfai.allsites.df_filtered$values > 0)
-total_negative <- sum(hfai.allsites.df_filtered$values < 0)
-
-# Calculate the percentage of positive values relative to negative
-percentage_positive <- (total_positive / (total_positive + total_negative)) * 100
-percentage_negative <- (total_negative / (total_negative + total_positive)) * 100
-
-percentage_positive
-percentage_negative
-
-hfai.allsites.filtered.plot=ggplot(hfai.allsites.df[hfai.allsites.df$values > -46 & hfai.allsites.df$values <70, ], aes(x = reorder(names, values), y = values, fill = treatment)) +
-  geom_bar(stat = "identity", position ="dodge", alpha = 0.5) +
+hfai.allsites.plot_flipped=ggplot(hfai.allsites.df, aes(x = reorder(names, values), y = values, fill = treatment)) +
+  geom_bar(stat = "identity", position ="dodge", alpha = 0.3) +
   scale_fill_viridis_d()+
-  xlab("reciprocated pairs") +
+  coord_flip()+
+  xlab("") +
   ylab("home-field advantage (% faster decomposition at home)") +
   theme_minimal() +
   theme(text = element_text(size =20), 
-    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
     legend.position = "right",
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
     panel.border = element_blank(),
     panel.background = element_blank(),
-    plot.background = element_blank()
-  )+  geom_vline(xintercept = 39.5, linetype = "dashed", color = "red") +
-  annotate(geom = "text", x = 60, y = 50, label = paste(round(percentage_positive), "% decompose faster at home"), color = "black", size = 5)
+    plot.background = element_blank())+  
+  geom_vline(xintercept = 44.5, linetype = "dashed", color = "red")+
+  scale_y_continuous(
+    limits = c(-65, 255),
+     breaks = seq(-65, 250, by = 65),
+    expand = c(0, 0)
+  )
 
-hfai.allsites.plot
+
+ggsave("figures/hfai.allsites.plot_flipped.pdf", hfai.allsites.plot_flipped, width = 14, height = 10)
 
 
-hfai.allsites.df$values %>%
-  n_distinct()
-
-ggsave("figures/hfai.allsites.plot.pdf", hfai.allsites.plot, width = 14, height = 10)
 ```
-
-
 
 
 
 ------------------------END--------------------------------
 Everything below isnt used
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 This is also the proper dataframe
 generate **present**, site a (HOK 2)
