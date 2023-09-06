@@ -1844,137 +1844,6 @@ Armla and Armlb; Brlma, Brmlb: These are the relative mass loss values for speci
 The equation calculates the Home-Field Advantage Index (HFAI) by comparing the relative mass loss of litter from two species at their home and away sites. The result is expressed as a percentage, indicating how much faster (or slower) the decomposition occurs at the home site compared to the away site.
 
 
-This is the proper dataframe with for loop
-generate **present**, site a (HOK 1)
-```{r}
-########################
-mass.hok1.present.df <- mass.hok1.present.df %>%
-  mutate(ayres = ifelse(hfa == "H", "Aa", ifelse(hfa == "A", "Ba", NA)))
-  #since we're at site a, the notation follows species A at a (Aa) or species B at a (Ba)
-
-# Create a new column combining tree_num and ayres with a period in between
-mass.hok1.present.df$ayres.tree <- paste(mass.hok1.present.df$ayres, mass.hok1.present.df$tree_num, sep = ".")
-
-# Create a new column based on Ayres HFAI equation 
-mass.hok1.present.df$ayres.eq <- ifelse(
-  mass.hok1.present.df$ayres.tree %in% paste("Aa.", tree_num_values, sep = ""),
-  paste("Armla", tree_num_values, sep = "."),
-  ifelse(
-    mass.hok1.present.df$ayres.tree %in% paste("Ba.", tree_num_values, sep = ""),
-    paste("Brmla", tree_num_values, sep = "."),
-    NA
-  )
-)
-
-###tree numbers are used for pairwise relative mass loss (RML) calculation (e.g., HOK 1-1 with SEK 1-1; this follows similar logic as Ayres Species A to B comparison)
-
-# Define the values you want to loop through
-ayres_values <- c("Aa", "Ba")
-tree_num_values <- c("1", "2", "3", "4", "5")
-
-# Initialize an empty vector to store the results
-rml_values_z <- numeric()
-rml_values_mass <- numeric()
-
-# Loop through the combinations and calculate rml values
-for (ayres in ayres_values) {
-  for (tree_num in tree_num_values) {
-    hok_z_loss <- mass.hok1.present.df$z_score[
-      mass.hok1.present.df$tree_id == "HOK" & mass.hok1.present.df$tree_num == tree_num
-    ]
-    sek_z_loss <- mass.hok1.present.df$z_score[
-      mass.hok1.present.df$tree_id == "SEK" & mass.hok1.present.df$tree_num == tree_num
-    ]
-    
-    rml.z <- ifelse(
-      ayres == "Aa", hok_z_loss / (hok_z_loss + sek_z_loss),
-      ifelse(ayres == "Ba", sek_z_loss / (sek_z_loss + hok_z_loss), NA)
-    )
-    
-    rml_values_z <- c(rml_values_z, rml.z * 100)
-    
-    hok_mass_loss <- mass.hok1.present.df$perc.mass_loss[
-      mass.hok1.present.df$tree_id == "HOK" & mass.hok1.present.df$tree_num == tree_num
-    ]
-    sek_mass_loss <- mass.hok1.present.df$perc.mass_loss[
-      mass.hok1.present.df$tree_id == "SEK" & mass.hok1.present.df$tree_num == tree_num
-    ]
-    
-    rml.mass <- ifelse(
-      ayres == "Aa", hok_mass_loss / (hok_mass_loss + sek_mass_loss),
-      ifelse(ayres == "Ba", sek_mass_loss / (sek_mass_loss + hok_mass_loss), NA)
-    )
-    
-    rml_values_mass <- c(rml_values_mass, rml.mass * 100)
-  }
-}
-
-# Add the rml values to the dataframe
-mass.hok1.present.df$rml.z <- rml_values_z
-mass.hok1.present.df$rml.mass <- rml_values_mass
-
-
-
-############### STOP ######################
-##check the calculations (Armla.1-Armla.5)
-((mass.hok1.present.df[mass.hok1.present.df$ayres.tree == "Aa.1",]$z_score) /
-  (mass.hok1.present.df[mass.hok1.present.df$ayres.tree == "Aa.1",]$z_score +
-   mass.hok1.present.df[mass.hok1.present.df$ayres.tree == "Ba.2",]$z_score)) * 100
-
-((mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.2",]$z_score) /
-  (mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.2",]$z_score +
-   mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.2",]$z_score)) * 100
-
-
-(
-  (mass.hok1.present.df[mass.hok1.present.df$ayres.tree == "Aa.3",]$perc.mass_loss) /
-  (mass.hok1.present.df[mass.hok1.present.df$ayres.tree == "Aa.3",]$perc.mass_loss +
-   mass.hok1.present.df[mass.hok1.present.df$ayres.tree == "Ba.3",]$perc.mass_loss)
-  
-  * 100) 
-
-((mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.4",]$z_score) /
-  (mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.4",]$z_score +
-   mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.4",]$z_score)) * 100
-
-
-((mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.5",]$z_score) /
-  (mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.5",]$z_score +
-   mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.5",]$z_score)) * 100
-
-
-##check the calculations (Brmla.1-Brmla.5)
-((mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.1",]$z_score) /
-  (mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.1",]$z_score +
-   mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.1",]$z_score)) * 100
-
-
-((mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.2",]$z_score) /
-  (mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.2",]$z_score +
-   mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.2",]$z_score)) * 100
-
-
-((mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.3",]$z_score) /
-  (mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.3",]$z_score +
-   mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.3",]$z_score)) * 100
-
-
-((mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.4",]$z_score) /
-  (mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.4",]$z_score +
-   mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.4",]$z_score)) * 100
-
-
-((mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.5",]$z_score) /
-  (mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Ba.5",]$z_score +
-   mass.p.hoko1.df[mass.p.hoko1.df$ayres.tree == "Aa.5",]$z_score)) * 100
-
-
-```
-
-
-
-
-
 NEW: use this! This is a now a proper test dataframe with for loop!
 generate **present**, site a (HOK 1)
 ```{r}
@@ -2202,8 +2071,6 @@ brmlb.armlb.df_1=rbind(brmlb_df, armlb_df)
 brmlb.armlb.df_1
 ```
 
-
-
 NEW: use this! This is a now a proper test dataframe with for loop!
 generate **absent**, site a (SEK 1)
 ```{r}
@@ -2365,12 +2232,9 @@ result_name <- paste0(LETTERS[(X - 1) * 5 + Y], "_1")
 result_ab_df_1
 
 
-
-
-
 ```
 
-
+plot check for all site 1 (both absent and present)
 ```{r}
 #combine sites 1 and 2
   hfai.allsite1.df=rbind(result_df_1, result_ab_df_1)
@@ -2392,17 +2256,13 @@ ggplot(hfai.allsite1.df, aes(x = reorder(names, values), y = values, fill = trea
   )
 
 
-
+hfai.allsite1.df$values %>%
+  n_distinct()
 
 
 
 ```
-
-
-
-
-
-
+THIS IS NOW SITE 2:
 
 NEW: use this! This is a now a proper test dataframe with for loop!
 generate **present**, site a (HOK 2)
@@ -2411,63 +2271,72 @@ generate **present**, site a (HOK 2)
 mass.hok2.present.df <- mass.hok2.present.df %>%
   mutate(ayres = ifelse(hfa == "H", "Aa", ifelse(hfa == "A", "Ba", NA)))
   #since we're at site a, the notation follows species A at a (Aa) or species B at a (Ba)
-
+mass.hok2.present.df
 # Create a new column combining tree_num and ayres with a period in between
 mass.hok2.present.df$ayres.tree <- paste(mass.hok2.present.df$ayres, mass.hok2.present.df$tree_num, sep = ".")
 
 # Define the range for X and Y (1 to 5)
-X_values_2 <- 1:5
-Y_values_2 <- 1:5
+X_values <- 1:5
+Y_values <- 1:5
 
 # Initialize empty vectors to store names and values for Armla
-names_vector_armla_2 <- character(0)
-values_vector_armla_2 <- numeric(0)
+names_vector_armla <- character(0)
+values_vector_armla <- numeric(0)
+treatment_vector_armla<- character(0)
 
 # Initialize empty vectors to store names and values for Brmla
-names_vector_brmla_2 <- character(0)
-values_vector_brmla_2 <- numeric(0)
+names_vector_brmla <- character(0)
+values_vector_brmla<- numeric(0)
+treatment_vector_brmla<- character(0)
+
 
 # Loop through all combinations of X and Y for Aa and Ba
-for (X in X_values_2) {
-  for (Y in Y_values_2) {
-    Aa_column_2 <- paste("Aa.", X, sep = "")
-    Ba_column_2 <- paste("Ba.", Y, sep = "")
+for (X in X_values) {
+  for (Y in Y_values) {
+    Aa_column <- paste("Aa.", X, sep = "")
+    Ba_column <- paste("Ba.", Y, sep = "")
     
     # Calculate the result for Armla for the current combination
-    armla_result_2 <- (mass.hok2.present.df[mass.hok2.present.df$ayres.tree == Aa_column_2, "perc.mass_loss_c"] / 
-                     (mass.hok2.present.df[mass.hok2.present.df$ayres.tree == Aa_column_2, "perc.mass_loss_c"] + 
-                      mass.hok2.present.df[mass.hok2.present.df$ayres.tree == Ba_column_2, "perc.mass_loss_c"])) * 100
+    armla_result <- (mass.hok2.present.df[mass.hok2.present.df$ayres.tree == Aa_column, "perc.mass_loss_c"] / 
+                     (mass.hok2.present.df[mass.hok2.present.df$ayres.tree == Aa_column, "perc.mass_loss_c"] + 
+                      mass.hok2.present.df[mass.hok2.present.df$ayres.tree == Ba_column, "perc.mass_loss_c"])) * 100
     
     # Calculate the result for Brmla for the current combination
-    brmla_result_2 <- (mass.hok2.present.df[mass.hok2.present.df$ayres.tree == Ba_column_2, "perc.mass_loss_c"] / 
-                     (mass.hok2.present.df[mass.hok2.present.df$ayres.tree == Ba_column_2, "perc.mass_loss_c"] + 
-                      mass.hok2.present.df[mass.hok2.present.df$ayres.tree == Aa_column_2, "perc.mass_loss_c"])) * 100
+    brmla_result <- (mass.hok2.present.df[mass.hok2.present.df$ayres.tree == Ba_column, "perc.mass_loss_c"] / 
+                     (mass.hok2.present.df[mass.hok2.present.df$ayres.tree == Ba_column, "perc.mass_loss_c"] + 
+                      mass.hok2.present.df[mass.hok2.present.df$ayres.tree == Aa_column, "perc.mass_loss_c"])) * 100
     
     # Create a new name for the results
-    armla_name_2 <- paste("Armla.", X, Y, sep = ".")
-    brmla_name_2 <- paste("Brmla.", X, Y, sep = ".")
+    armla_name <- paste("Armla", X, Y, sep = ".")
+    brmla_name <- paste("Brmla", X, Y, sep = ".")
+    
+    # Get the treatment for the current combination
+    treatment_name <- mass.hok2.present.df[mass.hok2.present.df$ayres.tree == Aa_column, "treatment"]
     
     # Append the names and values to the respective vectors for Armla
-    names_vector_armla_2 <- c(names_vector_armla_2, armla_name_2)
-    values_vector_armla_2 <- c(values_vector_armla_2, armla_result_2)
-    
+    names_vector_armla <- c(names_vector_armla, armla_name)
+    values_vector_armla <- c(values_vector_armla, armla_result)
+    treatment_vector_armla<- c(treatment_vector_armla, treatment_name)
+
     # Append the names and values to the respective vectors for Brmla
-    names_vector_brmla_2 <- c(names_vector_brmla_2, brmla_name_2)
-    values_vector_brmla_2 <- c(values_vector_brmla_2, brmla_result_2)
+    names_vector_brmla <- c(names_vector_brmla, brmla_name)
+    values_vector_brmla <- c(values_vector_brmla, brmla_result)
+        treatment_vector_brmla<- c(treatment_vector_brmla, treatment_name)
+
   }
 }
 
 # Create dataframes for Armla and Brmla
-armla_df_2 <- data.frame(names = names_vector_armla_2, values = values_vector_armla_2)
-brmla_df_2 <- data.frame(names = names_vector_brmla_2, values = values_vector_brmla_2)
+armla_df_2 <- data.frame(names = names_vector_armla, values = values_vector_armla, treatment = treatment_vector_armla)
+brmla_df_2 <- data.frame(names = names_vector_brmla, values = values_vector_brmla, treatment = treatment_vector_brmla)
 
 # View the resulting dataframes
 print(armla_df_2)
 print(brmla_df_2)
 
 armla.brmla.df_2=rbind(armla_df_2, brmla_df_2)
-View(armla.brmla.df_2)
-duplicated(armla.brmla.df_2$values)
+armla.brmla.df_2
+
 ```
 
 
@@ -2483,61 +2352,69 @@ mass.hok2.absent.df <- mass.hok2.absent.df %>%
 mass.hok2.absent.df$ayres.tree <- paste(mass.hok2.absent.df$ayres, mass.hok2.absent.df$tree_num, sep = ".")
 
 # Define the range for X and Y (1 to 5)
-X_values_4 <- 1:5
-Y_values_4 <- 1:5
+X_values <- 1:5
+Y_values <- 1:5
 
 # Initialize empty vectors to store names and values for Armla
-names_vector_armla_4 <- character(0)
-values_vector_armla_4 <- numeric(0)
+names_vector_armla <- character(0)
+values_vector_armla <- numeric(0)
+treatment_vector_armla <- character(0)
 
 # Initialize empty vectors to store names and values for Brmla
-names_vector_brmla_4 <- character(0)
-values_vector_brmla_4 <- numeric(0)
+names_vector_brmla <- character(0)
+values_vector_brmla <- numeric(0)
+treatment_vector_brmla <- character(0)
+
 
 # Loop through all combinations of X and Y for Aa and Ba
-for (X in X_values_4) {
-  for (Y in Y_values_4) {
-    Aa_column_4 <- paste("Aa.", X, sep = "")
-    Ba_column_4 <- paste("Ba.", Y, sep = "")
+for (X in X_values) {
+  for (Y in Y_values) {
+    Aa_column <- paste("Aa.", X, sep = "")
+    Ba_column <- paste("Ba.", Y, sep = "")
     
     # Calculate the result for Armla for the current combination
-    armla_result_4 <- (mass.hok2.absent.df[mass.hok2.absent.df$ayres.tree == Aa_column_4, "perc.mass_loss_c"] / 
-                     (mass.hok2.absent.df[mass.hok2.absent.df$ayres.tree == Aa_column_4, "perc.mass_loss_c"] + 
-                      mass.hok2.absent.df[mass.hok2.absent.df$ayres.tree == Ba_column_4, "perc.mass_loss_c"])) * 100
+    armla_result <- (mass.hok2.absent.df[mass.hok2.absent.df$ayres.tree == Aa_column, "perc.mass_loss_c"] / 
+                     (mass.hok2.absent.df[mass.hok2.absent.df$ayres.tree == Aa_column, "perc.mass_loss_c"] + 
+                      mass.hok2.absent.df[mass.hok2.absent.df$ayres.tree == Ba_column, "perc.mass_loss_c"])) * 100
     
     # Calculate the result for Brmla for the current combination
-    brmla_result_4 <- (mass.hok2.absent.df[mass.hok2.absent.df$ayres.tree == Ba_column_4, "perc.mass_loss_c"] / 
-                     (mass.hok2.absent.df[mass.hok2.absent.df$ayres.tree == Ba_column_4, "perc.mass_loss_c"] + 
-                      mass.hok2.absent.df[mass.hok2.absent.df$ayres.tree == Aa_column_4, "perc.mass_loss_c"])) * 100
+    brmla_result <- (mass.hok2.absent.df[mass.hok2.absent.df$ayres.tree == Ba_column, "perc.mass_loss_c"] / 
+                     (mass.hok2.absent.df[mass.hok2.absent.df$ayres.tree == Ba_column, "perc.mass_loss_c"] + 
+                      mass.hok2.absent.df[mass.hok2.absent.df$ayres.tree == Aa_column, "perc.mass_loss_c"])) * 100
     
     # Create a new name for the results
-    armla_name_4 <- paste("Armla.", X, Y, sep = ".")
-    brmla_name_4 <- paste("Brmla.", X, Y, sep = ".")
+    armla_name <- paste("Armla", X, Y, sep = ".")
+    brmla_name <- paste("Brmla", X, Y, sep = ".")
+    
+    # create treatment 
+    
+    treatment_name <- mass.hok2.absent.df[mass.hok2.absent.df$ayres.tree == Aa_column, "treatment"]
     
     # Append the names and values to the respective vectors for Armla
-    names_vector_armla_4 <- c(names_vector_armla_4, armla_name_4)
-    values_vector_armla_4 <- c(values_vector_armla_4, armla_result_4)
+    names_vector_armla <- c(names_vector_armla, armla_name)
+    values_vector_armla <- c(values_vector_armla, armla_result)
+    treatment_vector_armla <- c(treatment_vector_armla, treatment_name)
     
     # Append the names and values to the respective vectors for Brmla
-    names_vector_brmla_4 <- c(names_vector_brmla_4, brmla_name_4)
-    values_vector_brmla_4 <- c(values_vector_brmla_4, brmla_result_4)
+    names_vector_brmla <- c(names_vector_brmla, brmla_name)
+    values_vector_brmla <- c(values_vector_brmla, brmla_result)
+        treatment_vector_brmla <- c(treatment_vector_brmla, treatment_name)
+
   }
 }
 
 # Create dataframes for Armla and Brmla
-armla_df_4 <- data.frame(names = names_vector_armla_4, values = values_vector_armla_4)
-brmla_df_4 <- data.frame(names = names_vector_brmla_4, values = values_vector_brmla_4)
+armla_ab_df_2 <- data.frame(names = names_vector_armla, values = values_vector_armla, treatment = treatment_vector_armla)
+brmla_ab_df_2 <- data.frame(names = names_vector_brmla, values = values_vector_brmla, treatment = treatment_vector_brmla)
 
 # View the resulting dataframes
-print(armla_df_4)
-print(brmla_df_4)
+print(armla_ab_df_2)
+print(armla_ab_df_2)
 
-armla.brmla.absent.df_2=rbind(armla_df_4, brmla_df_4)
-
+armla.brmla.absent.df_2=rbind(armla_ab_df_2, brmla_ab_df_2)
+armla.brmla.absent.df_2
 
 ```
-
-
 
 NEW: use this! This is a now a proper test dataframe with for loop!
 generate **present**, site a (SEK 2)
@@ -2546,63 +2423,71 @@ mass.sek2.present.df <- mass.sek2.present.df %>%
   mutate(ayres = ifelse(hfa == "H", "Bb", ifelse(hfa == "A", "Ab", NA)))
   # Create a new column combining tree_num and ayres with a period in between
 mass.sek2.present.df$ayres.tree <- paste(mass.sek2.present.df$ayres, mass.sek2.present.df$tree_num, sep = ".")
-View(mass.sek1.present.df)
+
 # Define the range for X and Y (1 to 5)
-X_values_2 <- 1:5
-Y_values_2 <- 1:5
+X_values <- 1:5
+Y_values <- 1:5
 
 # Initialize empty vectors to store names and values for Brmlb
-names_vector_brmlb_2 <- character(0)
-values_vector_brmlb_2 <- numeric(0)
+names_vector_brmlb <- character(0)
+values_vector_brmlb <- numeric(0)
+treatment_vector_brmlb <- character(0)
+
 
 # Initialize empty vectors to store names and values for Armlb
-names_vector_armlb_2 <- character(0)
-values_vector_armlb_2 <- numeric(0)
+names_vector_armlb <- character(0)
+values_vector_armlb <- numeric(0)
+treatment_vector_armlb <- character(0)
 
 # Loop through all combinations of X and Y for Aa and Ba
 for (X in X_values) {
   for (Y in Y_values) {
-    Bb_column_2 <- paste("Bb.", X, sep = "")
-    Ab_column_2 <- paste("Ab.", Y, sep = "")
+    Bb_column <- paste("Bb.", X, sep = "")
+    Ab_column <- paste("Ab.", Y, sep = "")
     
     # Calculate the result for Armla for the current combination
-    brmlb_result_2 <- (mass.sek2.present.df[mass.sek2.present.df$ayres.tree == Bb_column_2, "perc.mass_loss_c"] / 
-                     (mass.sek2.present.df[mass.sek2.present.df$ayres.tree == Bb_column_2, "perc.mass_loss_c"] + 
-                      mass.sek2.present.df[mass.sek2.present.df$ayres.tree == Ab_column_2, "perc.mass_loss_c"])) * 100
+    brmlb_result <- (mass.sek2.present.df[mass.sek2.present.df$ayres.tree == Bb_column, "perc.mass_loss_c"] / 
+                     (mass.sek2.present.df[mass.sek2.present.df$ayres.tree == Bb_column, "perc.mass_loss_c"] + 
+                      mass.sek2.present.df[mass.sek2.present.df$ayres.tree == Ab_column, "perc.mass_loss_c"])) * 100
     
     # Calculate the result for Brmla for the current combination
-    armlb_result_2 <- (mass.sek2.present.df[mass.sek2.present.df$ayres.tree == Ab_column_2, "perc.mass_loss_c"] / 
-                     (mass.sek2.present.df[mass.sek2.present.df$ayres.tree == Ab_column_2, "perc.mass_loss_c"] + 
-                      mass.sek2.present.df[mass.sek2.present.df$ayres.tree == Bb_column_2, "perc.mass_loss_c"])) * 100
+    armlb_result <- (mass.sek2.present.df[mass.sek2.present.df$ayres.tree == Ab_column, "perc.mass_loss_c"] / 
+                     (mass.sek2.present.df[mass.sek2.present.df$ayres.tree == Ab_column, "perc.mass_loss_c"] + 
+                      mass.sek2.present.df[mass.sek2.present.df$ayres.tree == Bb_column, "perc.mass_loss_c"])) * 100
     
     # Create a new name for the results
-    brmlb_name_2 <- paste("Brmlb.", X, Y, sep = ".")
-    armlb_name_2 <- paste("Armlb.", X, Y, sep = ".")
+    brmlb_name <- paste("Brmlb", X, Y, sep = ".")
+    armlb_name <- paste("Armlb", X, Y, sep = ".")
+    
+    # create treatment
+    treatment_name <- mass.sek2.present.df[mass.sek2.present.df$ayres.tree == Bb_column, "treatment"]
+
     
     # Append the names and values to the respective vectors for Brmlb
-    names_vector_brmlb_2 <- c(names_vector_brmlb_2, brmlb_name_2)
-    values_vector_brmlb_2 <- c(values_vector_brmlb_2, brmlb_result_2)
+    names_vector_brmlb <- c(names_vector_brmlb, brmlb_name)
+    values_vector_brmlb <- c(values_vector_brmlb, brmlb_result)
+    treatment_vector_brmlb<- c(treatment_vector_brmlb, treatment_name)
     
     # Append the names and values to the respective vectors for Brmla
-    names_vector_armlb_2 <- c(names_vector_armlb_2, armlb_name_2)
-    values_vector_armlb_2 <- c(values_vector_armlb_2, armlb_result_2)
+    names_vector_armlb <- c(names_vector_armlb, armlb_name)
+    values_vector_armlb <- c(values_vector_armlb, armlb_result)
+        treatment_vector_armlb<- c(treatment_vector_armlb, treatment_name)
+
   }
 }
 
 # Create dataframes for Armla and Brmla
-brmlb_df_2 <- data.frame(names = names_vector_brmlb_2, values = values_vector_brmlb_2)
-armlb_df_2 <- data.frame(names = names_vector_armlb_2, values = values_vector_armlb_2)
+brmlb_df_2 <- data.frame(names = names_vector_brmlb, values = values_vector_brmlb, treatment = treatment_vector_brmlb)
+armlb_df_2 <- data.frame(names = names_vector_armlb, values = values_vector_armlb, treatment = treatment_vector_armlb)
 
 # View the resulting dataframes
 print(brmlb_df_2)
 print(armlb_df_2)
 
 brmlb.armlb.df_2=rbind(brmlb_df_2, armlb_df_2)
-View(brmlb.armlb.df_2)
+brmlb.armlb.df_2
 
 ```
-
-
 
 NEW: use this! This is a now a proper test dataframe with for loop!
 generate **absent**, site a (SEK 2)
@@ -2613,66 +2498,246 @@ mass.sek2.absent.df <- mass.sek2.absent.df %>%
 mass.sek2.absent.df$ayres.tree <- paste(mass.sek2.absent.df$ayres, mass.sek2.absent.df$tree_num, sep = ".")
 
 # Define the range for X and Y (1 to 5)
-X_values_4 <- 1:5
-Y_values_4 <- 1:5
+X_values<- 1:5
+Y_values <- 1:5
 
 # Initialize empty vectors to store names and values for Brmlb
-names_vector_brmlb_4 <- character(0)
-values_vector_brmlb_4 <- numeric(0)
+names_vector_brmlb <- character(0)
+values_vector_brmlb <- numeric(0)
+treatment_vector_brmlb<- character(0)
 
 # Initialize empty vectors to store names and values for Armlb
-names_vector_armlb_4 <- character(0)
-values_vector_armlb_4 <- numeric(0)
+names_vector_armlb <- character(0)
+values_vector_armlb <- numeric(0)
+treatment_vector_armlb<- character(0)
+
 
 # Loop through all combinations of X and Y for Aa and Ba
-for (X in X_values_4) {
-  for (Y in Y_values_4) {
-    Bb_column_4 <- paste("Bb.", X, sep = "")
-    Ab_column_4 <- paste("Ab.", Y, sep = "")
+for (X in X_values) {
+  for (Y in Y_values) {
+    Bb_column <- paste("Bb.", X, sep = "")
+    Ab_column <- paste("Ab.", Y, sep = "")
     
     # Calculate the result for Armla for the current combination
-    brmlb_result_4 <- (mass.sek2.absent.df[mass.sek2.absent.df$ayres.tree == Bb_column_4, "perc.mass_loss_c"] / 
-                     (mass.sek2.absent.df[mass.sek2.absent.df$ayres.tree == Bb_column_4, "perc.mass_loss_c"] + 
-                      mass.sek2.absent.df[mass.sek2.absent.df$ayres.tree == Ab_column_4, "perc.mass_loss_c"])) * 100
+    brmlb_result <- (mass.sek2.absent.df[mass.sek2.absent.df$ayres.tree == Bb_column, "perc.mass_loss_c"] / 
+                     (mass.sek2.absent.df[mass.sek2.absent.df$ayres.tree == Bb_column, "perc.mass_loss_c"] + 
+                      mass.sek2.absent.df[mass.sek2.absent.df$ayres.tree == Ab_column, "perc.mass_loss_c"])) * 100
     
     # Calculate the result for Brmla for the current combination
-    armlb_result_4 <- (mass.sek2.absent.df[mass.sek2.absent.df$ayres.tree == Ab_column_4, "perc.mass_loss_c"] / 
-                     (mass.sek2.absent.df[mass.sek2.absent.df$ayres.tree == Ab_column_4, "perc.mass_loss_c"] + 
-                      mass.sek2.absent.df[mass.sek2.absent.df$ayres.tree == Bb_column_4, "perc.mass_loss_c"])) * 100
+    armlb_result <- (mass.sek2.absent.df[mass.sek2.absent.df$ayres.tree == Ab_column, "perc.mass_loss_c"] / 
+                     (mass.sek2.absent.df[mass.sek2.absent.df$ayres.tree == Ab_column, "perc.mass_loss_c"] + 
+                      mass.sek2.absent.df[mass.sek2.absent.df$ayres.tree == Bb_column, "perc.mass_loss_c"])) * 100
     
     # Create a new name for the results
-    brmlb_name_4 <- paste("Brmlb.", X, Y, sep = ".")
-    armlb_name_4 <- paste("Armlb.", X, Y, sep = ".")
+    brmlb_name <- paste("Brmlb", X, Y, sep = ".")
+    armlb_name <- paste("Armlb", X, Y, sep = ".")
+    
+    # create treatment 
+    treatment_name <- mass.sek2.absent.df[mass.sek2.absent.df$ayres.tree == Bb_column, "treatment"]
+    
     
     # Append the names and values to the respective vectors for Brmlb
-    names_vector_brmlb_4 <- c(names_vector_brmlb_4, brmlb_name_4)
-    values_vector_brmlb_4 <- c(values_vector_brmlb_4, brmlb_result_4)
+    names_vector_brmlb <- c(names_vector_brmlb, brmlb_name)
+    values_vector_brmlb <- c(values_vector_brmlb, brmlb_result)
+    treatment_vector_brmlb<- c(treatment_vector_brmlb, treatment_name)
     
     # Append the names and values to the respective vectors for Brmla
-    names_vector_armlb_4 <- c(names_vector_armlb_4, armlb_name_4)
-    values_vector_armlb_4 <- c(values_vector_armlb_4, armlb_result_4)
+    names_vector_armlb <- c(names_vector_armlb, armlb_name)
+    values_vector_armlb <- c(values_vector_armlb, armlb_result)
+        treatment_vector_armlb<- c(treatment_vector_armlb, treatment_name)
+
   }
 }
 
 # Create dataframes for Armla and Brmla
-brmlb_df_4 <- data.frame(names = names_vector_brmlb_4, values = values_vector_brmlb_4)
-armlb_df_4 <- data.frame(names = names_vector_armlb_4, values = values_vector_armlb_4)
+brmlb_ab_df_2 <- data.frame(names = names_vector_brmlb, values = values_vector_brmlb, treatment = treatment_vector_brmlb)
+armlb_ab_df_2 <- data.frame(names = names_vector_armlb, values = values_vector_armlb, treatment = treatment_vector_armlb)
 
 
-brmlb.armlb.absent.df_2=rbind(brmlb_df_4, armlb_df_4)
+brmlb.armlb.absent.df_2=rbind(brmlb_ab_df_2, armlb_ab_df_2)
+brmlb.armlb.absent.df_2
+
+```
+
+NEW: use this! merging HOK 2 and SEK 2 dataframe
+merge **present**, site a and b (aka HOK 2 and SEK 2) dataframes 
+```{r}
+#merge both present site 1 dataframes
+mass.present.site2.df=rbind(armla.brmla.df_2, brmlb.armlb.df_2)
+mass.present.site2.df
+# Define the range for X and Y (1 to 5)
+X_values <- 1:5
+Y_values <- 1:5
+
+# Create an empty dataframe to store the results
+result_df_2 <- data.frame(names = character(0), values = numeric(0), treatment = character(0))
+
+# Loop through all combinations of X and Y for Armla, Brmla, Brmlb, and Armlb
+for (X in X_values) {
+  for (Y in Y_values) {
+    armla_name <- paste("Armla.", X, ".", Y, sep = "")
+    brmla_name <- paste("Brmla.", X, ".", Y, sep = "")
+    brmlb_name <- paste("Brmlb.", X, ".", Y, sep = "")
+    armlb_name <- paste("Armlb.", X, ".", Y, sep = "")
+    
+    # Calculate the result for the current combination
+    result <- 
+((
+  (mass.present.site2.df[mass.present.site2.df$names == armla_name, "values"] +
+      mass.present.site2.df[mass.present.site2.df$names == brmlb_name, "values"])/2)/ (
+      (mass.present.site2.df[mass.present.site2.df$names == armlb_name, "values"] +
+      mass.present.site2.df[mass.present.site2.df$names == brmla_name, "values"])/2
+    )*100
+)-100
+     # Create a new name (letter) for the result
+    result_name <- paste0(LETTERS[(X - 1) * 5 + Y], "_2")
+    
+  # Get the treatment for the current combination
+    treatment_name <- mass.present.site2.df[mass.present.site2.df$names == armla_name, "treatment"]
+ 
+# Append the name and value to the result dataframe
+    result_df_2 <- rbind(result_df_2, data.frame(names = result_name, values = result, treatment= treatment_name))  }
+}
 
 
+# View the resulting dataframe
+
+print(result_df_2)
+
+
+
+```
+
+
+NEW: use this! merging HOK 2 and SEK 2 dataframe
+merge **absent**, merging HOK 2 and SEK 2 dataframe
+```{r}
+#merge both present site 1 dataframes
+mass.absent.site2.df=rbind(armla.brmla.absent.df_2, brmlb.armlb.absent.df_2)
+mass.absent.site2.df
+# Define the range for X and Y (1 to 5)
+X_values <- 1:5
+Y_values <- 1:5
+
+# Create an empty dataframe to store the results
+result_ab_df_2 <- data.frame(names = character(0), values = numeric(0), treatment = character(0))
+
+# Loop through all combinations of X and Y for Armla, Brmla, Brmlb, and Armlb
+for (X in X_values) {
+  for (Y in Y_values) {
+    armla_name <- paste("Armla.", X, ".", Y, sep = "")
+    brmla_name <- paste("Brmla.", X, ".", Y, sep = "")
+    brmlb_name <- paste("Brmlb.", X, ".", Y, sep = "")
+    armlb_name <- paste("Armlb.", X, ".", Y, sep = "")
+    
+    # Calculate the result for the current combination
+    result <- 
+((
+  (mass.absent.site2.df[mass.absent.site2.df$names == armla_name, "values"] +
+      mass.absent.site2.df[mass.absent.site2.df$names == brmlb_name, "values"])/2)/ (
+      (mass.absent.site2.df[mass.absent.site2.df$names == armlb_name, "values"] +
+      mass.absent.site2.df[mass.absent.site2.df$names == brmla_name, "values"])/2
+    )*100
+)-100
+     # Create a new name (letter) for the result
+    result_name <- paste0(LETTERS[(X - 1) * 5 + Y], "_3")
+    
+  # Get the treatment for the current combination
+    treatment_name <- mass.absent.site2.df[mass.absent.site2.df$names == armla_name, "treatment"]
+ 
+# Append the name and value to the result dataframe
+    result_ab_df_2 <- rbind(result_ab_df_2, data.frame(names = result_name, values = result, treatment= treatment_name))  }
+}
+
+
+# View the resulting dataframe
+result_ab_df_2
+
+```
+NEW: use this! merging all dataframes (Sites 1 and 2; includes P and AB)
+merge all sites and plot
+```{r}
+#combine sites 1 and 2
+hfai.allsites.df=rbind(result_df_1, result_df_2, result_ab_df_1, result_ab_df_2)
+# Calculate the total number of positive and negative values
+total_positive <- sum(hfai.allsites.df$values > 0)
+total_negative <- sum(hfai.allsites.df$values < 0)
+# Calculate the percentage of positive values relative to negative
+percentage_positive <- (total_positive / (total_positive + total_negative)) * 100
+percentage_negative <- (total_negative / (total_negative + total_positive)) * 100
+
+percentage_positive
+
+hfai.allsites.plot=ggplot(hfai.allsites.df, aes(x = reorder(names, values), y = values, fill = treatment)) +
+  geom_bar(stat = "identity", position ="dodge", alpha = 0.5) +
+  scale_fill_viridis_d()+
+  xlab("reciprocated pairs") +
+  ylab("home-field advantage (% faster decomposition at home)") +
+  theme_minimal() +
+  theme(text = element_text(size =20), 
+    axis.text.x = element_blank(),
+    legend.position = "right",
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    plot.background = element_blank()
+  )+  geom_vline(xintercept = 45, linetype = "dashed", color = "red") +
+  annotate(geom = "text", x = 60, y = 50, label = paste(round(percentage_positive), "% decompose faster at home"), color = "black", size = 5)
+
+######## using mass loss
+min(hfai.allsites.df$values)
+max(hfai.allsites.df$values)
+
+# Calculate the total number of positive and negative values
+total_positive <- sum(hfai.allsites.df_filtered$values > 0)
+total_negative <- sum(hfai.allsites.df_filtered$values < 0)
+
+#filter outlier
+hfai.allsites.df_filtered= data.frame(hfai.allsites.df[hfai.allsites.df$values > -46 & hfai.allsites.df$values <70, ])
+# Calculate the total number of positive and negative values
+total_positive <- sum(hfai.allsites.df_filtered$values > 0)
+total_negative <- sum(hfai.allsites.df_filtered$values < 0)
+
+# Calculate the percentage of positive values relative to negative
+percentage_positive <- (total_positive / (total_positive + total_negative)) * 100
+percentage_negative <- (total_negative / (total_negative + total_positive)) * 100
+
+percentage_positive
+percentage_negative
+
+hfai.allsites.filtered.plot=ggplot(hfai.allsites.df[hfai.allsites.df$values > -46 & hfai.allsites.df$values <70, ], aes(x = reorder(names, values), y = values, fill = treatment)) +
+  geom_bar(stat = "identity", position ="dodge", alpha = 0.5) +
+  scale_fill_viridis_d()+
+  xlab("reciprocated pairs") +
+  ylab("home-field advantage (% faster decomposition at home)") +
+  theme_minimal() +
+  theme(text = element_text(size =20), 
+    axis.text.x = element_blank(),
+    legend.position = "right",
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    plot.background = element_blank()
+  )+  geom_vline(xintercept = 39.5, linetype = "dashed", color = "red") +
+  annotate(geom = "text", x = 60, y = 50, label = paste(round(percentage_positive), "% decompose faster at home"), color = "black", size = 5)
+
+hfai.allsites.plot
+
+
+hfai.allsites.df$values %>%
+  n_distinct()
+
+ggsave("figures/hfai.allsites.plot.pdf", hfai.allsites.plot, width = 14, height = 10)
 ```
 
 
 
 
 
-
-
-
-
-
+------------------------END--------------------------------
+Everything below isnt used
 
 This is also the proper dataframe
 generate **present**, site a (HOK 2)
@@ -2914,58 +2979,6 @@ View(result_df_2)
 hfai.allsites.df=rbind(result_df, result_df_2)
 View(hfai.allsites.df)
 ```
-
-
-This is the test plot
-another plot check
-```{r}
-######## using mass loss
-min(hfai.allsites.df$values)
-max(hfai.allsites.df$values)
-#if we want to remove top 5 outliers
-hfai.allsites.df %>%
-  filter(values < 75) %>%
-  summarize(distinct_count = n_distinct(values))
-# Calculate the total number of positive and negative values
-total_positive <- sum(hfai.allsites.df$values > 0)
-total_negative <- sum(hfai.allsites.df$values < 0)
-
-# Calculate the percentage of positive values relative to negative
-percentage_positive <- (total_positive / (total_positive + total_negative)) * 100
-
-percentage_positive
-
-hfai.allsites.plot=ggplot(hfai.allsites.df[hfai.allsites.df$values<75,], aes(x = reorder(names, values), y = values, fill = names)) +
-  geom_bar(stat = "identity", alpha = 0.5) +
-  scale_fill_viridis_d(guide = "none")+
-  xlab("reciprocated pairs") +
-  ylab("home-field advantage (% faster decomposition at home)") +
-  theme_minimal() +
-  theme(text = element_text(size =20), 
-    axis.text.x = element_blank(),
-    legend.position = "right",
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.border = element_blank(),
-    panel.background = element_blank(),
-    plot.background = element_blank()
-  )+ scale_y_continuous(limits = c(-25, 75), breaks = seq(-25, 75, by = 25))+  geom_vline(xintercept = 14.5, linetype = "dashed", color = "red") +
-  annotate(geom = "text", x = 25, y = 50, label = paste(round(percentage_positive), "% decompose faster at home"), color = "black", size = 5)
-
-hfai.allsites.plot
-
-ggsave("figures/hfai.allsites.plot.pdf", hfai.allsites.plot, width = 14, height = 10)
-```
-
-
-
-
-
-
-
-
-
-
 
 
 
