@@ -1219,7 +1219,7 @@ mass.present.deploy.merged.df$tree_id=as.factor(as.character(mass.present.deploy
 mass.present.deploy.merged.df$deploy=as.factor(as.character(mass.present.deploy.merged.df$deploy))
 mass.present.deploy.merged.df$hfa=as.factor(as.character(mass.present.deploy.merged.df$hfa))
 
-#merge all P treatment sites 
+#merge all AB treatment sites 
 mass.absent.deploy.merged.df=rbind(mass.hok1.absent.df, mass.hok2.absent.df, mass.sek1.absent.df, mass.sek2.absent.df)
 mass.absent.deploy.merged.df$treatment=as.factor(as.character(mass.absent.deploy.merged.df$treatment))
 mass.absent.deploy.merged.df$tree_id=as.factor(as.character(mass.absent.deploy.merged.df$tree_id))
@@ -1234,7 +1234,8 @@ Let's first look at the P only to see if HFA is there
 #create a proper "site" column for the figure
 
 #plot
-leaf.mass.presentonly.plot=ggplot(mass.present.deploy.merged.df, aes(x = hfa, y = z_score)) +
+leaf.mass.presentonly.plot
+ggplot(mass.present.deploy.merged.df, aes(x = hfa, y = z_score)) +
   geom_boxplot(alpha= 0.3) +
   geom_point(aes(shape = as.factor(combined_site)), position = position_jitter(width = 0.2)) +
   labs(x = "", y = "mass loss (z score)") +
@@ -1269,64 +1270,226 @@ ggsave("figures/leaf.mass.presentonly.plot.pdf", leaf.mass.presentonly.plot, wid
 Analysis for **present only** dataframe
 There are two ways to go about model exploration: using z scored mass loss or arcsine square root transforming percent mass loss. These are outlined below...
 
-perform t-test and add result to P treatment only plot
+perform lmer and add result to P treatment only plot
 ```{r}
 library(tidyverse)
 library(ggpubr)
 library(rstatix)
 #transform % mass loss into arcsine trans
 mass.present.deploy.merged.df <- mass.present.deploy.merged.df %>%
-  mutate(arcsine_trans = asin(sqrt(perc.mass_loss_c / 100)))  
-  
+  mutate(arcsine_trans = asin(sqrt(perc.mass_loss_c / 100)))
+
+# Create an ordered factor variable
+mass.present.deploy.merged.df$hfa_ordered <- ordered(mass.present.deploy.merged.df$hfa,
+                                         levels = c("H", "A"))
+
+#look at distribution of data
 # Create a histogram
-hist_data <- hist(mass.present.deploy.merged.df$z_score, plot = FALSE)
+# Step 1: Histogram and Density Plot
+hist_data <- hist(mass.present.deploy.merged.df$arcsine_trans, breaks = 20, plot = FALSE)
+density_data <- density(mass.present.deploy.merged.df$arcsine_trans)
+
+# Plot histogram and overlay beta density
+plot(hist_data, main = "Histogram and Beta Density")
+lines(density_data, col = "red")
+
 hist_data <- hist(mass.present.deploy.merged.df$arcsine_trans, plot = FALSE)
 
 # Create a density plot
-density_data <- density(mass.present.deploy.merged.df$z_score)
 density_data <- density(mass.present.deploy.merged.df$arcsine_trans)
 
 # Plot histogram with density overlay
-  hist(mass.present.deploy.merged.df$z_score, freq = F, main = "")
-lines(density_data, col = "red")
-  #normal
-hist(mass.present.deploy.merged.df$arcsine_trans, freq = F, main = "")
+  hist(mass.present.deploy.merged.df$arcsine_trans, freq = F, main = "")
 lines(density_data, col = "red")
 
 
-shapiro.test(mass.present.deploy.merged.df$z_score)
-shapiro.test(mass.present.deploy.merged.df$arcsine_trans)
+#model exploration
+m1 <- lmer(arcsine_trans ~ hfa + (1 | site_num) + (1 | tree_num), data = mass.present.deploy.merged.df)
+m2 <- lmer(arcsine_trans ~ hfa + (1 | deploy), data = mass.present.deploy.merged.df)
+m3 <- lmer(arcsine_trans ~ tree_id * deploy + (1 | site_num), data = mass.present.deploy.merged.df)
+m4 <- lmer(arcsine_trans ~ hfa_ordered + (1 | site_num), data = mass.present.deploy.merged.df)
+m5 <- lmer(arcsine_trans ~ hfa_ordered + (1 | site_num) + (1 | tree_num), data = mass.present.deploy.merged.df)
+m6 <- lmer(arcsine_trans ~ hfa + (1 | site_num) + (1 | tree_num), data = mass.present.deploy.merged.df)
+m7 <- lmer(arcsine_trans ~ hfa + (1 | site_num), data = mass.present.deploy.merged.df)
 
-  # p= 0.52, normal
-View(mass.present.deploy.merged.df)
-# Q-Q Plots
-qqnorm(mass.present.deploy.merged.df$z_score, main = "Q-Q Plot")
-qqline(mass.present.deploy.merged.df$z_score)
-  #normal
+
+anova(m1)
+anova(m2)
+anova(m3)
+anova(m4)
+summary(m6)
+AIC(m5,m6)
+
+#model 8 has the lowest AIC
+m5 <- lmer(arcsine_trans ~ hfa_ordered + (1 | site_num) + (1 | tree_num), data = mass.present.deploy.merged.df)
+
+m6 <- lmer(arcsine_trans ~ hfa + (1 | site_num) + (1 | tree_num), data = mass.present.deploy.merged.df)
+
+m7 <- lmer(arcsine_trans ~ hfa + (1 | site_num) + (1 | deploy) + (1 | tree_num), data = mass.present.deploy.merged.df)
 
 
-# Levene's Test
-leveneTest(z_score ~ hfa, data = mass.present.deploy.merged.df)
-  # p= 0.64, variances between H and A are equal (i.e., the homogeneity assumption of the variance is met)
+m8 <- lmer(arcsine_trans ~ hfa  + (1 | deploy) + (1 | tree_num), data = mass.present.deploy.merged.df)
 
-# Interaction Effects (if applicable)
-interaction.plot(
-  mass.present.deploy.merged.df$hfa,
-  mass.present.deploy.merged.df$tree_id,
-  mass.present.deploy.merged.df$z_score,
-  type = "b",  # Use "b" for both lines and points
-  legend = TRUE
-)
+m9 <- lmer(arcsine_trans ~ hfa_ordered  + (1 | deploy) + (1 | tree_num), data = mass.present.deploy.merged.df)
 
-interaction.plot(
-  mass.present.deploy.merged.df$tree_id,
-  mass.present.deploy.merged.df$deploy,
-  mass.present.deploy.merged.df$z_score,
-  type = "b",  # Use "b" for both lines and points
-  legend = TRUE
-)
 
-View(mass.present.deploy.merged.df)
+m9 <- lmer(arcsine_trans ~ hfa_ordered + (1 | site_num) + (1 | deploy) + (1 | tree_num), data = mass.present.deploy.merged.df)
+
+
+m9 <- lmer(arcsine_trans ~ hfa_ordered + (1 | deploy) + (1 | tree_num), data = mass.present.deploy.merged.df)
+
+summary(m8)
+AIC(m8,m9)
+
+# lets explore model 8
+m8 <- lmer(arcsine_trans ~ hfa  + (1 | deploy) + (1 | tree_num), data = mass.present.deploy.merged.df)
+m8_sum=summary(m8)
+m8_sum$coefficients
+residuals<- residuals(m8)
+plot(residuals(m8) ~ fitted(m8))
+hist(residuals(m8_wls), breaks = 20)
+# Calculate the variances of the error terms (residuals)
+variances <- resid(m8)^2  # Assuming 'm2' is your original linear regression model
+
+variances <- resid(m6)^2  # Assuming 'm2' is your original linear regression model
+
+# Inverse of variances as weights
+weights_vector <- 1 / variances
+
+weights_vector <- 1 / variances
+
+m8_wls <- lmer(arcsine_trans ~ hfa  + (1 | deploy) + (1 | tree_num), data = mass.present.deploy.merged.df)
+
+m6_wls <- lmer(arcsine_trans ~ hfa + (1 | site_num) + (1 | tree_num), data = mass.present.deploy.merged.df)
+
+######## model 8 with weights ##############
+# Calculate the variances of the error terms (residuals)
+variances <- resid(m8)^2  # Assuming 'm8' is your original linear regression model
+
+# Inverse of variances as weights
+weights_vector <- 1 / variances
+
+m8_wls <- lmer(arcsine_trans ~ hfa  + (1 | deploy) + (1 | tree_num), 
+                weights = weights_vector, data = mass.present.deploy.merged.df)
+
+
+summary(m8_wls)
+
+AIC(m8, m8_wls)
+BIC(m8, m8_wls)
+# Fit the weighted least squares model
+m8_wls <- lmer(arcsine_trans ~ hfa + (1 | deploy) + (1 | tree_num), 
+               weights = weights_vector, data = mass.present.deploy.merged.df)
+
+# Extract the coefficients and p-values using lmerTest
+summary_m8_wls <- summary(m8_wls)
+
+
+
+# add results to plot
+# Extract p-values and critical values from the model summary
+#check levels
+levels(mass.present.deploy.merged.df$hfa)
+mass.present.deploy.merged.df$hfa=factor(mass.present.deploy.merged.df$hfa, levels = c("H", "A"))
+levels(mass.present.deploy.merged.df$hfa)
+
+
+# Step 1: Calculate p-values for the model 'm8'
+library(lmerTest)
+p_values_m8 <- summary(m8)$coefficients[, "Pr(>|t|)"]
+p_values_m8
+# Step 2: Create a data frame for 'stat_pvalue_manual'
+p_value_hfaA <- coefficients["hfaA", "Pr(>|t|)"]
+p_value_hfaA
+p_value_data$p_value[2]
+# Step 3: Add 'stat_pvalue_manual' to your ggplot
+library(ggpubr)
+library(glue)
+
+leaf.z.presentonly.plot=ggboxplot(
+  mass.present.deploy.merged.df, x = "hfa", y = "z_score", 
+  ylab = "mass loss (z score)", xlab = "", fill = "hfa", alpha = 0.4
+) + 
+scale_fill_manual(values = c("grey", "grey0"), guide = "none") +
+stat_pvalue_manual(stat.test.arc,y.position = 2.5, tip.length = c(0.16, 0.06), label = "p") +
+labs(
+  ylab = "mass loss (z score)",
+  xlab = ""
+) +
+  scale_x_discrete(labels = c("home", "away")) +
+  geom_point(aes(shape = as.factor(deploy)), position = position_jitter(width = 0.2)) +
+  scale_shape_manual(values = c(7, 10), name = "site") +
+  geom_hline(data = mass.present.deploy.merged.df, aes(yintercept = mean(z_score), linetype = "Average"), color = "red", linetype = "dotted") +
+  theme(
+    legend.position = "right",
+    legend.text = element_text(size = 16),
+    legend.title = element_text(size = 16),
+    text = element_text(size = 16),
+    plot.background = element_blank()
+  )
+ggsave("figures/leaf.z.presentonly.plot.pdf", leaf.z.presentonly.plot, width = 8, height = 6)
+
+
+# Create the ggplot with the extracted values
+ggboxplot(
+  mass.present.deploy.merged.df, x = "hfa", y = "z_score", 
+  ylab = "mass loss (z score)", xlab = "", fill="hfa", alpha= 0.4) + 
+  scale_fill_manual(values = c("grey", "grey0"), guide = "none")+
+  stat_pvalue_manual(m8, label , y.position = 2.5, tip.length = c(0.16, 0.06)) +
+  labs(
+    ylab = "mass loss (z score)",
+    xlab = "")+
+    geom_point(aes(shape = as.factor(deploy)), position = position_jitter(width = 0.2))+
+    scale_shape_manual(values = c(7,10), name= "site")+
+    geom_hline(data = mass.present.deploy.merged.df, aes(yintercept = mean(z_score), linetype = "Average"), color = "red", linetype = "dotted") +
+    theme(legend.position = "right",
+          legend.text = element_text(size=16),
+          legend.title = element_text(size = 16),
+          text = element_text(size =16),
+          plot.background = element_blank()) 
+
+
+  
+  
+
+
+
+
+residuals <- residuals(m6_wls)
+# Q-Q Plot
+qqnorm(residuals)
+qqline(residuals)
+
+
+
+fitted_values <- fitted(m1)
+plot(fitted_values, residuals, main = "Residuals vs. Fitted Values", xlab = "Fitted Values", ylab = "Residuals")
+
+shapiro.test(residuals)
+
+plot(predict(m1), residuals)
+abline(h = 0, col = "red")
+########## weighted regression
+
+# Calculate the weights based on the residuals
+weights <- 1 / residuals^2
+
+# Fit the weighted least squares (WLS) regression model
+m2 <- lm(arcsine_trans ~ leaf_origin_contrast, weights = weights, data = mass.present.deploy.merged.df)
+anova(m2)
+# Check for heteroscedasticity in the WLS model
+plot(fitted(m2), residuals(m2))
+abline(h = 0, col = "red")
+
+qqnorm(m2$residuals)
+qqline(m2$residuals)
+
+```
+
+
+Generic t-test for P only treatment
+```{r}
+
 # the t test will use z score values
 #combined site
 mass.present.deploy.merged.df$combined_site <- paste("site", mass.present.deploy.merged.df$site_num, sep = "")
@@ -1392,7 +1555,7 @@ ggsave("figures/leaf.z.presentonly.plot.pdf", leaf.z.presentonly.plot, width = 8
 Analysis for **all treatment** dataframe
 There are two ways to go about model exploration: using z scored mass loss or arcsine square root transforming percent mass loss. These are outlined below...
 
-visualize the 4 treatments
+first, plot to visualize the 4 treatments
 ```{r}
 # Combine treatment and hfa into one group
 mass.deploy.merged.df$combined_group <- paste(mass.deploy.merged.df$treatment, mass.deploy.merged.df$hfa, sep = "-")
@@ -1419,8 +1582,175 @@ leaf.mass.bothtreatments.plot
 
 
 ```
-model exploration of all treatment
+
+model exploration of all treatments: ph, pa, abh, aba
 ```{r}
+#transform % mass loss into arcsine trans
+scaling_factor <- 2.5
+mass.deploy.merged.df <- mass.deploy.merged.df %>%
+  mutate(arcsine_trans = asin(sqrt(perc.mass_loss_c / 100)))%>%
+  mutate(arcsine_trans.scaled= scaling_factor * arcsine_trans)
+
+install.packages("glmmTMB")
+library(glmmTMB)
+glmmtb1 <- glmmTMB(prop.mass_loss ~ treatment + hfa + (1 | tree_num) + (1|deploy), family = gaussian(link="logit"), data = mass.deploy.merged.df)
+summary(glmmtb1)
+
+# Residuals vs. Fitted Values Plot
+plot(residuals(glmmtb1) ~ fitted(glmmtb1))
+
+# Residuals vs. Predictors Plot (replace 'predictor_name' with your predictor variable)
+plot(residuals(glmmtb1) ~ mass.deploy.merged.df$hfa)
+
+# Histogram of Residuals on the Logit Scale
+hist(residuals(glmmtb1, type = "response"), breaks = 15)
+
+# Q-Q Plot of Residuals on the Logit Scale
+qqnorm(residuals(glmmtb1, type = "response"))
+qqline(residuals(glmmtb1, type = "response"))
+
+# Shapiro-Wilk Normality Test on Residuals
+shapiro.test(residuals(glmmtb1, type = "response"))
+# Q-Q Plots
+qqnorm(mass.deploy.merged.df$arcsine_trans.scaled)
+qqline(mass.deploy.merged.df$arcsine_trans.scaled)
+
+hist((mass.deploy.merged.df$prop.mass_loss^(1/2)) * 2)
+
+# install.packages("MASS")
+# library(MASS)
+
+library(MASS)
+# Assuming 'proportional_data' is your raw proportional data
+lambda <- boxcox(mass.deploy.merged.df$prop.mass_loss)$x  # Find the optimal lambda
+boxcox_transformed <- ifelse(lambda == 0, log(proportional_data), (proportional_data^lambda - 1) / lambda)
+
+```
+
+
+```{r}
+# Adjust the scaling factor as needed
+scaled_arcsine_transformed <- scaling_factor * arcsine_transformed
+
+mass.deploy.merged.df=mass.deploy.merged.df%>%
+  mutate(prop.mass_loss = perc.mass_loss_c/100)
+# Combine treatment and hfa into one group
+mass.deploy.merged.df$combined_group <- paste(mass.deploy.merged.df$treatment, mass.deploy.merged.df$hfa, sep = "-")
+
+# Reorder the levels of 'combined_group' variable
+mass.deploy.merged.df$combined_group <- factor(mass.deploy.merged.df$combined_group, 
+                                            levels = c("P-H", "P-A", "AB-H", "AB-A"))
+
+
+###### apply new transformations besides arcsine
+mass.deploy.merged.df$logit_trans <- log(mass.deploy.merged.df$prop.mass_loss / (1 - mass.deploy.merged.df$prop.mass_loss))
+hist(mass.deploy.merged.df$logit_trans, breaks = 10)
+
+
+#inspect the data
+density_data <- density(mass.deploy.merged.df$arcsine_trans)
+
+hist(residuals(lmer1.wt), freq= F, main= "", breaks = 15)
+lines(density_data, col = "red")
+
+# Load required libraries
+library(lme4)  # For mixed-effects modeling
+library(car)   # For Type III ANOVA
+library(emmeans) # For post-hoc tests
+
+# Fit the mixed-effects model
+lmer1 <- lmer(arcsine_trans ~ treatment * hfa + (1|tree_id) + (1|deploy), data = mass.deploy.merged.df)
+residuals <- residuals(lmer1)
+variance_residuals <- residuals^2
+weights <- 1 / variance_residuals
+lmer1.wt <- lmer(arcsine_trans ~ treatment * hfa + (1|tree_id) + (1|deploy), weights = weights, data = mass.deploy.merged.df)
+
+plot(residuals(lmer1.wt) ~ fitted(lmer1.wt))
+qqnorm(residuals(lmer1.wt))
+qqline(residuals(lmer1.wt))
+
+glmm1 <- glmer(arcsine_trans ~ treatment * hfa + (1|tree_id) + (1|deploy), family = Gamma(link="inverse"), data = mass.deploy.merged.df)
+summary(glmm1)
+help(glm)
+
+# Assuming your model is glmm1
+
+# 1. Linearity and Homoscedasticity:
+# Create a residuals vs. fitted values plot to check for linearity and homoscedasticity
+plot(residuals(glmm1) ~ fitted(glmm1))
+
+# 2. Distributional Assumption:
+# Check the normality of residuals using a Q-Q plot
+
+
+# 3. Independence:
+# You can visually inspect the residuals plot for any patterns that might indicate lack of independence.
+# Alternatively, you can use a Durbin-Watson test to check for autocorrelation.
+dwtest(glmm1)
+
+# 4. Random Effects Assumptions:
+# Check the assumptions for random effects (1|tree_id) and (1|deploy)
+# Plot random effects to check for normality and homoscedasticity
+ranef(glmm1, condVar = TRUE)
+
+# 5. Overdispersion:
+# You can check for overdispersion by comparing the residual deviance to the residual degrees of freedom.
+overdisp_fun <- function(model) {
+  disp = sum(residuals(model, type = "pearson")^2) / df.residual(model)
+  disp
+}
+dispersion_glmm1 <- overdisp_fun(glmm1)
+
+# Print the dispersion parameter
+dispersion_glmm1
+
+
+# Type III ANOVA for fixed effects
+Anova(lmer1, type="III")
+
+# Post-hoc tests for interactions (if significant)
+interaction_emm <- emmeans(lmer1, specs = ~treatment:hfa)
+contrast(interaction_emm, method = "pairwise")
+
+# You may need to adjust for multiple comparisons in post-hoc tests
+
+# Check model assumptions and plot if needed
+# Assuming 'model' is your fitted mixed-effects model
+# Normality of Residuals
+qqnorm(residuals(lmer1))
+qqline(residuals(lmer1))  # Add a reference line
+# Shapiro-Wilk Test
+shapiro.test(residuals(lmer1.wt))
+
+# Homoscedasticity (Residuals vs. Fitted Plot)
+plot(fitted(lmer1), residuals(lmer1))
+abline(h = 0, col = "red")  # Add a reference line
+
+#### the lmer violates assumptions of the anova
+install.packages("robustlmm")
+library(robustlmm)
+
+# Create a histogram
+hist_data=hist(mass.deploy.merged.df$z_score, plot = FALSE)
+
+# Create a density plot
+
+# Define your covariance structure, e.g., corExp() for exponential correlation
+library(nlme)
+covariance_structure <- corExp(form = ~1|mass.deploy.merged.df$deploy)
+
+# Fit the GLS model
+gls_model <- gls(arcsine_trans ~ treatment + hfa, 
+                 correlation = covariance_structure, data = mass.deploy.merged.df)
+
+
+density(mass.deploy.merged.df$arcsine_trans)
+
+
+lmer1.robust <- rlmer(arcsine_trans ~ treatment * hfa + (1 | deploy), data = mass.deploy.merged.df)
+
+# Interpret the results
+
 # Create a histogram
 hist_data=hist(mass.deploy.merged.df$z_score, plot = FALSE)
 
@@ -1472,21 +1802,23 @@ aov1 <- aov(z_score ~ as.factor(combined_group), data = mass.deploy.merged.df)
 aov2 <- aov(z_score ~ as.factor(combined_group), data = mass.deploy.merged.df)
 aov3 <- aov(z_score ~ as.factor(combined_group) + Error(tree_id / tree_num), data = mass.deploy.merged.df)
 aov4 <- aov(z_score ~ as.factor(combined_group) + Error(tree_id /tree_num / site_num), data = mass.deploy.merged.df)
-
+lmer1 <- lmer(arcsine_trans ~ treatment * hfa + (1 | deploy) + (1 | tree_num), data = mass.deploy.merged.df)
+anova(lmer1)
+lmer1.resid=residuals(lmer1)
 
 summary(aov1)
 #checking anova assumptions are met
 #normality
-qqnorm(aov1$residuals)
-qqline(aov1$residuals)
+qqnorm(lmer1.resid)
+qqline(lmer1.resid)
 
-shapiro.test(aov1$residuals)
+shapiro.test(lmer1.resid)
 
 # Histogram
-hist(aov1$Within$residuals)
+hist(lmer1.resid)
 
 #homogeneity (i.e., homoscedasticity)
-plot(aov1$Within$fitted.values, aov1$Within$residuals, xlab = "Fitted Values", ylab = "Residuals")
+plot(fitted(lmer1), residuals(lmer1), xlab = "Fitted Values", ylab = "Residuals")
 abline(h = 0, col = "red")
 
 leveneTest(z_score ~ combined_group, data = mass.deploy.merged.df)
@@ -1510,14 +1842,9 @@ print(kw1)
 
 This is the proper all treatment dataframe
 ```{r}
-# Combine treatment and hfa into one group
-mass.deploy.merged.df$combined_group <- paste(mass.deploy.merged.df$treatment, mass.deploy.merged.df$hfa, sep = "-")
 
-# Reorder the levels of 'combined_group' variable
-mass.deploy.merged.df$combined_group <- factor(mass.deploy.merged.df$combined_group, 
-                                            levels = c("P-H", "P-A", "AB-H", "AB-A"))
-dunn.test.z.res=mass.deploy.merged.df %>% dunn_test(z_score ~ combined_group) %>% add_xy_position(x = "combined_group")
-
+dunn.test.z.res=mass.deploy.merged.df %>% dunn_test(arcsine_trans ~ combined_group) %>% add_xy_position(x = "combined_group")
+dunn.test.z.res
 # Create a function to format p-values and add stars for significance
 format_p_value <- function(p_value) {
   if (p_value < 0.001) {
@@ -1675,7 +2002,6 @@ leveneTest(z_score ~ hfa, data = mass.absent.deploy.merged.df)
   # p= 0.63, variances between H and A are equal (i.e., the homogeneity assumption of the variance is met)
 
 
-
 # the t test will use z score values
 stat.ab.test.z <- mass.absent.deploy.merged.df %>% 
   t_test(z_score ~ hfa, var.equal = T) %>%
@@ -1819,7 +2145,7 @@ hist(m2$residuals)
 
 ```
 
-
+----------------- START OF HFAI CALCULATIONS ----------------------------------
 
 Calculating HFA Index (HFAI) from Ayres et al. (2009):
 
@@ -1845,6 +2171,9 @@ The equation calculates the Home-Field Advantage Index (HFAI) by comparing the r
 
 
 NEW: use this! This is a now a proper test dataframe with for loop!
+
+NOTICE: THIS IS FOR SITE 1:
+
 generate **present**, site a (HOK 1)
 ```{r}
 ########################
@@ -2262,7 +2591,9 @@ hfai.allsite1.df$values %>%
 
 
 ```
-THIS IS NOW SITE 2:
+
+
+NOTICE: THIS IS NOW SITE 2:
 
 NEW: use this! This is a now a proper test dataframe with for loop!
 generate **present**, site a (HOK 2)
@@ -2661,6 +2992,8 @@ for (X in X_values) {
 result_ab_df_2
 
 ```
+
+
 NEW: use this! merging all dataframes (Sites 1 and 2; includes P and AB)
 merge all sites and plot
 ```{r}
@@ -2705,11 +3038,11 @@ percentage_negative <- (total_negative / (total_negative + total_positive)) * 10
 
 
 #just P treatment
+#just P treatment with coord_flip
 hfai.present.allsites.plot=ggplot(hfai.present.allsites.df, aes(x = reorder(names, values), y = values, fill = treatment)) +
-  geom_bar(stat = "identity", position ="dodge", alpha = 0.3) +
-  scale_fill_viridis_d()+
-    labs(subtitle = formatted_p_value) +  # Use the formatted t-test result in the subtitle
-  xlab("reciprocated pairs") +
+  scale_fill_manual(values = "grey")+
+  geom_bar(stat = "identity", position ="dodge", alpha = 0.6) +
+  xlab("") +
   ylab("home-field advantage (% faster decomposition at home)") +
   theme_minimal() +
   theme(text = element_text(size =20), 
@@ -2721,7 +3054,8 @@ hfai.present.allsites.plot=ggplot(hfai.present.allsites.df, aes(x = reorder(name
     panel.background = element_blank(),
     plot.background = element_blank())+  
   geom_vline(xintercept = 14.5, linetype = "dashed", color = "red") +
-scale_y_continuous(limits = c(-20, 70), breaks = seq(-20, 70, by = 10))
+scale_y_continuous(limits = c(-20, 70), breaks = seq(-20, 80, by = 20))
+hfai.present.allsites.plot
 
 #just P treatment with coord_flip
 hfai.present.allsites.plot_flipped=ggplot(hfai.present.allsites.df, aes(x = reorder(names, values), y = values, fill = treatment)) +
@@ -2742,7 +3076,7 @@ hfai.present.allsites.plot_flipped=ggplot(hfai.present.allsites.df, aes(x = reor
   geom_vline(xintercept = 14.5, linetype = "dashed", color = "red") +
 scale_y_continuous(limits = c(-20, 70), breaks = seq(-20, 70, by = 10))
 
-ggsave("figures/hfai.present.allsites.plot_flipped.pdf", hfai.present.allsites.plot_flipped, width = 14, height = 10)
+ggsave("figures/hfai.present.allsites.plot.pdf", hfai.present.allsites.plot, width = 14, height = 10)
 
 
 ######################### BOTH P and AB #########################################
@@ -2801,10 +3135,10 @@ percentage_negative <- (total_negative / (total_negative + total_positive)) * 10
 
 
 #both P and AB treatments
-ggplot(hfai.allsites.df, aes(x = reorder(names, values), y = values, fill = treatment)) +
-  geom_bar(stat = "identity", position ="dodge", alpha = 0.5) +
+hfai.allsites.plot=ggplot(hfai.allsites.df, aes(x = reorder(names, values), y = values, fill = treatment)) +
+  geom_bar(stat = "identity", position ="dodge", alpha = 0.3) +
   scale_fill_viridis_d()+
-  xlab("reciprocated pairs") +
+  xlab("") +
   ylab("home-field advantage (% faster decomposition at home)") +
   theme_minimal() +
   theme(text = element_text(size =20), 
@@ -2815,9 +3149,14 @@ ggplot(hfai.allsites.df, aes(x = reorder(names, values), y = values, fill = trea
     panel.border = element_blank(),
     panel.background = element_blank(),
     plot.background = element_blank())+  
-  geom_vline(xintercept = 45, linetype = "dashed", color = "red") 
+  geom_vline(xintercept = 44.5, linetype = "dashed", color = "red")+
+  scale_y_continuous(
+    limits = c(-65, 255),
+     breaks = seq(-65, 250, by = 65),
+    expand = c(0, 0)
+  )
 
-#just P treatment with coord_flip
+
 min(hfai.allsites.df$values) 
 max(hfai.allsites.df$values)
 hfai.allsites.plot_flipped=ggplot(hfai.allsites.df, aes(x = reorder(names, values), y = values, fill = treatment)) +
@@ -2843,7 +3182,7 @@ hfai.allsites.plot_flipped=ggplot(hfai.allsites.df, aes(x = reorder(names, value
   )
 
 
-ggsave("figures/hfai.allsites.plot_flipped.pdf", hfai.allsites.plot_flipped, width = 14, height = 10)
+ggsave("figures/hfai.allsites.plot.pdf", hfai.allsites.plot, width = 14, height = 10)
 
 
 ```
