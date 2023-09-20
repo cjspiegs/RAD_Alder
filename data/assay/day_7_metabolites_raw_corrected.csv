@@ -1,4 +1,4 @@
-treatment,tree_id,deploy,metabolite,hfa,site_num,tree_num,decomp_day,well_id,time,od_raw,od_corrected,od_corrected_b_n
+treatment,tree_id,deploy,metabolite,hfa,site_num,tree_num,decomp_day,well_id,time,od_raw,od_corrected_b,od_corrected_b_n
 P,HOK,HOK,SEK,A,2,5,7,1A,30,0.79,1.172106825,0.9929525223
 AB,HOK,HOK,SEK,A,2,5,7,1B,30,1.467,2.176557864,1.997403561
 P,SEK,HOK,SEK,H,2,5,7,1C,30,1.748,2.59347181,2.414317507

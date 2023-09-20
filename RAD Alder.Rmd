@@ -21,8 +21,9 @@ This data set focuses on:
 (1) **metabolism assay** 
 (2) **Leaf mass loss** using % mass loss  
 (3) **Alder C and N isotopic composotion**
-(4) **Alder secondary chemistry (mass speci)** 
+(4) **Alder secondary chemistry (mass spec)** 
 
+Load primary packages and figure formatting
 ```{r setup chunk, setup, include = FALSE, cache=FALSE, message=FALSE, warning=FALSE}
 if (!require('knitr')) install.packages('knitr'); library('knitr')
 knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.align='center')
@@ -71,6 +72,25 @@ meta.day11.raw.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day
 
 
 meta.day17.raw.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_17_metabolites_raw_corrected.csv")
+
+
+#merge
+meta.df= rbind(meta.day1.raw.df, meta.day3.raw.df, meta.day5.raw.df, meta.day7.raw.df, meta.day11.raw.df, meta.day17.raw.df)
+
+#z score by deployment
+# Assuming your data frame is named 'df'
+meta.df=meta.df %>%
+  filter(time == "960")%>%
+  group_by(deploy, decomp_day) %>%
+  mutate(z_score = (od_corrected_b_n - mean(od_corrected_b_n)) / sd(od_corrected_b_n))
+
+meta.df$treatment=as.factor(meta.df$treatment)
+meta.df$tree_id= as.factor(meta.df$tree_id)
+meta.df$deploy = as.factor(meta.df$deploy)
+meta.df$metabolite= as.factor(meta.df$metabolite)
+meta.df$hfa=as.factor(meta.df$hfa)
+meta.df$decomp_day=as.factor(meta.df$decomp_day)
+meta.df$time = as.numeric(meta.df$time)
 
 
 
@@ -169,6 +189,55 @@ meta.day7.df=subset_list$day7
 meta.day11.df=subset_list$day11
 meta.day17.df=subset_list$day17
 
+#merge into one big dataframe
+meta.df= rbind(meta.day1.df, meta.day3.df, meta.day5.df, meta.day7.df, meta.day11.df, meta.day17.df)
+
+#create new HFA code (if deployed at home or away, fed a home or away metabolite)
+meta.df$group <- 
+  
+ifelse(
+  meta.df$tree_id == "HOK" & meta.df$deploy == "HOK" & meta.df$metabolite == "HOK", "home-home",
+  
+  ifelse(
+    meta.df$tree_id == "HOK" & meta.df$deploy == "HOK" & meta.df$metabolite == "SEK", "home-away",
+    
+    ifelse(
+      meta.df$tree_id == "SEK" & meta.df$deploy == "SEK" & meta.df$metabolite == "SEK", "home-home",
+      
+      ifelse(
+      meta.df$tree_id == "SEK" & meta.df$deploy == "SEK" & meta.df$metabolite == "HOK", "home-away",
+      
+      ifelse(
+      meta.df$tree_id == "HOK" & meta.df$deploy == "SEK" & meta.df$metabolite == "HOK", "away-home-away",
+      
+      ifelse(
+      meta.df$tree_id == "HOK" & meta.df$deploy == "SEK" & meta.df$metabolite == "SEK", "away-home-home",
+      
+      ifelse(
+      meta.df$tree_id == "SEK" & meta.df$deploy == "HOK" & meta.df$metabolite == "SEK", "away-home-away",
+      
+     ifelse(
+      meta.df$tree_id == "SEK" & meta.df$deploy == "HOK" & meta.df$metabolite == "HOK", "away-home-home",
+        NA  # Default value if none of the conditions are met
+      )
+    )
+  )
+)
+)
+)
+)
+)
+
+# Group by the factors of interest
+z_scored_data <- meta.df %>%
+  group_by(deploy, metabolite, decomp_day) %>%
+  mutate(
+    mean_OD = mean(od_corrected_b_n),           # Calculate mean for the group
+    sd_OD = sd(od_corrected_b_n),               # Calculate standard deviation for the group
+    z_score = (od_corrected_b_n - mean_OD) / sd_OD  # Calculate z-score
+  )
+z_scored_data
+
 
 ```
 
@@ -178,7 +247,19 @@ Day 1: plots
 #color blind palette
 library(viridis) 
 
-day1.z.30.plot=ggplot(meta.day1.df[meta.day1.df$time=="30",], aes(x = treatment, y = z_score, fill = factor(hfa))) +
+meta.df %>% 
+  ggplot( aes(x = decomp_day, linetype= treatment, color = group, y = z_score)) +
+  geom_line(aes(group = interaction(hfa, treatment, site_num, metabolite, deploy, tree_num,tree_id))) + 
+  geom_point(aes(group = tree_num)) +   
+  theme_test()+
+  facet_wrap(deploy~group)
+
+
+```
+
+
+```{r}
+day1.z.30.plot=ggplot(meta.df[meta.df$time=="30",], aes(x = de, y = z_score, fill = factor(hfa))) +
   geom_boxplot() +
   labs(x = "Treatment", y = "Optical density (z-scored)") +
   theme(legend.position = "right")+
@@ -1652,14 +1733,14 @@ for (X in X_values) {
     Ba_column <- paste("Ba.", Y, sep = "")
     
     # Calculate the result for Armla for the current combination
-    armla_result <- (mass.hok1.present.df[mass.hok1.present.df$ayres.tree == Aa_column, "perc.mass_loss_c"] / 
-                     (mass.hok1.present.df[mass.hok1.present.df$ayres.tree == Aa_column, "perc.mass_loss_c"] + 
-                      mass.hok1.present.df[mass.hok1.present.df$ayres.tree == Ba_column, "perc.mass_loss_c"])) * 100
+    armla_result <- (mass.hok1.present.df[mass.hok1.present.df$ayres.tree == Aa_column, "perc.mass_loss"] / 
+                     (mass.hok1.present.df[mass.hok1.present.df$ayres.tree == Aa_column, "perc.mass_loss"] + 
+                      mass.hok1.present.df[mass.hok1.present.df$ayres.tree == Ba_column, "perc.mass_loss"])) * 100
     
     # Calculate the result for Brmla for the current combination
-    brmla_result <- (mass.hok1.present.df[mass.hok1.present.df$ayres.tree == Ba_column, "perc.mass_loss_c"] / 
-                     (mass.hok1.present.df[mass.hok1.present.df$ayres.tree == Ba_column, "perc.mass_loss_c"] + 
-                      mass.hok1.present.df[mass.hok1.present.df$ayres.tree == Aa_column, "perc.mass_loss_c"])) * 100
+    brmla_result <- (mass.hok1.present.df[mass.hok1.present.df$ayres.tree == Ba_column, "perc.mass_loss"] / 
+                     (mass.hok1.present.df[mass.hok1.present.df$ayres.tree == Ba_column, "perc.mass_loss"] + 
+                      mass.hok1.present.df[mass.hok1.present.df$ayres.tree == Aa_column, "perc.mass_loss"])) * 100
     
     # Create a new name for the results
     armla_name <- paste("Armla", X, Y, sep = ".")
@@ -1727,14 +1808,14 @@ for (X in X_values) {
     Ba_column <- paste("Ba.", Y, sep = "")
     
     # Calculate the result for Armla for the current combination
-    armla_result <- (mass.hok1.absent.df[mass.hok1.absent.df$ayres.tree == Aa_column, "perc.mass_loss_c"] / 
-                     (mass.hok1.absent.df[mass.hok1.absent.df$ayres.tree == Aa_column, "perc.mass_loss_c"] + 
-                      mass.hok1.absent.df[mass.hok1.absent.df$ayres.tree == Ba_column, "perc.mass_loss_c"])) * 100
+    armla_result <- (mass.hok1.absent.df[mass.hok1.absent.df$ayres.tree == Aa_column, "perc.mass_loss"] / 
+                     (mass.hok1.absent.df[mass.hok1.absent.df$ayres.tree == Aa_column, "perc.mass_loss"] + 
+                      mass.hok1.absent.df[mass.hok1.absent.df$ayres.tree == Ba_column, "perc.mass_loss"])) * 100
     
     # Calculate the result for Brmla for the current combination
-    brmla_result <- (mass.hok1.absent.df[mass.hok1.absent.df$ayres.tree == Ba_column, "perc.mass_loss_c"] / 
-                     (mass.hok1.absent.df[mass.hok1.absent.df$ayres.tree == Ba_column, "perc.mass_loss_c"] + 
-                      mass.hok1.absent.df[mass.hok1.absent.df$ayres.tree == Aa_column, "perc.mass_loss_c"])) * 100
+    brmla_result <- (mass.hok1.absent.df[mass.hok1.absent.df$ayres.tree == Ba_column, "perc.mass_loss"] / 
+                     (mass.hok1.absent.df[mass.hok1.absent.df$ayres.tree == Ba_column, "perc.mass_loss"] + 
+                      mass.hok1.absent.df[mass.hok1.absent.df$ayres.tree == Aa_column, "perc.mass_loss"])) * 100
     
     # Create a new name for the results
     armla_name <- paste("Armla", X, Y, sep = ".")
@@ -1802,14 +1883,14 @@ for (X in X_values) {
     Ab_column <- paste("Ab.", Y, sep = "")
     
     # Calculate the result for Armla for the current combination
-    brmlb_result <- (mass.sek1.present.df[mass.sek1.present.df$ayres.tree == Bb_column, "perc.mass_loss_c"] / 
-                     (mass.sek1.present.df[mass.sek1.present.df$ayres.tree == Bb_column, "perc.mass_loss_c"] + 
-                      mass.sek1.present.df[mass.sek1.present.df$ayres.tree == Ab_column, "perc.mass_loss_c"])) * 100
+    brmlb_result <- (mass.sek1.present.df[mass.sek1.present.df$ayres.tree == Bb_column, "perc.mass_loss"] / 
+                     (mass.sek1.present.df[mass.sek1.present.df$ayres.tree == Bb_column, "perc.mass_loss"] + 
+                      mass.sek1.present.df[mass.sek1.present.df$ayres.tree == Ab_column, "perc.mass_loss"])) * 100
     
     # Calculate the result for Brmla for the current combination
-    armlb_result <- (mass.sek1.present.df[mass.sek1.present.df$ayres.tree == Ab_column, "perc.mass_loss_c"] / 
-                     (mass.sek1.present.df[mass.sek1.present.df$ayres.tree == Ab_column, "perc.mass_loss_c"] + 
-                      mass.sek1.present.df[mass.sek1.present.df$ayres.tree == Bb_column, "perc.mass_loss_c"])) * 100
+    armlb_result <- (mass.sek1.present.df[mass.sek1.present.df$ayres.tree == Ab_column, "perc.mass_loss"] / 
+                     (mass.sek1.present.df[mass.sek1.present.df$ayres.tree == Ab_column, "perc.mass_loss"] + 
+                      mass.sek1.present.df[mass.sek1.present.df$ayres.tree == Bb_column, "perc.mass_loss"])) * 100
     
     # Create a new name for the results
     brmlb_name <- paste("Brmlb", X, Y, sep = ".")
@@ -1876,14 +1957,14 @@ for (X in X_values_3) {
     Ab_column <- paste("Ab.", Y, sep = "")
     
     # Calculate the result for Armla for the current combination
-    brmlb_result <- (mass.sek1.absent.df[mass.sek1.absent.df$ayres.tree == Bb_column, "perc.mass_loss_c"] / 
-                     (mass.sek1.absent.df[mass.sek1.absent.df$ayres.tree == Bb_column, "perc.mass_loss_c"] + 
-                      mass.sek1.absent.df[mass.sek1.absent.df$ayres.tree == Ab_column, "perc.mass_loss_c"])) * 100
+    brmlb_result <- (mass.sek1.absent.df[mass.sek1.absent.df$ayres.tree == Bb_column, "perc.mass_loss"] / 
+                     (mass.sek1.absent.df[mass.sek1.absent.df$ayres.tree == Bb_column, "perc.mass_loss"] + 
+                      mass.sek1.absent.df[mass.sek1.absent.df$ayres.tree == Ab_column, "perc.mass_loss"])) * 100
     
     # Calculate the result for Brmla for the current combination
-    armlb_result <- (mass.sek1.absent.df[mass.sek1.absent.df$ayres.tree == Ab_column, "perc.mass_loss_c"] / 
-                     (mass.sek1.absent.df[mass.sek1.absent.df$ayres.tree == Ab_column, "perc.mass_loss_c"] + 
-                      mass.sek1.absent.df[mass.sek1.absent.df$ayres.tree == Bb_column, "perc.mass_loss_c"])) * 100
+    armlb_result <- (mass.sek1.absent.df[mass.sek1.absent.df$ayres.tree == Ab_column, "perc.mass_loss"] / 
+                     (mass.sek1.absent.df[mass.sek1.absent.df$ayres.tree == Ab_column, "perc.mass_loss"] + 
+                      mass.sek1.absent.df[mass.sek1.absent.df$ayres.tree == Bb_column, "perc.mass_loss"])) * 100
     
     # Create a new name for the results
     brmlb_name <- paste("Brmlb", X, Y, sep = ".")
@@ -2074,14 +2155,14 @@ for (X in X_values) {
     Ba_column <- paste("Ba.", Y, sep = "")
     
     # Calculate the result for Armla for the current combination
-    armla_result <- (mass.hok2.present.df[mass.hok2.present.df$ayres.tree == Aa_column, "perc.mass_loss_c"] / 
-                     (mass.hok2.present.df[mass.hok2.present.df$ayres.tree == Aa_column, "perc.mass_loss_c"] + 
-                      mass.hok2.present.df[mass.hok2.present.df$ayres.tree == Ba_column, "perc.mass_loss_c"])) * 100
+    armla_result <- (mass.hok2.present.df[mass.hok2.present.df$ayres.tree == Aa_column, "perc.mass_loss"] / 
+                     (mass.hok2.present.df[mass.hok2.present.df$ayres.tree == Aa_column, "perc.mass_loss"] + 
+                      mass.hok2.present.df[mass.hok2.present.df$ayres.tree == Ba_column, "perc.mass_loss"])) * 100
     
     # Calculate the result for Brmla for the current combination
-    brmla_result <- (mass.hok2.present.df[mass.hok2.present.df$ayres.tree == Ba_column, "perc.mass_loss_c"] / 
-                     (mass.hok2.present.df[mass.hok2.present.df$ayres.tree == Ba_column, "perc.mass_loss_c"] + 
-                      mass.hok2.present.df[mass.hok2.present.df$ayres.tree == Aa_column, "perc.mass_loss_c"])) * 100
+    brmla_result <- (mass.hok2.present.df[mass.hok2.present.df$ayres.tree == Ba_column, "perc.mass_loss"] / 
+                     (mass.hok2.present.df[mass.hok2.present.df$ayres.tree == Ba_column, "perc.mass_loss"] + 
+                      mass.hok2.present.df[mass.hok2.present.df$ayres.tree == Aa_column, "perc.mass_loss"])) * 100
     
     # Create a new name for the results
     armla_name <- paste("Armla", X, Y, sep = ".")
@@ -2114,12 +2195,6 @@ print(armla_df_2)
 print(brmla_df_2)
 
 armla.brmla.df_2=rbind(armla_df_2, brmla_df_2)
-View(armla.brmla.df_2)
-
-
-###### check the math
-
-(mass.hok2.present.df[mass.hok2.present.df$ayres.tree=="Aa.1",]$perc.mass_loss_c/(mass.hok2.present.df[mass.hok2.present.df$ayres.tree=="Aa.1",]$perc.mass_loss_c + mass.hok2.present.df[mass.hok2.present.df$ayres.tree=="Ba.3",]$perc.mass_loss_c))*100
 
 
 ```
@@ -2158,14 +2233,14 @@ for (X in X_values) {
     Ba_column <- paste("Ba.", Y, sep = "")
     
     # Calculate the result for Armla for the current combination
-    armla_result <- (mass.hok2.absent.df[mass.hok2.absent.df$ayres.tree == Aa_column, "perc.mass_loss_c"] / 
-                     (mass.hok2.absent.df[mass.hok2.absent.df$ayres.tree == Aa_column, "perc.mass_loss_c"] + 
-                      mass.hok2.absent.df[mass.hok2.absent.df$ayres.tree == Ba_column, "perc.mass_loss_c"])) * 100
+    armla_result <- (mass.hok2.absent.df[mass.hok2.absent.df$ayres.tree == Aa_column, "perc.mass_loss"] / 
+                     (mass.hok2.absent.df[mass.hok2.absent.df$ayres.tree == Aa_column, "perc.mass_loss"] + 
+                      mass.hok2.absent.df[mass.hok2.absent.df$ayres.tree == Ba_column, "perc.mass_loss"])) * 100
     
     # Calculate the result for Brmla for the current combination
-    brmla_result <- (mass.hok2.absent.df[mass.hok2.absent.df$ayres.tree == Ba_column, "perc.mass_loss_c"] / 
-                     (mass.hok2.absent.df[mass.hok2.absent.df$ayres.tree == Ba_column, "perc.mass_loss_c"] + 
-                      mass.hok2.absent.df[mass.hok2.absent.df$ayres.tree == Aa_column, "perc.mass_loss_c"])) * 100
+    brmla_result <- (mass.hok2.absent.df[mass.hok2.absent.df$ayres.tree == Ba_column, "perc.mass_loss"] / 
+                     (mass.hok2.absent.df[mass.hok2.absent.df$ayres.tree == Ba_column, "perc.mass_loss"] + 
+                      mass.hok2.absent.df[mass.hok2.absent.df$ayres.tree == Aa_column, "perc.mass_loss"])) * 100
     
     # Create a new name for the results
     armla_name <- paste("Armla", X, Y, sep = ".")
@@ -2231,14 +2306,14 @@ for (X in X_values) {
     Ab_column <- paste("Ab.", Y, sep = "")
     
     # Calculate the result for Armla for the current combination
-    brmlb_result <- (mass.sek2.present.df[mass.sek2.present.df$ayres.tree == Bb_column, "perc.mass_loss_c"] / 
-                     (mass.sek2.present.df[mass.sek2.present.df$ayres.tree == Bb_column, "perc.mass_loss_c"] + 
-                      mass.sek2.present.df[mass.sek2.present.df$ayres.tree == Ab_column, "perc.mass_loss_c"])) * 100
+    brmlb_result <- (mass.sek2.present.df[mass.sek2.present.df$ayres.tree == Bb_column, "perc.mass_loss"] / 
+                     (mass.sek2.present.df[mass.sek2.present.df$ayres.tree == Bb_column, "perc.mass_loss"] + 
+                      mass.sek2.present.df[mass.sek2.present.df$ayres.tree == Ab_column, "perc.mass_loss"])) * 100
     
     # Calculate the result for Brmla for the current combination
-    armlb_result <- (mass.sek2.present.df[mass.sek2.present.df$ayres.tree == Ab_column, "perc.mass_loss_c"] / 
-                     (mass.sek2.present.df[mass.sek2.present.df$ayres.tree == Ab_column, "perc.mass_loss_c"] + 
-                      mass.sek2.present.df[mass.sek2.present.df$ayres.tree == Bb_column, "perc.mass_loss_c"])) * 100
+    armlb_result <- (mass.sek2.present.df[mass.sek2.present.df$ayres.tree == Ab_column, "perc.mass_loss"] / 
+                     (mass.sek2.present.df[mass.sek2.present.df$ayres.tree == Ab_column, "perc.mass_loss"] + 
+                      mass.sek2.present.df[mass.sek2.present.df$ayres.tree == Bb_column, "perc.mass_loss"])) * 100
     
     # Create a new name for the results
     brmlb_name <- paste("Brmlb", X, Y, sep = ".")
@@ -2304,14 +2379,14 @@ for (X in X_values) {
     Ab_column <- paste("Ab.", Y, sep = "")
     
     # Calculate the result for Armla for the current combination
-    brmlb_result <- (mass.sek2.absent.df[mass.sek2.absent.df$ayres.tree == Bb_column, "perc.mass_loss_c"] / 
-                     (mass.sek2.absent.df[mass.sek2.absent.df$ayres.tree == Bb_column, "perc.mass_loss_c"] + 
-                      mass.sek2.absent.df[mass.sek2.absent.df$ayres.tree == Ab_column, "perc.mass_loss_c"])) * 100
+    brmlb_result <- (mass.sek2.absent.df[mass.sek2.absent.df$ayres.tree == Bb_column, "perc.mass_loss"] / 
+                     (mass.sek2.absent.df[mass.sek2.absent.df$ayres.tree == Bb_column, "perc.mass_loss"] + 
+                      mass.sek2.absent.df[mass.sek2.absent.df$ayres.tree == Ab_column, "perc.mass_loss"])) * 100
     
     # Calculate the result for Brmla for the current combination
-    armlb_result <- (mass.sek2.absent.df[mass.sek2.absent.df$ayres.tree == Ab_column, "perc.mass_loss_c"] / 
-                     (mass.sek2.absent.df[mass.sek2.absent.df$ayres.tree == Ab_column, "perc.mass_loss_c"] + 
-                      mass.sek2.absent.df[mass.sek2.absent.df$ayres.tree == Bb_column, "perc.mass_loss_c"])) * 100
+    armlb_result <- (mass.sek2.absent.df[mass.sek2.absent.df$ayres.tree == Ab_column, "perc.mass_loss"] / 
+                     (mass.sek2.absent.df[mass.sek2.absent.df$ayres.tree == Ab_column, "perc.mass_loss"] + 
+                      mass.sek2.absent.df[mass.sek2.absent.df$ayres.tree == Bb_column, "perc.mass_loss"])) * 100
     
     # Create a new name for the results
     brmlb_name <- paste("Brmlb", X, Y, sep = ".")
@@ -2446,14 +2521,14 @@ merge all sites; HFAI plots
 ```{r}
 #combine sites 1 and 2 including P and AB
 hfai.allsites.df=rbind(result_df_1, result_df_2, result_ab_df_1, result_ab_df_2)
-
+hfai.allsites.df$treatment=as.factor(hfai.allsites.df$treatment)
 
 
 ####################  P ONLY ###################
 #filter P treatment only for HFA effect
 hfai.present.allsites.df=hfai.allsites.df%>%
   filter(treatment == "P")
-hfai.present.allsites.df
+
 
 # Filter the dataframe to include only positive cases
 positive_present_df <- hfai.present.allsites.df[hfai.present.allsites.df$values > 0, ]
@@ -2464,6 +2539,8 @@ se_hfa <- sd(positive_present_df$values) / sqrt(nrow(positive_present_df))
 # Perform a t-test
 t_test_present_result <- t.test(positive_present_df$values, mu = 0)
 t_test_present_result
+
+
 
 # Format the t-test result
 t_test_label <- paste("p =", formatC(t_test_present_result$p.value, format = "e", digits = 2), ",", "t-test =", round(t_test_present_result$statistic, 2))
@@ -2482,7 +2559,8 @@ total_negative <- sum(hfai.present.allsites.df$values < 0)
 # Calculate the percentage of positive values relative to negative
 percentage_positive <- (total_positive / (total_positive + total_negative)) * 100
 percentage_negative <- (total_negative / (total_negative + total_positive)) * 100
-
+# 68% positive
+# 32% negative
 
 #just P treatment
 #just P treatment with coord_flip
@@ -2523,17 +2601,109 @@ hfai.present.allsites.plot_flipped=ggplot(hfai.present.allsites.df, aes(x = reor
   geom_vline(xintercept = 14.5, linetype = "dashed", color = "red") +
 scale_y_continuous(limits = c(-20, 70), breaks = seq(-20, 70, by = 10))
 
-ggsave("figures/hfai.present.allsites.plot.pdf", hfai.present.allsites.plot, width = 14, height = 10)
 
 
+hfai.present.allsites.plot_flipped=ggplot(hfai.present.allsites.df, aes(x = reorder(names, values), y = values, fill = treatment)) +
+  scale_fill_manual(values = "grey")+
+  geom_bar(stat = "identity", position ="dodge", alpha = 0.6) +
+  coord_flip()+
+  xlab("") +
+  ylab("home-field advantage (% faster decomposition at home)") +
+  theme_minimal() +
+  theme(text = element_text(size =20), 
+    axis.text.y = element_blank(),
+    legend.position = "right",
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    plot.background = element_blank())+  
+  geom_vline(xintercept = 16.5, linetype = "dashed", color = "red")
+
+hfai.present.allsites.plot_flipped
+ggsave("figures/hfai.present.allsites.plot_flipped.pdf", hfai.present.allsites.plot_flipped, width = 14, height = 10)
+
+
+```
+
+
+```{r}
 ######################### BOTH P and AB #########################################
 
 # Filter the dataframe to include only positive cases
-positive_all_df <- hfai.allsites.df[hfai.allsites.df$values > 0, ]
 
-# Calculate the mean and standard error (SE)
-mean_hfa <- mean(positive_all_df$values)
-se_hfa <- sd(positive_all_df$values) / sqrt(nrow(positive_all_df))
+mean_positive_P <- mean(hfai.allsites.df[hfai.allsites.df$treatment == "P" & hfai.allsites.df$values > 0, "values"])
+
+positive_values <- hfai.allsites.df %>%
+  filter(values > 0)
+
+mean_positive <- mean(positive_values$values)
+se_positive <- sd(positive_values$values) / sqrt(nrow(positive_values))
+
+se_positive_P <- sd(hfai.allsites.df[hfai.allsites.df$treatment == "P" & hfai.allsites.df$values > 0, "values"]) / sqrt(nrow(hfai.allsites.df[hfai.allsites.df$treatment == "P" & hfai.allsites.df$values > 0, ]))
+
+
+mean_positive_AB <- mean(hfai.allsites.df[hfai.allsites.df$treatment == "AB" & hfai.allsites.df$values > 0, "values"])
+# mean positive P = 13.7
+# mean positive AB = 14.2
+
+print(hfai.allsites.df[hfai.allsites.df$treatment=="P" & hfai.allsites.df$values>0, "values"])
+print(hfai.allsites.df[hfai.allsites.df$treatment=="AB" & hfai.allsites.df$values>0, "values"])
+
+# Calculate the mean of positive "P" values relative to all positive values
+mean_p_relative_to_all <- mean(p_positive_subset$values) / mean(hfai.allsites.df[hfai.allsites.df$values > 0, ]$values)
+
+
+View(hfai.allsites.df)
+
+hfai.allsites.df %>%
+  filter(values > 0) %>%
+  summarise(mean = mean(values), se = sd(values) / sqrt(n()))
+
+hfai.allsites.df %>%
+  filter(values < 0) %>%
+  summarise(mean = mean(values))
+
+hfai.allsites.df%>%
+  filter(treatment == "AB")%>%
+  filter(values > 0)%>%
+n_distinct()
+# P 34 > 0; AB 19 > 0; P 16 < 0; AB 31 < 0
+
+# Subset the dataframe to include only positive values for each treatment
+positive_values <- hfai.allsites.df[hfai.allsites.df$values > 0, "values"]
+
+positive_values_P <- hfai.allsites.df[hfai.allsites.df$treatment == "P" & hfai.allsites.df$values > 0, "values"]
+positive_values_AB <- hfai.allsites.df[hfai.allsites.df$treatment == "AB" & hfai.allsites.df$values > 0, "values"]
+
+# Perform a t-test for each treatment against 0
+t_test<- t.test(positive_values, mu = 0)
+t_test_P <- t.test(positive_values_P, mu = 0)
+t_test_AB <- t.test(positive_values_AB, mu = 0)
+
+# Calculate Cohen's d for each treatment
+cohen_d_P <- t_test_P$estimate / sd(positive_values_P)
+cohen_d_AB <- t_test_AB$estimate / sd(positive_values_AB)
+# Filter the dataframe for positive values (both "P" and "AB")
+positive_values_subset <- hfai.allsites.df[hfai.allsites.df$values > 0, ]
+
+
+# Calculate the proportion of positive values for the "P" treatment relative to all positive values
+proportion_positive_P <- sum(hfai.allsites.df$treatment == "P" & hfai.allsites.df$values > 0) /
+                        sum(hfai.allsites.df$values > 0)
+proportion_positive_AB <- sum(hfai.allsites.df$treatment == "AB" & hfai.allsites.df$values > 0) /
+                        sum(hfai.allsites.df$values > 0)
+
+positive_values_subset%>%
+  filter(treatment == "AB")%>%
+  n_distinct()
+hfai.allsites.df%>%
+  filter(values > 0)%>%
+  n_distinct()
+#53 positive
+# 47 negative
+
+
 # Perform a t-test
 t_test_present_result <- t.test(positive_all_df$values, mu = 0)
 t_test_present_result
@@ -2548,31 +2718,59 @@ formatted_p_value <- if (p_value < 0.0001) {
   paste("p =", formatC(p_value, digits = 1))
 }
 
+#### proportion that are positive
 
 # Filter the dataframe for "AB" and "P" treatments
 ab_p_subset <- hfai.allsites.df[hfai.allsites.df$treatment %in% c("AB", "P"), ]
 
 # Further filter to include only rows where values are greater than 0
 positive_values_subset <- ab_p_subset[ab_p_subset$values > 0, ]
-
+View(positive_values_subset)
 # Calculate the proportion of values greater than 0 for "AB"
 prop_positive_ab <- sum(positive_values_subset$treatment == "AB") / nrow(positive_values_subset)
 
 # Calculate the proportion of values greater than 0 for "P"
 prop_positive_p <- sum(positive_values_subset$treatment == "P") / nrow(positive_values_subset)
 
+
+##### proportion that are negative
+# Further filter to include only rows where values are greater than 0
+neg_values_subset <- ab_p_subset[ab_p_subset$values < 0, ]
+
+# Calculate the proportion of values greater than 0 for "AB"
+prop_neg_ab <- sum(neg_values_subset$treatment == "AB") / nrow(ab_p_subset$values)
+
+
+# Calculate the proportion of values greater than 0 for "P"
+prop_neg_p <- sum(neg_values_subset$treatment == "P") / nrow(ab_p_subset$values)
+
 # Calculate mean and SE for 'AB' and 'P' values individually
 mean_ab <- mean(positive_values_subset[positive_values_subset$treatment == "AB", "values"])
+
+# Calculate the weighted mean for group P
+weighted_mean_P <- sum(positive_values_subset[positive_values_subset$treatment == "P", "values"]) / sum(positive_values_subset$treatment == "P")
+
+# Calculate the weighted mean for group AB
+weighted_mean_AB <- sum(positive_values_subset[positive_values_subset$treatment == "AB", "values"]) / sum(positive_values_subset$treatment == "AB")
+
+# Print the results
+weighted_mean_P
+weighted_mean_AB
+
+med_ab <- median(positive_values_subset[positive_values_subset$treatment == "AB", "values"])
 se_ab <- sd(positive_values_subset[positive_values_subset$treatment == "AB", "values"]) / sqrt(sum(positive_values_subset$treatment == "AB"))
 
 mean_p <- mean(positive_values_subset[positive_values_subset$treatment == "P", "values"])
+med_p <- median(positive_values_subset[positive_values_subset$treatment == "P", "values"])
 se_p <- sd(positive_values_subset[positive_values_subset$treatment == "P", "values"]) / sqrt(sum(positive_values_subset$treatment == "P"))
 
 
 # Perform a t-test
+t_test_result <- t.test(positive_values_subset[positive_values_subset$treatment == "P", "values"], mu = 0)
 t_test_result <- t.test(positive_values_subset[positive_values_subset$treatment == "AB", "values"], mu = 0)
-t_test_result
 
+d <- (mean_p - mean_ab) / sqrt((se_p^2 + se_ab^2) / 2)
+d
 #positive and negative values
 total_positive <- sum(hfai.allsites.df$values > 0)
 total_negative <- sum(hfai.allsites.df$values < 0)
@@ -2580,6 +2778,8 @@ total_negative <- sum(hfai.allsites.df$values < 0)
 percentage_positive <- (total_positive / (total_positive + total_negative)) * 100
 percentage_negative <- (total_negative / (total_negative + total_positive)) * 100
 
+# 53% positive
+# 47% negative
 
 #both P and AB treatments
 hfai.allsites.plot=ggplot(hfai.allsites.df, aes(x = reorder(names, values), y = values, fill = treatment)) +
@@ -2603,12 +2803,14 @@ hfai.allsites.plot=ggplot(hfai.allsites.df, aes(x = reorder(names, values), y = 
     expand = c(0, 0)
   )
 
-
+hfai.allsites.plot
 min(hfai.allsites.df$values) 
 max(hfai.allsites.df$values)
-hfai.allsites.plot_flipped=ggplot(hfai.allsites.df, aes(x = reorder(names, values), y = values, fill = treatment)) +
+
+
+ggplot(hfai.allsites.df, aes(x = reorder(names, values), y = values, fill = treatment)) +
   geom_bar(stat = "identity", position ="dodge", alpha = 0.3) +
-  scale_fill_viridis_d()+
+  scale_fill_manual(values = c("grey", "grey1"))+
   coord_flip()+
   xlab("") +
   ylab("home-field advantage (% faster decomposition at home)") +
@@ -2628,8 +2830,27 @@ hfai.allsites.plot_flipped=ggplot(hfai.allsites.df, aes(x = reorder(names, value
     expand = c(0, 0)
   )
 
+hfai.allsites.plot_flipped=ggplot(hfai.allsites.df, aes(x = reorder(names, values), y = values, fill = treatment)) +
+  geom_bar(stat = "identity", position ="dodge", alpha = 0.4) +
+  scale_fill_manual(values = c("grey", "grey0"))+
+  coord_flip()+
+  xlab("") +
+  ylab("home-field advantage (% faster decomposition at home)") +
+  theme_minimal() +
+  theme(text = element_text(size =20), 
+    axis.text.y = element_blank(),
+    legend.position = "right",
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    plot.background = element_blank())+  
+  geom_vline(xintercept = 46.5, linetype = "dashed", color = "red")
+hfai.allsites.plot_flipped
 
-ggsave("figures/hfai.allsites.plot.pdf", hfai.allsites.plot, width = 14, height = 10)
+max(hfai.allsites.df[hfai.allsites.df$treatment =="AB" & hfai.allsites.df$values >0, "values"])
+
+ggsave("figures/hfai.allsites.plot_flipped.pdf", hfai.allsites.plot_flipped, width = 14, height = 10)
 
 
 ```
