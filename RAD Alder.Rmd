@@ -543,29 +543,43 @@ t_0 <- coef(model)["t_0"]
                         
 #these look the same
 z_scored_d_d_df %>%
- ggplot(aes(x = as.factor(decomp_day), linetype= treatment, color = group, y = z_score)) +
-  geom_smooth(aes(group = interaction(group, treatment), fill = group),  method = 'gam', formula = y ~ s(x, k = 4), alpha = 0.1, na.rm = T)+
-  scale_color_colorblind()+
-  scale_fill_colorblind()+
-theme_bw()
+ ggplot(aes(x = as.factor(time), y = z_score)) +
+  geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'loess', formula = y ~ x, alpha = 0.1, na.rm = TRUE) +
+  labs(x = "decomposition day", y = "standardized optical density (z score)")+
+  scale_color_colorblind() +
+  scale_fill_colorblind() +
+   guides(linetype = guide_legend(override.aes = list(color = "cornflowerblue")))+
+  facet_wrap(.~decomp_day, labeller = labeller(decomp_day = c("1" = "Day 1", "3" = "Day 3", "5" = "Day 5", "7" = "Day 7", "11" = "Day 11", "17" = "Day 17"))) +
+  theme_bw()+
+  theme(
+    axis.text = element_text(size = 12),      # Adjust text size for axis labels
+    axis.title = element_text(size = 14),     # Adjust text size for axis titles
+    legend.text = element_text(size = 12),    # Adjust text size for legend labels
+    legend.title = element_text(size = 14),   # Adjust text size for legend title
+    strip.text = element_text(size = 16)      # Adjust text size for facet labels
+  )
 
 z_scored_d_d_m_df %>%
- ggplot(aes(x = as.factor(decomp_day), linetype= treatment, color = group, y = z_score)) +
-  geom_smooth(aes(group = interaction(group, treatment), fill = group),  method = 'loess', alpha = 0.1, na.rm = T)+
-  scale_color_colorblind()+
-  scale_fill_colorblind()+
-theme_bw()
+ ggplot(aes(x = as.factor(time), y = od_corrected_b)) +
+  geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'loess', formula = y ~ x, alpha = 0.1, na.rm = TRUE) +
+  labs(x = "decomposition day", y = "standardized optical density (z score)")+
+  scale_color_colorblind() +
+  scale_fill_colorblind() +
+   guides(linetype = guide_legend(override.aes = list(color = "cornflowerblue")))+
+  facet_wrap(.~decomp_day, labeller = labeller(decomp_day = c("1" = "Day 1", "3" = "Day 3", "5" = "Day 5", "7" = "Day 7", "11" = "Day 11", "17" = "Day 17"))) +
+  theme_bw()+
+  theme(
+    axis.text = element_text(size = 12),      # Adjust text size for axis labels
+    axis.title = element_text(size = 14),     # Adjust text size for axis titles
+    legend.text = element_text(size = 12),    # Adjust text size for legend labels
+    legend.title = element_text(size = 14),   # Adjust text size for legend title
+    strip.text = element_text(size = 16)      # Adjust text size for facet labels
+  )
 
-z_scored_d_d_m_df %>%
- ggplot(aes(x = as.factor(decomp_day), linetype= treatment, color = hfa, y = z_score)) +
-  geom_smooth(aes(group = interaction(hfa, treatment), fill = hfa),  method = 'gam', formula = y ~ s(x, k = 4), alpha = 0.1, na.rm = T)+
-  scale_color_colorblind()+
-  scale_fill_colorblind()+
-theme_bw()
 
 #these look the same
 z_scored_df %>%
-  ggplot(aes(x = as.factor(decomp_day), linetype= treatment, color = group, y = z_score)) +
+  ggplot(aes(x = as.factor(decomp_day), linetype= treatment, color = group, y = od_corrected_b)) +
   geom_smooth(aes(group = interaction(group, treatment), fill = group),  method = 'loess', formula = y ~ x, alpha = 0.1, na.rm = T)+
   scale_color_colorblind()+
   scale_fill_colorblind()+
@@ -573,7 +587,7 @@ z_scored_df %>%
 theme_bw()
 
 z_scored_df %>%
-  ggplot(aes(x = as.factor(decomp_day), y = z_score)) +
+  ggplot(aes(x = as.factor(decomp_day), y = od_corrected_b)) +
   geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'loess', formula = y ~ x, alpha = 0.1, na.rm = TRUE) +
   labs(x = "decomposition day", y = "standardized optical density (z score)")+
   scale_color_colorblind() +
@@ -591,8 +605,8 @@ z_scored_df %>%
 
 
 z_scored_df %>%
-  ggplot(aes(x = as.factor(time), y = od_corrected_b_n)) +
-  geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'loess', formula = y ~ x, span = 0.7, alpha = 0.1, na.rm = TRUE) +
+  ggplot(aes(x = as.factor(time), y = od_corrected_b)) +
+  geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'loess', formula = y ~ x, alpha = 0.1, na.rm = TRUE) +
   labs(x = "decomposition day", y = "standardized optical density (z score)")+
   scale_color_colorblind() +
   scale_fill_colorblind() +
@@ -609,14 +623,13 @@ z_scored_df %>%
 
 z_scored_df %>%
   ggplot(aes(x = as.factor(time), y = z_score)) +
-  geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'loess', formula = y ~ x, span = 0.7, alpha = 0.1, na.rm = TRUE) +
+  geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'loess', formula = y ~ x, alpha = 0.1, na.rm = TRUE) +
   labs(x = "decomposition day", y = "standardized optical density (z score)")+
   scale_color_colorblind() +
   scale_fill_colorblind() +
    guides(linetype = guide_legend(override.aes = list(color = "cornflowerblue")))+
   facet_wrap(.~decomp_day, labeller = labeller(decomp_day = c("1" = "Day 1", "3" = "Day 3", "5" = "Day 5", "7" = "Day 7", "11" = "Day 11", "17" = "Day 17"))) +
   theme_bw()+
-    scale_y_continuous(limits = c(-0.7, 0.75))+  # Adjust the limits as needed
   theme(
     axis.text = element_text(size = 12),      # Adjust text size for axis labels
     axis.title = element_text(size = 14),     # Adjust text size for axis titles
@@ -626,23 +639,7 @@ z_scored_df %>%
   )
 
 
-z_scored_df %>%
-  filter(time == "960")%>%
-  ggplot(aes(x = as.factor(decomp_day), y = z_score)) +
-  geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'loess', formula = y ~ x, alpha = 0.1, na.rm = TRUE) +
-  labs(x = "decomposition day", y = "standardized optical density (z score)")+
-  scale_color_colorblind() +
-  scale_fill_colorblind() +
-   guides(linetype = guide_legend(override.aes = list(color = "cornflowerblue")))+
-    facet_grid(~ deploy, labeller = labeller(deploy = c("HOK" = "Deployed at Hoko", "SEK" = "Deployed at Sekiu"))) +
-  theme_bw()+
-  theme(
-    axis.text = element_text(size = 12),      # Adjust text size for axis labels
-    axis.title = element_text(size = 14),     # Adjust text size for axis titles
-    legend.text = element_text(size = 12),    # Adjust text size for legend labels
-    legend.title = element_text(size = 14),   # Adjust text size for legend title
-    strip.text = element_text(size = 16)      # Adjust text size for facet labels
-  )
+
 ```
 
 
@@ -656,19 +653,41 @@ z_scored_df %>%
 theme_bw()
 
 z_scored_d_m_df %>%
-  ggplot(aes(x = as.factor(decomp_day), linetype= treatment, color = group, y = z_score)) +
-  geom_smooth(aes(group = interaction(group, treatment), fill = group),  method = 'loess', formula = y ~ x, alpha = 0.1, na.rm = T)+
-  scale_color_colorblind()+
-  scale_fill_colorblind()+
-theme_bw()
+  ggplot(aes(x = as.factor(time), y = z_score)) +
+  geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'loess', formula = y ~ x, alpha = 0.1, na.rm = TRUE) +
+  labs(x = "decomposition day", y = "standardized optical density (z score)")+
+  scale_color_colorblind() +
+  scale_fill_colorblind() +
+   guides(linetype = guide_legend(override.aes = list(color = "cornflowerblue")))+
+  facet_wrap(.~decomp_day, labeller = labeller(decomp_day = c("1" = "Day 1", "3" = "Day 3", "5" = "Day 5", "7" = "Day 7", "11" = "Day 11", "17" = "Day 17"))) +
+        scale_y_continuous(limits = c(-0.6,0.5))+  # Adjust the limits as needed
+  theme_bw()+
+  theme(
+    axis.text = element_text(size = 12),      # Adjust text size for axis labels
+    axis.title = element_text(size = 14),     # Adjust text size for axis titles
+    legend.text = element_text(size = 12),    # Adjust text size for legend labels
+    legend.title = element_text(size = 14),   # Adjust text size for legend title
+    strip.text = element_text(size = 16)      # Adjust text size for facet labels
+  )
 
 
 z_scored_m_df%>%
- ggplot(aes(x = as.factor(decomp_day), linetype= treatment, color = group, y = z_score)) +
-  geom_smooth(aes(group = interaction(group, treatment), fill = group),  method = 'gam', formula = y ~ s(x, k = 4), alpha = 0.1, na.rm = T)+
-  scale_color_colorblind()+
-  scale_fill_colorblind()+
-theme_bw()
+ ggplot(aes(x = as.factor(time), y = z_score)) +
+  geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'loess', formula = y ~ x, alpha = 0.1, na.rm = TRUE) +
+  labs(x = "decomposition day", y = "standardized optical density (z score)")+
+  scale_color_colorblind() +
+  scale_fill_colorblind() +
+   guides(linetype = guide_legend(override.aes = list(color = "cornflowerblue")))+
+  facet_wrap(.~decomp_day, labeller = labeller(decomp_day = c("1" = "Day 1", "3" = "Day 3", "5" = "Day 5", "7" = "Day 7", "11" = "Day 11", "17" = "Day 17"))) +
+          scale_y_continuous(limits = c(-0.6,0.2))+  # Adjust the limits as needed
+  theme_bw()+
+  theme(
+    axis.text = element_text(size = 12),      # Adjust text size for axis labels
+    axis.title = element_text(size = 14),     # Adjust text size for axis titles
+    legend.text = element_text(size = 12),    # Adjust text size for legend labels
+    legend.title = element_text(size = 14),   # Adjust text size for legend title
+    strip.text = element_text(size = 16)      # Adjust text size for facet labels
+  )
 
 scale_colour_colorblind()
   scale_fill_colorblind()
