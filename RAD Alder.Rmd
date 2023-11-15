@@ -1,8 +1,18 @@
 ---
-title: "RAD Alder 2023"
-author: "Cody Spiegel"
+title: "Zapped out of existence! Home-field advantage decomposition patterns persist after removal of leaf-associated microbes"
+author: "CJ Spiegel et al. 2023, in prep"
 date: "`r Sys.Date()`"
-output: word_document
+output:
+  html_document:
+    code_folding: hide
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '4'
+  editor_options:
+      chunk_output_type: console
 ---
 
 ### Project overview
@@ -20,10 +30,8 @@ This data set focuses on:
 
 (1) **metabolism assay** 
 (2) **Leaf mass loss** using % mass loss  
-(3) **Alder C and N isotopic composotion**
-(4) **Alder secondary chemistry (mass spec)** 
-
-Load primary packages and figure formatting
+(3) **Alder C and N isotopic composition**
+(4) **Alder secondary chemistry (via mass spectrometry)** 
 ```{r setup chunk, setup, include = FALSE, cache=FALSE, message=FALSE, warning=FALSE}
 if (!require('knitr')) install.packages('knitr'); library('knitr')
 knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.align='center')
@@ -48,13 +56,10 @@ Fig.formatting<-(theme_classic()) +
   theme(legend.key.size = unit(0.4, "cm"), legend.position = "right") +
   theme(aspect.ratio=1.3) 
 
-
-
-
 ```
 
 
-All metabolite decomp days
+### Import metabolism assay data
 ```{r}
 meta.day1.raw.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_1_metabolites_raw_corrected.csv")
 
@@ -77,54 +82,13 @@ meta.day17.raw.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day
 #merge
 meta.df= rbind(meta.day1.raw.df, meta.day3.raw.df, meta.day5.raw.df, meta.day7.raw.df, meta.day11.raw.df, meta.day17.raw.df)
 
-#If leaf origin is HOK, deploy is HOK, metabolite is HOK = (true home)
-#If leaf origin is SEK, deploy is SEK, metabolite is SEK = (true home)
-
-#If leaf origin is HOK, deploy is HOK, metabolite is SEK = (true away)
-#If leaf origin is SEK, deploy is SEK, metabolite is HOK = (true away)
-
-#If leaf origin is HOK, deploy is SEK, metabolite is SEK (false home)
-#If leaf origin is SEK, deploy is HOK, metabolite is HOK (false home)
-
-#If leaf origin is HOK, deploy is SEK, metabolite is HOK (false away)
-#If leaf origin is SEK, deploy is HOK, metabolite is SEK (false away)
-
-#create group label for deployment and metabolite 
-meta.df$group <- 
-  ifelse(
-   meta.df$tree_id == "HOK" & meta.df$deploy == "HOK" & meta.df$metabolite == "HOK", "T-home",
-   ifelse(
-   meta.df$tree_id == "SEK" & meta.df$deploy == "SEK" & meta.df$metabolite == "SEK", "T-home",
-   ifelse(
-   meta.df$tree_id == "HOK" & meta.df$deploy == "HOK" & meta.df$metabolite == "SEK", "T-away",
-   ifelse(
-   meta.df$tree_id == "SEK" & meta.df$deploy == "SEK" & meta.df$metabolite == "HOK", "T-away",
-   ifelse(
-   meta.df$tree_id == "HOK" & meta.df$deploy == "SEK" & meta.df$metabolite == "SEK", "F-home",
-    ifelse(
-   meta.df$tree_id == "SEK" & meta.df$deploy == "HOK" & meta.df$metabolite == "HOK", "F-home",
-   ifelse(
-   meta.df$tree_id == "HOK" & meta.df$deploy == "SEK" & meta.df$metabolite == "HOK", "F-away",
-    ifelse(
-   meta.df$tree_id == "SEK" & meta.df$deploy == "HOK" & meta.df$metabolite == "SEK", "F-away", NA  # Default value if none of the conditions are met
-                )
-              )
-            )
-          )
-   )
-   )
-   )
-  )
-
-
-##### OR
+#create groups based on deployment and metabolite pair
 
 #if deploy is HOK, metabolite is HOK (home)
 #if deplpy is SEK, metaboltie is SEK (home)
 #if deploy is HOK, metaboltie is SEK (away)
 #if deploy is SEK, metabolite is HOK (away)
 
-#create group label for deployment and metabolite 
 meta.df$group <- 
   ifelse(
   meta.df$deploy == "HOK" & meta.df$metabolite == "HOK", "home",
@@ -138,10 +102,13 @@ meta.df$group <-
               )
             )
           )
- 
 
 
-    
+```
+
+#### z score optical density
+First, z score by decomp day, deployment site, and metabolite
+```{r}
 ###########################
 #z score by deployment and decomposition day and metabolite
 decomp_days <- c("1", "3", "5", "7", "11", "17")
@@ -162,7 +129,7 @@ for (day in decomp_days) {
 
         # Calculate z-scores for the subset
         subset <- subset %>%
-          mutate(z_score = (od_corrected_b - mean(od_corrected_b, na.rm = TRUE)) / sd(od_corrected_b, na.rm = TRUE))
+          mutate(z_score = (od_raw - mean(od_raw, na.rm = TRUE)) / sd(od_raw, na.rm = TRUE))
 
 
 # Combine the z-scored subset into the z_scored_df
@@ -172,24 +139,26 @@ for (day in decomp_days) {
   }
 }
 
-z_scored_d_d_m_df=aggregate(z_score ~ treatment + tree_id + deploy + metabolite + hfa + site_num + tree_num + decomp_day + group, data = z_scored_d_d_m_df, median, na.rm=T)
+z_scored_d_d_m_df$treatment=as.factor(z_scored_d_d_m_df$treatment)
+z_scored_d_d_m_df$group=as.factor(z_scored_d_d_m_df$group)
 
-# Now, z_scored_list contains z-scored subsets for each combination of decomposition day, deployment, and site number
+z_scored_d_d_m_mean_df=aggregate(z_score ~ treatment + tree_id + deploy + metabolite + hfa + site_num + tree_num + decomp_day + group, data = z_scored_d_d_m_df, mean, na.rm=T)
+```
 
 
+```{r}
 #z score by deployment and decomposition day 
 decomp_days <- c("1", "3", "5", "7", "11", "17")
 deployments <- c("HOK", "SEK")
 site_numbers <- c("1", "2")
 
 # Initialize an empty data frame to store the z-scored data
-z_scored_d_d_df <- data.frame()
+z_scored_od_corrected_df <- data.frame()
 
 # Loop through decomposition days, deployments, site numbers, and metabolites
 for (day in decomp_days) {
   for (deploy in deployments) {
     for (site in site_numbers) {
-      for (group in group) {
         subset <- meta.df %>%
           filter(decomp_day == day, deploy == deploy, site_num == site)
 
@@ -199,15 +168,82 @@ for (day in decomp_days) {
 
 
 # Combine the z-scored subset into the z_scored_df
-        z_scored_d_d_df <- bind_rows(z_scored_d_d_df, subset)
+        z_scored_od_corrected_df <- bind_rows(z_scored_od_corrected_df, subset)
       }
     }
   }
-}
-z_scored_d_d_df=aggregate(z_score ~ treatment + tree_id + deploy + metabolite + hfa + site_num + tree_num + decomp_day + group, data = z_scored_d_d_df, median, na.rm=T)
+
+
+z_scored_od_corrected_df$treatment=as.factor(z_scored_od_corrected_df$treatment)
+z_scored_od_corrected_df$group=as.factor(z_scored_od_corrected_df$group)
+z_scored_od_corrected_mean_df=aggregate(z_score ~ treatment + tree_id + deploy + metabolite + hfa + site_num + tree_num + decomp_day + group, data = z_scored_od_corrected_df, mean, na.rm=T)
 
 
 
+#z score by deployment and decomposition day 
+decomp_days <- c("1", "3", "5", "7", "11", "17")
+deployments <- c("HOK", "SEK")
+site_numbers <- c("1", "2")
+
+# Initialize an empty data frame to store the z-scored data
+z_scored_od_raw_df <- data.frame()
+
+# Loop through decomposition days, deployments, site numbers, and metabolites
+for (day in decomp_days) {
+  for (deploy in deployments) {
+    for (site in site_numbers) {
+        subset <- meta.df %>%
+          filter(decomp_day == day, deploy == deploy, site_num == site)
+
+        # Calculate z-scores for the subset
+        subset <- subset %>%
+          mutate(z_score = (od_raw - mean(od_raw, na.rm = TRUE)) / sd(od_raw, na.rm = TRUE))
+
+
+# Combine the z-scored subset into the z_scored_df
+        z_scored_od_raw_df <- bind_rows(z_scored_od_raw_df, subset)
+      }
+    }
+  }
+
+
+z_scored_od_raw_df$treatment=as.factor(z_scored_od_raw_df$treatment)
+z_scored_od_raw_df$group=as.factor(z_scored_od_raw_df$group)
+z_scored_od_raw_mean_df=aggregate(z_score ~ treatment + tree_id + deploy + metabolite + hfa + site_num + tree_num + decomp_day + group, data = z_scored_od_raw_df, mean, na.rm=T)
+
+
+#z score by deployment and decomposition day 
+decomp_days <- c("1", "3", "5", "7", "11", "17")
+deployments <- c("HOK", "SEK")
+site_numbers <- c("1", "2")
+
+# Initialize an empty data frame to store the z-scored data
+z_scored_od_neg_df <- data.frame()
+
+# Loop through decomposition days, deployments, site numbers, and metabolites
+for (day in decomp_days) {
+  for (deploy in deployments) {
+    for (site in site_numbers) {
+        subset <- meta.df %>%
+          filter(decomp_day == day, deploy == deploy, site_num == site)
+
+        # Calculate z-scores for the subset
+        subset <- subset %>%
+          mutate(z_score = (od_corrected_b_n - mean(od_corrected_b_n, na.rm = TRUE)) / sd(od_corrected_b_n, na.rm = TRUE))
+
+
+# Combine the z-scored subset into the z_scored_df
+        z_scored_od_neg_df <- bind_rows(z_scored_od_neg_df, subset)
+      }
+    }
+  }
+
+z_scored_od_neg_df$treatment=as.factor(z_scored_od_neg_df$treatment)
+z_scored_od_neg_df$group=as.factor(z_scored_od_neg_df$group)
+```
+
+
+```{r}
 # Initialize an empty data frame to store the z-scored data
 z_scored_df <- data.frame()
 
@@ -219,326 +255,339 @@ z_scored_df <- data.frame()
 
         # Calculate z-scores for the subset
         subset <- subset %>%
-          mutate(z_score = (od_corrected_b - mean(od_corrected_b, na.rm = TRUE)) / sd(od_corrected_b, na.rm = TRUE))
+          mutate(z_score = (od_raw - mean(od_raw, na.rm = TRUE)) / sd(od_raw, na.rm = TRUE))
 # Combine the z-scored subset into the z_scored_df
         z_scored_df <- bind_rows(z_scored_df, subset)
       }
   }
 # Custom function to calculate the rate of change (slope)
 # Define a custom function to calculate the slope
+z_scored_df$treatment=as.factor(z_scored_df$treatment)
+z_scored_df$group=as.factor(z_scored_df$group)
 
-
-z_mean_scored_df=data.frame(aggregate(z_score ~ treatment + tree_id + deploy + metabolite + hfa + site_num + tree_num + decomp_day + group, data = z_scored_df, mean, na.rm=T))
-
-View(z_median_scored_df)
-ggplot(test.df, aes(x = z_score)) +
-  geom_histogram(binwidth = 0.1, fill = "blue", color = "black") +
-  labs(title = "Distribution of z-scores",
-       x = "z-score",
-       y = "Frequency")
-
-
+z_mean_scored_mean_df=data.frame(aggregate(z_score ~ treatment + tree_id + deploy + metabolite + hfa + site_num + tree_num + decomp_day + group, data = z_scored_df, mean, na.rm=T))
 
 ```
 
-
-```{r}
-# Initialize an empty data frame to store the z-scored data
-z_scored_d_m_df <- data.frame()
-
-# Loop through decomposition days, deployments, site numbers, and metabolites
-  for (deploy in deployments) {
-    for (site in site_numbers) {
-      for (group in group) {
-        subset <- meta.df %>%
-          filter(deploy == deploy, site_num == site, group == group)
-
-        # Calculate z-scores for the subset
-        subset <- subset %>%
-          mutate(z_score = (od_corrected_b - mean(od_corrected_b, na.rm = TRUE)) / sd(od_corrected_b, na.rm = TRUE))
-
-
-# Combine the z-scored subset into the z_scored_df
-        z_scored_d_m_df <- bind_rows(z_scored_d_m_df, subset)
-      }
-    }
-  }
-
-z_scored_d_m_df=aggregate(z_score ~ treatment + tree_id + deploy + metabolite + hfa + site_num + tree_num + decomp_day + group, data = z_scored_d_m_df, median, na.rm=T)
-
-# Initialize an empty data frame to store the z-scored data
-z_scored_m_df <- data.frame()
-
-# Loop through decomposition days, deployments, site numbers, and metabolites
-      for (group in group) {
-        subset <- meta.df %>%
-          filter(group == group)
-
-        # Calculate z-scores for the subset
-        subset <- subset %>%
-          mutate(z_score = (od_corrected_b - mean(od_corrected_b, na.rm = TRUE)) / sd(od_corrected_b, na.rm = TRUE))
-
-
-# Combine the z-scored subset into the z_scored_df
-        z_scored_m_df <- bind_rows(z_scored_m_df, subset)
-      }
-z_scored_m_df=aggregate(z_score ~ treatment + tree_id + deploy + metabolite + hfa + site_num + tree_num + decomp_day + group, data = z_scored_m_df, median, na.rm=T)
-
-```
-
-
-
-```{r}
-library(broom)
-# Define the exponential decay model
-exp_decay_model <- function(data) {
-  lm(z_score ~ time, data = data)
-}
-
-# Fit the model for each decomp day and extract parameters
-model_parameters <- z_scored_data %>%
-  group_by(decomp_day) %>%
-  do({
-    model <- exp_decay_model(.)
-    coef_summary <- summary(model)
-
-    data.frame(
-      intercept = coef_summary$coefficients["(Intercept)", "Estimate"],
-      slope = coef_summary$coefficients["time", "Estimate"],
-      p_value = coef_summary$coefficients["time", "Pr(>|t|)"]
-    )
-  }) %>%
-  ungroup()
-
-# Visualize the decay rates
-ggplot(model_parameters, aes(x = decomp_day, y = slope)) +
-  geom_point() +
-  geom_line() +
-  labs(x = "Decomp Day", y = "Decay Rate (k)")
-
-
-# List of treatments and groups
-treatments <- c("P", "AB")
-groups <- c("T-home", "T-away")
-
-# Initialize an empty data frame to store k rates
-k_rate_df <- data.frame()
-
-# Loop through treatments, groups, and decomposition days
-for (treatment in treatments) {
-  for (group in groups) {
-    for (day in decomp_days) {
-      subset <- z_scored_d_d_df %>%
-        filter(decomp_day == day, treatment == treatment, group == group)
-
-      # Fit the exponential decay model and extract parameters
-      model <- exp_decay_model(subset)
-      coef_summary <- summary(model)
-
-      # Store the parameters in the data frame
-      k_rate_df <- k_rate_df %>%
-        bind_rows(data.frame(
-          treatment = treatment,
-          group = group,
-          decomp_day = as.numeric(day),
-          intercept = coef_summary$coefficients["(Intercept)", "Estimate"],
-          slope = coef_summary$coefficients["time", "Estimate"]
-        ))
-    }
-  }
-}
-
-ggplot(z_scored_d_d_df, aes(x = as.factor(decomp_day), y = z_score, linetype = treatment, color = group)) +
-  geom_smooth() +
-  labs(x = "Decomp Day", y = "z score") +
-  theme_minimal()
-
-
-
-# Define the exponential decay model
-exp_decay_model <- function(data) {
-  lm(z_score ~ time, data = data)
-}
-
-k_rate_df <- z_scored_d_d_df %>%
-  group_by(treatment, tree_id, deploy, metabolite, site_num, tree_num, decomp_day, group) %>%
-  do({
-    model <- exp_decay_model(.)
-    coef_summary <- summary(model)
-
-    data.frame(
-      treatment = unique(.$treatment),
-      tree_id = unique(.$tree_id),
-      deploy = unique(.$deploy),
-      metabolite = unique(.$metabolite),
-      site_num = unique(.$site_num),
-      tree_num = unique(.$tree_num),
-      decomp_day = unique(.$decomp_day),
-      intercept = coef_summary$coefficients["(Intercept)", "Estimate"],
-      slope = coef_summary$coefficients["time", "Estimate"],
-      p_value = coef_summary$coefficients["time", "Pr(>|t|)"]
-    )
-  }) %>%
-  ungroup()
-```
-
-
-```{r}
-# Define the exponential decay model
-exp_decay_model <- function(data) {
-  nls(z_score ~ a * exp(b * time), data = data, start = list(a = -4, b = -4))
-}
-
-k_rate_df <- z_scored_d_d_df %>%
-  group_by(treatment, tree_id, deploy, metabolite, site_num, tree_num, decomp_day, group) %>%
-  do({
-    model <- exp_decay_model(.)
-    summary_data <- summary(model)
-
-    data.frame(
-      treatment = unique(.$treatment),
-      tree_id = unique(.$tree_id),
-      deploy = unique(.$deploy),
-      metabolite = unique(.$metabolite),
-      site_num = unique(.$site_num),
-      tree_num = unique(.$tree_num),
-      decomp_day = unique(.$decomp_day),
-      intercept = coef(summary_data)[["a"]],  # Replace with your parameter names
-      k_rate = coef(summary_data)[["b"]],     # Replace with your parameter names
-      p_value = coef(summary_data)[["a"]],     # Replace with your parameter names
-    )
-  }) %>%
-  ungroup()
-
-
-
-library(dplyr)
-
-library(nls)
-
-
-# Initial parameter estimates
-initial_params <- c(K = 4, r = -0.2, t_0 = 1)
-
-# Fit a logistic growth model using nlsLM
-logistic_growth_model <- nlsLM(
-  z_score ~ K / (1 + exp(-r * (time - t_0))),
-  data = z_scored_d_d_df,
-  start = initial_params
-)
-
-
-# Summary of the logistic growth model
-summary(logistic_growth_model)
-
-# Extract k-rate from the model
-k_rate <- coef(growth_model)[["k"]]
-# Initialize a data frame to store the results
-k_rate_df <- data.frame()
-
-# Loop through decomposition days and time points
-for (day in unique_decomp_days) {
-  for (time_point in times) {
-    # Filter data for the current combination
-    filtered_data <- z_scored_d_d_df %>%
-      filter(decomp_day == day, time == time_point)
-    
-    # Remove NAs and Infinities
-    filtered_data <- na.omit(filtered_data)
-    
-    # Fit the exponential growth model
-    model <- growth_model(filtered_data)
-    
-    # Extract the k-rate from the model
-    k_rate <- coef(model)[["k"]]
-    
-    # Store the results in k_rate_df
-    result <- data.frame(
-      decomp_day = day,
-      time = time_point,
-      k_rate = k_rate
-    )
-    
-    k_rate_df <- bind_rows(k_rate_df, result)
-  }
-}
-
-# View the results
-print(k_rate_df)
-summary(z_scored_d_d_df)
-
-# Visualize the decay rates
-library(ggplot2)
-
-ggplot(k_rate_df, aes(x = as.factor(decomp_day), y = slope, linetype = treatment, color = group)) +
-  geom_smooth(aes(group = interaction(group, treatment)), alpha = 0.1) +
-  labs(x = "Decomp Day", y = "Decay Rate (k)") +
-  theme_minimal()
-
-
-  ggplot(aes(x = as.factor(decomp_day), linetype= treatment, color = group, y = z_score)) +
-  geom_smooth(aes(group = interaction(group, treatment), na.rm= T))+
-  facet_grid(~group)+
-  theme_bw()
-
-
-```
-
-plot
-
+metabolism models
 ```{r}
 #color blind palette
 library(viridis) 
+library(mgcv)
 
-gam1 <- gam(z_score ~  treatment + group + s(as.numeric(decomp_day), k= 6), data = z_scored_data[z_scored_data$time=="960",], family = gaussian)
+
+gam1=gam(scale(od_corrected_b) ~ treatment * group + s(decomp_day, k = 6), subset = time=="1440", data = z_scored_od_corrected_df, method = "REML")
 summary(gam1)
 gam.check(gam1)
+plot(gam1)
 
-gam2 <- gam(z_score ~  treatment*group + s(decomp_day, k= 5), data = z_scored_d_m_df[z_scored_d_m_df$time=="960",], family = gaussian)
+gam2=gam(scale(od_corrected_b) ~ treatment * group + s(decomp_day, k = 6), subset = time=="960", data = z_scored_od_corrected_df, method = "REML")
 summary(gam2)
 gam.check(gam2)
+plot(gam2)
+anova.gam(gam2)
+gam3=gam(scale(od_corrected_b) ~ s(decomp_day, k = 6), subset = time=="960", data = z_scored_od_corrected_df, method = "REML")
 
-gam3 <- gam(z_score ~  treatment*group + s(decomp_day, k= 6), data = z_scored_d_d_m_df[z_scored_d_d_m_df$time=="960",], family = gaussian)
+AIC(gam1, gam2, gam3)
+
+gam2 <- gam(z_score ~  treatment * group + s(decomp_day, k= 4), data = z_scored_df[z_scored_df$time=="960",], family = gaussian)
+summary(gam2)
+gam.check(gam3)
+
+gam3 <- gam(z_score ~  treatment * group + s(decomp_day, k= 5), data = z_scored_df[z_scored_df$time=="960",], family = gaussian)
 summary(gam3)
 gam.check(gam3)
 
-
-gam4 <- gam(z_score ~  treatment*group + s(decomp_day, k= 6), data = z_scored_d_d_df[z_scored_d_d_df$time=="960",], family = gaussian)
+gam4 <- gam(z_score ~  treatment * group + s(decomp_day, k= 6), data = z_scored_df[z_scored_df$time=="960",], family = gaussian)
 summary(gam4)
-gam.check(gam4)
+gam.check(gam3)
 
 
-gam5 <- gam(z_score ~  treatment*group + s(decomp_day, k= 6), data = z_scored_m_df[z_scored_m_df$time=="960",], family = gaussian)
+gam5 <- gam(z_score ~  treatment * group + s(decomp_day, by= interaction(treatment,group), k = 5, bs="bs"), data = z_scored_df[z_scored_df$time=="960",], family = gaussian)
 summary(gam5)
 gam.check(gam5)
 
 
-AIC(gam3, gam4)
+gam6 <- gam(z_score ~  treatment * group + s(decomp_day, k = 5, bs="bs"), data = z_scored_df[z_scored_df$time=="960",], family = gaussian)
+summary(gam6)
+gam.check(gam6)
+
+
+gam7 <- gam(z_score ~  treatment * group + s(decomp_day, k = 4, bs="tp"), data = z_scored_d_d_m_df[z_scored_d_d_m_df$time=="960",], family = gaussian)
+summary(gam7)
+gam.check(gam7)
+
+gam8 <- gam(z_score ~  treatment * group + s(decomp_day, k = 4, bs="fs"), data = z_scored_df[z_scored_df$time=="960",], family = gaussian)
+summary(gam8)
+gam.check(gam8)
+
+
+  
+  
+
+
+
 ```
 
-
+metabolism plot
 ```{r}
 library("scales")
 install.packages("ggthemes")
 library(ggthemes)
 
+# z score by deployment/decomp/metabolite, no facet, gam
+z_scored_d_d_df %>%
+  filter(time == "1440")%>%
+  ggplot(aes(x = as.factor(decomp_day), y = z_score)) +
+  geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'gam', formula = y ~ s(x, k = 6), alpha = 0.1, na.rm = TRUE) +
+  labs(x = "decomposition day", y = "standardized optical density (z score)")+
+  scale_color_colorblind() +
+  scale_fill_colorblind() +
+    geom_hline(yintercept = 0, linetype = "dotted", color = "red") +  # Add red dotted line at y = 0
+   guides(linetype = guide_legend(override.aes = list(color = "cornflowerblue")))+
+  theme_bw()+
+  facet_grid(~deploy)+
+  theme(
+    axis.text = element_text(size = 12),      # Adjust text size for axis labels
+    axis.title = element_text(size = 14),     # Adjust text size for axis titles
+    legend.text = element_text(size = 12),    # Adjust text size for legend labels
+    legend.title = element_text(size = 14),   # Adjust text size for legend title
+    strip.text = element_text(size = 16)      # Adjust text size for facet labels
+  )
 
-library(minpack.lm)
-# Fit a logistic growth model
-model <- nls(
-  z_score ~ K / (1 + exp(-r * (time - t_0))),
-  data = z_scored_df,
-  start = list(K = 0.5, r = -0.1, t_0 = 1),
-  algorithm = "plinear"
-)
+# z score by deployment/decomp/metabolite, no facet, loess
+z_scored_d_d_m_df %>%
+  filter(time == "30")%>%
+  ggplot(aes(x = as.factor(decomp_day), y = od_raw)) +
+  geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'loess', formula = y ~ x, alpha = 0.1, na.rm = TRUE) +
+  labs(x = "decomposition day", y = "standardized optical density (z score)")+
+  scale_color_colorblind() +
+  scale_fill_colorblind() +
+  guides(linetype = guide_legend(override.aes = list(color = "cornflowerblue")))+
+  theme_bw()+
+  theme(
+    axis.text = element_text(size = 12),      # Adjust text size for axis labels
+    axis.title = element_text(size = 14),     # Adjust text size for axis titles
+    legend.text = element_text(size = 12),    # Adjust text size for legend labels
+    legend.title = element_text(size = 14),   # Adjust text size for legend title
+    strip.text = element_text(size = 16)      # Adjust text size for facet labels
+  )
+```
 
-# Extract the parameter estimates
-K <- coef(model)["K"]
-r <- coef(model)["r"]
-t_0 <- coef(model)["t_0"]
+
+trying lmer
+```{r}
+library(lme4)
+library(lsmeans)
+
+
+# Fit global model
+m1 <- lmer(z_score ~ treatment * group + (1|tree_id), subset= time == "960", data = z_scored_od_corrected_df)
+
+# Check overall significance
+summary(m1)
+
+# Conduct post hoc analysis
+lsmeans(m1, c("treatment", "group"), pairwise ~ "treatment:group", pbkrtest.limit = 11040)
+
+# Print post hoc results
+print(posthoc)
+
+# Generate boxplot using ggplot2
+ggplot(df, aes(x = Treatment, y = OD, fill = Group)) +
+  geom_boxplot() +
+  facet_grid(. ~ TreeID, scales = "free_y") +
+  theme_minimal()
+
+```
 
 
 
+
+trying out different dfs
+```{r}
+hist(z_scored_od_raw_df$z_score)
+#z score raw
+z_scored_df %>%
+  filter(time == "960")%>%
+  ggplot(aes(x = as.factor(decomp_day), y = scale(od_corrected_b))) +
+  geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'loess', formula = y ~ x, alpha = 0.1, na.rm = TRUE) +
+  labs(x = "decomposition day", y = "standardized optical density (z score)")+
+  scale_color_colorblind() +
+  scale_fill_colorblind() +
+  guides(linetype = guide_legend(override.aes = list(color = "cornflowerblue")))+
+  theme_bw()+
+  theme(
+    axis.text = element_text(size = 12),      # Adjust text size for axis labels
+    axis.title = element_text(size = 14),     # Adjust text size for axis titles
+    legend.text = element_text(size = 12),    # Adjust text size for legend labels
+    legend.title = element_text(size = 14),   # Adjust text size for legend title
+    strip.text = element_text(size = 16)      # Adjust text size for facet labels
+  )
+
+z_scored_od_corrected_df %>%
+  filter(time == "960")%>%
+  ggplot(aes(x = group, y = z_score)) +
+  geom_boxplot(aes(group = interaction(group, treatment), color = treatment, fill = treatment), alpha = 0.1, na.rm = TRUE) +
+  labs(x = "decomposition day", y = "standardized optical density (z score)")+
+  scale_color_colorblind() +
+  scale_fill_colorblind() +
+  guides(linetype = guide_legend(override.aes = list(color = "cornflowerblue")))+
+  theme_bw()+
+  facet_wrap(.~decomp_day)+
+  theme(
+    axis.text = element_text(size = 12),      # Adjust text size for axis labels
+    axis.title = element_text(size = 14),     # Adjust text size for axis titles
+    legend.text = element_text(size = 12),    # Adjust text size for legend labels
+    legend.title = element_text(size = 14),   # Adjust text size for legend title
+    strip.text = element_text(size = 16)      # Adjust text size for facet labels
+  )
+
+ggsave("figures/z_scored_od_raw_plot.pdf", z_scored_od_raw_plot, width = 15, height = 8)
+```
+
+
+```{r}
+z_scored_od_corrected_plot=z_scored_od_corrected_df %>%
+  filter(time == "960")%>%
+  ggplot(aes(x = as.factor(decomp_day), y = z_score)) +
+  geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'gam', formula = y ~ s(x, k =6), alpha = 0.1, na.rm = TRUE) +
+  labs(x = "decomposition day", y = "standardized optical density (z score)")+
+  scale_color_colorblind() +
+  scale_fill_colorblind() +
+      geom_hline(yintercept = 0, linetype = "dotted", color = "red") +  # Add red dotted line at y = 0
+  guides(linetype = guide_legend(override.aes = list(color = "cornflowerblue")))+
+  theme_bw()+
+  theme(
+    axis.text = element_text(size = 12),      # Adjust text size for axis labels
+    axis.title = element_text(size = 14),     # Adjust text size for axis titles
+    legend.text = element_text(size = 12),    # Adjust text size for legend labels
+    legend.title = element_text(size = 14),   # Adjust text size for legend title
+    strip.text = element_text(size = 16)      # Adjust text size for facet labels
+  )
+
+ggsave("figures/z_scored_od_corrected_plot.pdf", z_scored_od_corrected_plot, width = 15, height = 8)
+
+z_scored_od_neg_plot= z_scored_od_neg_df %>%
+  ggplot(aes(x = as.factor(time), y = z_score)) +
+  geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'loess', formula = y ~ x, alpha = 0.1, na.rm = TRUE) +
+  labs(x = "decomposition day", y = "standardized optical density (z score)")+
+  scale_color_colorblind() +
+  scale_fill_colorblind() +
+      geom_hline(yintercept = 0, linetype = "dotted", color = "red") +  # Add red dotted line at y = 0
+  guides(linetype = guide_legend(override.aes = list(color = "cornflowerblue")))+
+  theme_bw()+
+  facet_wrap(.~decomp_day)+
+  theme(
+    axis.text = element_text(size = 12),      # Adjust text size for axis labels
+    axis.title = element_text(size = 14),     # Adjust text size for axis titles
+    legend.text = element_text(size = 12),    # Adjust text size for legend labels
+    legend.title = element_text(size = 14),   # Adjust text size for legend title
+    strip.text = element_text(size = 16)      # Adjust text size for facet labels
+  )
+
+ggsave("figures/z_scored_od_neg_plot.pdf", z_scored_od_neg_plot, width = 15, height = 8)
+
+```
+
+
+other metabolism test plots
+```{r}
+# z score by deployment only, faceted by site, loess
+z_scored_df %>%
+  filter(time == "960")%>%
+  ggplot(aes(x = as.factor(decomp_day), y = z_score)) +
+  geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'gam', formula = y ~ s(x, k=6), alpha = 0.1, na.rm = TRUE) +
+  labs(x = "decomposition day", y = "standardized optical density (z score)")+
+  scale_color_colorblind() +
+  scale_fill_colorblind() +
+   guides(linetype = guide_legend(override.aes = list(color = "cornflowerblue")))+
+      geom_hline(yintercept = 0, linetype = "dotted", color = "red") +  # Add red dotted line at y = 0
+  theme_bw()+
+  theme(
+    axis.text = element_text(size = 12),      # Adjust text size for axis labels
+    axis.title = element_text(size = 14),     # Adjust text size for axis titles
+    legend.text = element_text(size = 12),    # Adjust text size for legend labels
+    legend.title = element_text(size = 14),   # Adjust text size for legend title
+    strip.text = element_text(size = 16)      # Adjust text size for facet labels
+  )
+
+# z score by deployment only, no facets, loess
+z_scored_df %>%
+  filter(time == "960")%>%
+  ggplot(aes(x = as.factor(decomp_day), y = z_score)) +
+  geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'loess', formula = y ~ x, alpha = 0.1, na.rm = TRUE) +
+  labs(x = "decomposition day", y = "standardized optical density (z score)")+
+  scale_color_colorblind() +
+  scale_fill_colorblind() +
+   guides(linetype = guide_legend(override.aes = list(color = "cornflowerblue")))+
+      geom_hline(yintercept = 0, linetype = "dotted", color = "red") +  # Add red dotted line at y = 0
+  theme_bw()+
+  theme(
+    axis.text = element_text(size = 12),      # Adjust text size for axis labels
+    axis.title = element_text(size = 14),     # Adjust text size for axis titles
+    legend.text = element_text(size = 12),    # Adjust text size for legend labels
+    legend.title = element_text(size = 14),   # Adjust text size for legend title
+    strip.text = element_text(size = 16)      # Adjust text size for facet labels
+  )
+
+#z score by deploy, gam
+z_scored_df %>%
+  ggplot(aes(x = as.factor(decomp_day), y = z_score)) +
+  geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'gam', formula = y ~ s(x, k = 4), alpha = 0.1, na.rm = TRUE) +
+  labs(x = "decomposition day", y = "standardized optical density (z score)")+
+  scale_color_colorblind() +
+  scale_fill_colorblind() +
+   guides(linetype = guide_legend(override.aes = list(color = "cornflowerblue")))+
+  theme_bw()+
+  theme(
+    axis.text = element_text(size = 12),      # Adjust text size for axis labels
+    axis.title = element_text(size = 14),     # Adjust text size for axis titles
+    legend.text = element_text(size = 12),    # Adjust text size for legend labels
+    legend.title = element_text(size = 14),   # Adjust text size for legend title
+    strip.text = element_text(size = 16)      # Adjust text size for facet labels
+  )
+```
+
+
+```{r}
+####################
+         
+# z score by deployment/decomp day/metabolite, no facets
+z_scored_d_d_m_df %>%
+  filter(time == "960")%>%
+  ggplot(aes(x = as.factor(decomp_day), y = od_corrected_b)) +
+  geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'loess', formula = y ~ x, alpha = 0.1, na.rm = TRUE) +
+  labs(x = "decomposition day", y = "standardized optical density (z score)")+
+  scale_color_colorblind() +
+  scale_fill_colorblind() +
+   guides(linetype = guide_legend(override.aes = list(color = "cornflowerblue")))+
+  theme_bw()+
+  theme(
+    axis.text = element_text(size = 12),      # Adjust text size for axis labels
+    axis.title = element_text(size = 14),     # Adjust text size for axis titles
+    legend.text = element_text(size = 12),    # Adjust text size for legend labels
+    legend.title = element_text(size = 14),   # Adjust text size for legend title
+    strip.text = element_text(size = 16)      # Adjust text size for facet labels
+  )
+
+
+z_scored_d_d_m_df %>%
+  filter(time == "30")%>%
+  ggplot(aes(x = as.factor(decomp_day), y = od_corrected_b)) +
+  geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'loess', formula = y ~ x, alpha = 0.1, na.rm = TRUE) +
+  labs(x = "decomposition day", y = "standardized optical density (z score)")+
+  scale_color_colorblind() +
+  scale_fill_colorblind() +
+   guides(linetype = guide_legend(override.aes = list(color = "cornflowerblue")))+
+  theme_bw()+
+  theme(
+    axis.text = element_text(size = 12),      # Adjust text size for axis labels
+    axis.title = element_text(size = 14),     # Adjust text size for axis titles
+    legend.text = element_text(size = 12),    # Adjust text size for legend labels
+    legend.title = element_text(size = 14),   # Adjust text size for legend title
+    strip.text = element_text(size = 16)      # Adjust text size for facet labels
+  )
                         
                         
 #these look the same
@@ -560,7 +609,7 @@ z_scored_d_d_df %>%
   )
 
 z_scored_d_d_m_df %>%
- ggplot(aes(x = as.factor(time), y = od_corrected_b)) +
+ ggplot(aes(x = as.factor(time), y = z_score)) +
   geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'loess', formula = y ~ x, alpha = 0.1, na.rm = TRUE) +
   labs(x = "decomposition day", y = "standardized optical density (z score)")+
   scale_color_colorblind() +
@@ -576,6 +625,26 @@ z_scored_d_d_m_df %>%
     strip.text = element_text(size = 16)      # Adjust text size for facet labels
   )
 
+#z scored by deployment site
+z_scored_df %>%
+  filter(time== "960")%>%
+ ggplot(aes(x = as.factor(decomp_day), y = z_score)) +
+  geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'gam', formula = y ~ s(x, bs="bs", k = 5), alpha = 0.1, na.rm = TRUE) +
+  labs(x = "decomposition day", y = "standardized optical density (z score)")+
+  scale_color_colorblind() +
+  scale_fill_colorblind() +
+   guides(linetype = guide_legend(override.aes = list(color = "cornflowerblue")))+
+  theme_bw()+
+  theme(
+    axis.text = element_text(size = 12),      # Adjust text size for axis labels
+    axis.title = element_text(size = 14),     # Adjust text size for axis titles
+    legend.text = element_text(size = 12),    # Adjust text size for legend labels
+    legend.title = element_text(size = 14),   # Adjust text size for legend title
+    strip.text = element_text(size = 16)      # Adjust text size for facet labels
+  )
+
+
+labeller = labeller(decomp_day = c("1" = "Day 1", "3" = "Day 3", "5" = "Day 5", "7" = "Day 7", "11" = "Day 11", "17" = "Day 17"))
 
 #these look the same
 z_scored_df %>%
@@ -586,22 +655,7 @@ z_scored_df %>%
   facet_grid(~deploy)+
 theme_bw()
 
-z_scored_df %>%
-  ggplot(aes(x = as.factor(decomp_day), y = od_corrected_b)) +
-  geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'loess', formula = y ~ x, alpha = 0.1, na.rm = TRUE) +
-  labs(x = "decomposition day", y = "standardized optical density (z score)")+
-  scale_color_colorblind() +
-  scale_fill_colorblind() +
-   guides(linetype = guide_legend(override.aes = list(color = "cornflowerblue")))+
-  facet_grid(~ deploy, labeller = labeller(deploy = c("HOK" = "Deployed at Hoko", "SEK" = "Deployed at Sekiu"))) +
-  theme_bw()+
-  theme(
-    axis.text = element_text(size = 12),      # Adjust text size for axis labels
-    axis.title = element_text(size = 14),     # Adjust text size for axis titles
-    legend.text = element_text(size = 12),    # Adjust text size for legend labels
-    legend.title = element_text(size = 14),   # Adjust text size for legend title
-    strip.text = element_text(size = 16)      # Adjust text size for facet labels
-  )
+
 
 
 z_scored_df %>%
