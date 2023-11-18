@@ -61,26 +61,36 @@ Fig.formatting<-(theme_classic()) +
 
 ### Import metabolism assay data
 ```{r}
-meta.day1.raw.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_1_metabolites_raw_corrected.csv")
+meta.day1.450.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_1_450_clean.csv")
+meta.day1.590.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_1_590_clean.csv")
 
 
-meta.day3.raw.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_3_metabolites_raw_corrected.csv")
+meta.day3.450.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_3_450_clean.csv")
+meta.day3.590.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_3_590_clean.csv")
 
 
-meta.day5.raw.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_5_metabolites_raw_corrected.csv")
+meta.day5.450.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_5_450_clean.csv")
+meta.day5.590.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_5_590_clean.csv")
 
+meta.day7.450.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_7_450_clean.csv")
+meta.day7.590.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_7_590_clean.csv")
 
-meta.day7.raw.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_7_metabolites_raw_corrected.csv")
+meta.day11.450.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_11_450_clean.csv")
+meta.day11.590.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_11_590_clean.csv")
 
-
-meta.day11.raw.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_11_metabolites_raw_corrected.csv")
-
-
-meta.day17.raw.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_17_metabolites_raw_corrected.csv")
+meta.day17.450.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_17_450_clean.csv")
+meta.day17.590.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day_17_590_clean.csv")
 
 
 #merge
-meta.df= rbind(meta.day1.raw.df, meta.day3.raw.df, meta.day5.raw.df, meta.day7.raw.df, meta.day11.raw.df, meta.day17.raw.df)
+meta.df= rbind(
+  meta.day1.450.df, meta.day1.590.df, 
+  meta.day3.450.df, meta.day3.590.df, 
+  meta.day5.450.df, meta.day5.590.df,
+  meta.day7.450.df, meta.day7.590.df,
+  meta.day11.450.df, meta.day11.590.df,
+  meta.day17.450.df, meta.day17.590.df
+  )
 
 #create groups based on deployment and metabolite pair
 
