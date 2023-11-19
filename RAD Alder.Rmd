@@ -202,9 +202,9 @@ meta.df %>%
 meta.450.df=as.data.frame(meta.df[meta.df$nm=="450",])
 
 meta.450.df %>%
-    filter(time == "1440")%>%
+   filter(time == "1440")%>%
   na.omit()%>%
-  ggplot(aes(x = as.factor(decomp_day), y = od_corrected_b_n)) +
+  ggplot(aes(x = as.numeric(decomp_day), y = od_corrected_b_n)) +
   geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'gam', formula = y ~ s(x, k = 4), alpha = 0.1) +
   labs(x = "decomposition day", y = "standardized optical density (z score)")+
   scale_color_colorblind() +
@@ -218,6 +218,40 @@ meta.450.df %>%
     legend.title = element_text(size = 14),   # Adjust text size for legend title
     strip.text = element_text(size = 16)      # Adjust text size for facet labels
   )
+
+
+#HFAI shows P packs to have greater incidence of HFA, while AB show greater magnitude
+meta.450.df %>%
+   filter(time == "1440", group == "H")%>%
+  na.omit()%>%
+  ggplot(aes(x = as.numeric(decomp_day), y = od_corrected_b_n)) +
+  geom_smooth(aes(linetype = treatment, color = group, fill = group), method = 'gam', formula = y ~ s(x, k = 4), alpha = 0.1) +
+  labs(x = "decomposition day", y = "standardized optical density (z score)")+
+  scale_color_colorblind() +
+  scale_fill_colorblind() +
+   guides(linetype = guide_legend(override.aes = list(color = "cornflowerblue")))+
+  theme_bw()+
+  theme(
+    axis.text = element_text(size = 12),      # Adjust text size for axis labels
+    axis.title = element_text(size = 14),     # Adjust text size for axis titles
+    legend.text = element_text(size = 12),    # Adjust text size for legend labels
+    legend.title = element_text(size = 14),   # Adjust text size for legend title
+    strip.text = element_text(size = 16)      # Adjust text size for facet labels
+  )
+
+#In the context of the Homefield Advantage Index (HFAI) in your experiment, "incidence" and "magnitude" can be understood as follows:
+
+#Incidence of HFAI:
+
+#Definition: Incidence refers to the frequency or occurrence of HFAI events. In the Context of HFAI: In your experiment, when you mention that the incidence of HFAI is more in the "present" treatment, it means that there are more instances or occurrences where the HFAI is observed when the phyllosphere community is present. This could be interpreted as a higher frequency of home advantage events in terms of decomposition when the community is present.
+
+#Magnitude of HFAI: Definition: Magnitude refers to the size, extent, or intensity of the HFAI events. In the Context of HFAI: When you state that the magnitude is greater in the "absent" treatment, it suggests that, although the frequency might be lower, when HFAI events occur in the absence of the phyllosphere community, they have a larger impact or are more pronounced in terms of decomposition. The decomposition advantage at home (Hoko) is more significant when the community is absent, leading to a higher magnitude of the HFAI.
+
+#In summary, the "incidence" reflects how often HFAI events occur, while the "magnitude" indicates the strength or impact of those events when they do occur. Both aspects are important for understanding the dynamics of the Homefield Advantage Index in your experimental conditions.
+
+#Microbial communities metabolizing their home metabolite exhibit higher activity in the presence of the phyllosphere community. This is consistent with the HFai framework, where the relative advantage of home metabolite metabolization is observed in the ecological context of the phyllosphere community being present.
+
+
 
 
 ```
@@ -263,7 +297,7 @@ z_scored_mean_df=aggregate(z_score ~ treatment + tree_id + deploy + metabolite  
 z_scored_df %>%
   filter(time == "1440")%>%
   na.omit()%>%
-  ggplot(aes(x = decomp_day, y = z_score)) +
+  ggplot(aes(x = as.numeric(decomp_day), y = z_score)) +
   geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'gam', formula = y ~ s(x, k = 6), alpha = 0.1) +
   labs(x = "decomposition day", y = "standardized optical density (z score)")+
   scale_color_colorblind() +
