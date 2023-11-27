@@ -28,10 +28,10 @@ For Project ‘RAD’ Alder, gamma irradiated vs. non-irradiated leaf packs depl
 **DATA SETS**  
 This data set focuses on:  
 
-(1) **metabolism assay** 
-(2) **Leaf mass loss** using % mass loss  
+(1) **Metabolism assay** 
+(2) **Leaf mass loss** using % mass loss and HFAI
 (3) **Alder C and N isotopic composition**
-(4) **Alder secondary chemistry (via mass spectrometry)** 
+(4) **Alder secondary chemistry (via LC-MS/MS)** 
 ```{r setup chunk, setup, include = FALSE, cache=FALSE, message=FALSE, warning=FALSE}
 if (!require('knitr')) install.packages('knitr'); library('knitr')
 knitr::opts_chunk$set(warning=FALSE, message=FALSE, fig.align='center')
@@ -58,6 +58,10 @@ Fig.formatting<-(theme_classic()) +
 
 ```
 
+**Note on absorbance**
+Iodonitrotetrazolium chloride (INT) is utilized as a redox dye to gauge microbial activity in assays. Microbes with metabolic activity can reduce INT to a formazan compound, causing a color change from yellow (oxidized form) to red or purple (reduced form). This reduction reaction is often catalyzed by dehydrogenase enzymes present in metabolically active cells. The formazan product is  insoluble and has a distinct color (i.e., absorbance), leading to a visible change in the solution's color. The intensity of the color or absorbance is indicative of microbial metabolic activity.
+
+We measured absorbance at 450 nm (see Blenkinsopp & Lock, 1990; Friedel et al., 1994; Jackson et al., 2013; Bhupathiraju et al., 1998). Time course measurements, or absorbance readings at different intervals (e.g., 30 mins, 2 hrs, 16 hrs, 24 hrs, 48 hrs, and 72 hrs), allowed for tracking changes in microbial metabolic activity over time.
 
 ### Import metabolism assay data
 ```{r}
@@ -149,13 +153,11 @@ meta.df$metabolite=as.factor(meta.df$metabolite)
 meta.df$group=as.factor(meta.df$group)
 meta.df$hours=factor(meta.df$hours)
 
-
-
 ```
 
+#### determine which absorbance wavelength to use. Various studies (as those cited above) measured the absorbance of INT at both 450 and 590 nm. This provides some flexibility for us to determine exactly which to use based on the conditions present in our system (i.e., rivers, within the wells, external conditions of the lab space, etc). Factors such as these can influence the rate of metabolization, and thus the OD values from the absorbance reader. Additionally, determining which reading time (30 mins, 2 hrs, 16 hrs, etc.) at which the OD values were measured is important. Past work has measured absorbance at 30 mins, while other recommend 2-16 hrs. However, given the specific conditions of our field experiment, it has been suggested that 24 hrs is required for an accurate metabolic reading.
 
-
-visualize raw data
+Let's first visualize the raw OD readings at both 450 and 590 nm.
 ```{r}
 
 #plot at 450 nm
@@ -200,17 +202,72 @@ meta.df %>%
 #we will use 450 nm
 ## create subset 450 nm
 meta.450.df=as.data.frame(meta.df[meta.df$nm=="450",])
+meta.590.df=as.data.frame(meta.df[meta.df$nm=="590",])
 
+#by group and treatment using loess
 meta.450.df %>%
-   filter(time == "1440")%>%
+  filter(hours == "24")%>%
   na.omit()%>%
   ggplot(aes(x = as.numeric(decomp_day), y = od_corrected_b_n)) +
-  geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'gam', formula = y ~ s(x, k = 4), alpha = 0.1) +
-  labs(x = "decomposition day", y = "standardized optical density (z score)")+
+  geom_smooth(aes(color = treatment, fill = treatment, linetype = group, group = interaction(group, treatment)), method = 'loess', formula = y ~ x, alpha = 0.1) +
+  labs(x = "decomposition day", y = "optical density (450 nm)")+
+  scale_x_continuous(breaks = c(1, 5, 9, 13, 17))+
   scale_color_colorblind() +
   scale_fill_colorblind() +
-   guides(linetype = guide_legend(override.aes = list(color = "cornflowerblue")))+
+guides(
+    linetype = guide_legend(override.aes = list(color = "cornflowerblue")),
+    color = guide_legend(order = 1),  # Set order for the color legend
+    fill = guide_legend(order = 1)   # Set order for the fill legend
+  ) +
   theme_bw()+
+  theme(
+    axis.text = element_text(size = 12),      # Adjust text size for axis labels
+    axis.title = element_text(size = 14),     # Adjust text size for axis titles
+    legend.text = element_text(size = 12),    # Adjust text size for legend labels
+    legend.title = element_text(size = 14),   # Adjust text size for legend title
+    strip.text = element_text(size = 16)      # Adjust text size for facet labels
+  )
+
+#by group and treatment using gam
+meta.450.df %>%
+  filter(hours == "24")%>%
+  na.omit()%>%
+  ggplot(aes(x = as.numeric(decomp_day), y = od_corrected_b_n)) +
+  geom_smooth(aes(color = treatment, fill = treatment, linetype = group, group = interaction(group, treatment)), method = 'gam', formula = y ~ s(x, k=5), alpha = 0.1) +
+  labs(x = "decomposition day", y = "optical density (450 nm)")+
+  scale_x_continuous(breaks = c(1, 5, 9, 13, 17))+
+  scale_color_colorblind() +
+  scale_fill_colorblind() +
+guides(
+    linetype = guide_legend(override.aes = list(color = "cornflowerblue")),
+    color = guide_legend(order = 1),  # Set order for the color legend
+    fill = guide_legend(order = 1)   # Set order for the fill legend
+  ) +
+  theme_bw()+
+  theme(
+    axis.text = element_text(size = 12),      # Adjust text size for axis labels
+    axis.title = element_text(size = 14),     # Adjust text size for axis titles
+    legend.text = element_text(size = 12),    # Adjust text size for legend labels
+    legend.title = element_text(size = 14),   # Adjust text size for legend title
+    strip.text = element_text(size = 16)      # Adjust text size for facet labels
+  )
+
+#by 4 treatments
+meta.450.df %>%
+  filter(hours == "24")%>%
+  na.omit()%>%
+  ggplot(aes(x = decomp_day, y = od_corrected_b_n)) +
+  geom_smooth(aes(linetype= pairing, color = pairing, fill = pairing), method = 'gam', formula = y ~ s(x, k = 4), alpha = 0.1) +
+  labs(x = "decomposition day", y = "optical density (450 nm)")+
+    guides(color = guide_legend(title = "Treatment"), fill= guide_legend(title = "Treatment"), linetype = guide_legend(title = "Treatment"))+
+   scale_linetype_manual(name = "Treatment",
+                        values = c("P-AW" = "solid", "P-H" = "solid", "AB-AW" = "dotdash", "AB-H" = "dotdash")) +
+    guides(color = guide_legend(title = "Treatment"), fill = guide_legend(title = "Treatment"), linetype = guide_legend(title = "Treatment"))+
+  scale_x_continuous(breaks = c(1, 5, 9, 13, 17))+
+  theme_bw() +
+  scale_color_colorblind() +
+  scale_fill_colorblind() +
+theme_bw()+
   theme(
     axis.text = element_text(size = 12),      # Adjust text size for axis labels
     axis.title = element_text(size = 14),     # Adjust text size for axis titles
@@ -222,11 +279,12 @@ meta.450.df %>%
 
 #HFAI shows P packs to have greater incidence of HFA, while AB show greater magnitude
 meta.450.df %>%
-   filter(time == "1440", group == "H")%>%
+   filter(hours == "24", group == "H")%>%
   na.omit()%>%
   ggplot(aes(x = as.numeric(decomp_day), y = od_corrected_b_n)) +
-  geom_smooth(aes(linetype = treatment, color = group, fill = group), method = 'gam', formula = y ~ s(x, k = 4), alpha = 0.1) +
-  labs(x = "decomposition day", y = "standardized optical density (z score)")+
+  geom_smooth(aes( color = treatment, fill = treatment), method = 'loess', formula = y ~x, alpha = 0.1) +
+  labs(x = "decomposition day", y = "optical density (450 nm)")+
+    scale_x_continuous(breaks = c(1, 5, 9, 13, 17))+
   scale_color_colorblind() +
   scale_fill_colorblind() +
    guides(linetype = guide_legend(override.aes = list(color = "cornflowerblue")))+
@@ -257,10 +315,6 @@ meta.450.df %>%
 ```
 
 
-**Note on absorbance**
-Iodonitrotetrazolium chloride (INT) is utilized as a redox dye to gauge microbial activity in assays. Microbes with metabolic activity can reduce INT to a formazan compound, causing a color change from yellow (oxidized form) to red or purple (reduced form). This reduction reaction is often catalyzed by dehydrogenase enzymes present in metabolically active cells. The formazan product is  insoluble and has a distinct color (i.e., absorbance), leading to a visible change in the solution's color. The intensity of the color or absorbance is indicative of microbial metabolic activity.
-
-We measured absorbance at 450 nm (see Blenkinsopp & Lock, 1990; Friedel et al., 1994; Jackson et al., 2013; Bhupathiraju et al., 1998). Time course measurements, or absorbance readings at different intervals (e.g., 30 mins, 2 hrs, 16 hrs, 24 hrs, 48 hrs, and 72 hrs), allowed for tracking changes in microbial metabolic activity over time.
 
 
 #### z score optical density
@@ -295,10 +349,10 @@ z_scored_mean_df=aggregate(z_score ~ treatment + tree_id + deploy + metabolite  
 
 #plot at 450 nm
 z_scored_df %>%
-  filter(time == "1440")%>%
+  filter(hours == "24")%>%
   na.omit()%>%
   ggplot(aes(x = as.numeric(decomp_day), y = z_score)) +
-  geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'gam', formula = y ~ s(x, k = 6), alpha = 0.1) +
+  geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'gam', formula = y ~ s(x, k = 4), alpha = 0.1) +
   labs(x = "decomposition day", y = "standardized optical density (z score)")+
   scale_color_colorblind() +
   scale_fill_colorblind() +
@@ -312,20 +366,79 @@ z_scored_df %>%
     strip.text = element_text(size = 16)      # Adjust text size for facet labels
   )
 
-z_scored_gam1=gam(z_score ~ treatment * group + s(decomp_day, by = treatment, k=6) + s(decomp_day, by = group, k=6) + s(decomp_day, k=6) + s(tree_num, bs="re"), subset = time == "1440", data = z_scored_df)
+meta.450.df <- meta.450.df %>%
+  mutate(pairing = paste(treatment, group, sep = "-"))
 
-z_scored_gam2=gam(z_score ~ treatment * group + s(decomp_day, by = treatment, k=6) + s(decomp_day, by = group, k=6) + s(tree_num, bs="re"), subset = time == "1440", data = z_scored_df)
-
-gam1=gam(od_corrected_b_n ~ treatment * group + s(decomp_day, by = treatment, k=6) + s(decomp_day, by = group, k=6) + s(decomp_day, k=6) + s(tree_num, bs="re"), subset = time == "1440", data = meta.450.df)
-
-gam2=gam(od_corrected_b ~ treatment * group + s(decomp_day, by = treatment, k=6) + s(decomp_day, by = group, k=6) + s(decomp_day, k=6) + s(tree_num, bs="re"), subset = time == "1440", data = meta.450.df)
+meta.450.df <- meta.450.df %>% 
+  mutate(pairing = factor(pairing, levels = c("P-AW", "P-H", "AB-AW", "AB-H")))
 
 
-AIC(gam1,gam2 )
+meta.450.df %>%
+  filter(hours == "24")%>%
+  na.omit()%>%
+  ggplot(aes(x = as.numeric(decomp_day), y = od_corrected_b_n)) +
+  geom_smooth(aes(linetype = ifelse(substr(interaction(treatment, group), 1, 2) == "AB", "dashed", "solid"), color = interaction(treatment,group), fill = interaction(treatment,group)), method = 'gam', formula = y ~ s(x, k = 4), alpha = 0.1) +
+  labs(x = "decomposition day", y = "standardized optical density (z score)")+
+    guides(color = guide_legend(title = "Treatment"), fill= guide_legend(title = "Treatment"), linetype = guide_legend(override.aes = list( linetype = NULL)))+  # Remove the linetype legend
+  scale_color_colorblind() +
+  scale_fill_colorblind() +
+theme_bw()+
+  theme(
+    axis.text = element_text(size = 12),      # Adjust text size for axis labels
+    axis.title = element_text(size = 14),     # Adjust text size for axis titles
+    legend.text = element_text(size = 12),    # Adjust text size for legend labels
+    legend.title = element_text(size = 14),   # Adjust text size for legend title
+    strip.text = element_text(size = 16)      # Adjust text size for facet labels
+  )
+
+meta.450.df %>%
+  filter(hours == "24")%>%
+  na.omit()%>%
+  ggplot(aes(x = as.numeric(decomp_day), y = od_corrected_b_n)) +
+  geom_smooth(aes(linetype = ifelse(substr(interaction(pairing), 1, 2) == "AB", "dashed", "solid"), color = pairing, fill = pairing), method = 'gam', formula = y ~ s(x, k = 4), alpha = 0.1) +
+  labs(x = "decomposition day", y = "standardized optical density (z score)")+
+    guides(color = guide_legend(title = "Treatment"), fill= guide_legend(title = "Treatment"), linetype = guide_legend(title = "Treatment"))+  # Remove the linetype legend
+  scale_color_colorblind() +
+  scale_fill_colorblind() +
+theme_bw()+
+  theme(
+    axis.text = element_text(size = 12),      # Adjust text size for axis labels
+    axis.title = element_text(size = 14),     # Adjust text size for axis titles
+    legend.text = element_text(size = 12),    # Adjust text size for legend labels
+    legend.title = element_text(size = 14),   # Adjust text size for legend title
+    strip.text = element_text(size = 16)      # Adjust text size for facet labels
+  )
+
+
+
+
+```
+
+Model exploration
+```{r}
+z_scored_gam1=gam(z_score ~ treatment * group + s(as.numeric(decomp_day), by = treatment, k=6) + s(decomp_day, by = group, k=6) +  s(site_num, bs= "re") + s(decomp_day, k=6) + s(tree_id, bs= "re")+ s(tree_num, bs="re"), subset = hours == "24", data = z_scored_df)
+
+gam1=gam( od_corrected_b_n ~ treatment + group + s(decomp_day, bs="re"), subset = hours == "24", method = "REML", data = meta.450.df)
+draw(gam1)
+levels(as.numeric(meta.450.df$decomp_day))
+
+gam1=gam(od_corrected_b_n ~ treatment * group + s(as.numeric(decomp_day), by = treatment, k=6) + s(as.numeric(decomp_day), by = group, k=6) + s(decomp_day, k=6) + s(site_num, bs= "re") + s(tree_id, bs= "re")  + s(tree_num, bs="re"), subset = hours == "24", data = meta.450.df)
+
+gam2=gam(od_corrected_b_n ~ treatment * group + s(as.numeric(decomp_day), by = treatment, k=6) + s(as.numeric(decomp_day), by = group, k=6) + s(decomp_day, k=6, bs="cs") + s(site_num, bs= "re") + s(tree_id, bs= "re")  + s(tree_num, bs="re"), subset = hours == "24", data = meta.450.df)
+
+gam3=gam(od_corrected_b_n ~ treatment * group + s(as.numeric(decomp_day), by = treatment, k=6, bs= "cs") + s(as.numeric(decomp_day), by = group, k=6, bs="cs") + s(decomp_day, k=6, bs="cs") + s(site_num, bs= "re") + s(tree_id, bs= "re")  + s(tree_num, bs="re"), subset = hours == "24", data = meta.450.df)
+
+gam4=gam(od_corrected_b_n ~ treatment * group + s(as.numeric(decomp_day), k=6, bs="cs")  + s(site_num, bs= "re") + s(tree_num, bs="re"), subset = hours == "24", data = meta.450.df)
+
+chisq.test(table(z_scored_df$treatment, z_scored_df$group))
+
+bam
 
 summary(gam2)
+gam.check(z_scored_gam1)
+plot(gam1)
+gam.check(gam4)
 
-gam.check(gam2)
 
 
 ```
