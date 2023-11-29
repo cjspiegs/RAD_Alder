@@ -100,7 +100,12 @@ meta.450.df= rbind(
   )
 
 meta.590.df=rbind(
-  
+  meta.day1.590.df,
+  meta.day3.590.df,
+  meta.day5.590.df,
+  meta.day7.590.df,
+  meta.day11.590.df, 
+  meta.day17.590.df
 )
 
 #remove well_id columns
@@ -229,12 +234,13 @@ meta.df %>%
     strip.text = element_text(size = 16)      # Adjust text size for facet labels
   )
 
+
 # plot at 590 nm
 meta.df %>%
     filter(nm == "590", time == "1440")%>%
   na.omit()%>%
   ggplot(aes(x = as.factor(decomp_day), y = od_corrected_b)) +
-  geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'gam', formula = y ~ s(x, k = 4), alpha = 0.1) +
+  geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'loess', formula = y ~ s(x, k = 4), alpha = 0.1) +
   labs(x = "decomposition day", y = "standardized optical density (z score)")+
   scale_color_colorblind() +
   scale_fill_colorblind() +
@@ -248,15 +254,32 @@ meta.df %>%
     strip.text = element_text(size = 16)      # Adjust text size for facet labels
   )
 
+#plot 450 blanks
+meta.450.df %>%
+  na.omit()%>%
+  ggplot(aes(x = hours, y = scale(blank))) +
+  geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'gam', formula = y~s(x, k =3)) +
+  labs(x = "hours", y = "blank OD")+
+  scale_color_colorblind() +
+  scale_fill_colorblind() +
+   guides(linetype = guide_legend(override.aes = list(color = "cornflowerblue")))+
+  facet_wrap(.~decomp_day)+
+  theme_bw()+
+  theme(
+    axis.text = element_text(size = 12),      # Adjust text size for axis labels
+    axis.title = element_text(size = 14),     # Adjust text size for axis titles
+    legend.text = element_text(size = 12),    # Adjust text size for legend labels
+    legend.title = element_text(size = 14),   # Adjust text size for legend title
+    strip.text = element_text(size = 16)      # Adjust text size for facet labels
+  )
+
+
 
 ```
 
 
 ### Use 450 nm absorbance readings
 ```{r}
-
-View(meta.450.df[meta.450.df$decomp_day == "1",])
-
 #by group and treatment using loess
 meta.450.df %>%
   filter(hours == "24")%>%
@@ -307,6 +330,11 @@ guides(
 
 
 
+
+```
+
+
+```{r}
 #This pattern suggests that microbial communities from the intermediate stages of decomposition may be particularly well-equipped or adapted to metabolize the plant metabolites. 
 
 #The hypothesis about a unimodal trend in abundance and diversity, where early and low decomposition days show low abundance and diversity, and intermediate decomposition days show high abundance and diversity, is a reasonable expectation. It aligns with the concept of priority effects, where early colonizers influence substrate conditions and, in some cases, facilitate the establishment of subsequent colonizers.
