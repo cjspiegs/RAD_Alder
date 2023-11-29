@@ -338,12 +338,12 @@ guides(
 meta.450.df %>%
   filter(hours == "24")%>%
   na.omit()%>%
-  ggplot(aes(x = as.numeric(decomp_day), y = od_corrected_b_n)) +
+  ggplot(aes(x = as.factor(decomp_day), y = od_corrected_b_n)) +
+  geom_point(aes(y = od_corrected_b_n, group = interaction (group, treatment, tree_num)))+
   geom_smooth(aes(color = treatment, fill = treatment, linetype = group, group = interaction(group, treatment)), method = 'gam', formula = y ~ s(x, k=6), alpha = 0.1) +
       geom_smooth(aes(y = neg), method = "gam", formula = y ~ s(x, k=4), color = alpha("red", 0.5), fill= alpha("red", 0.5), linetype = "longdash", size = 0.7) +
   labs(x = "decomposition day", y = "optical density (450 nm)")+
-  scale_x_continuous(breaks = c(1, 5, 9, 13, 17))+
-  scale_color_colorblind() +
+scale_color_colorblind() +
   scale_fill_colorblind() +
 guides(
     linetype = guide_legend(override.aes = list(color = "cornflowerblue")),
@@ -358,6 +358,32 @@ guides(
     legend.title = element_text(size = 14),   # Adjust text size for legend title
     strip.text = element_text(size = 16)      # Adjust text size for facet labels
   )
+
+meta.450.df %>%
+  filter(hours == "24") %>%
+  na.omit() %>%
+  ggplot(aes(x = as.factor(decomp_day), y = od_corrected_b_n, group = interaction(group, treatment), color = treatment, fill = treatment)) +
+  stat_summary(fun = mean, geom = "point", position = position_dodge(width = 0.02), aes(shape = treatment), show.legend = F, size = 2, alpha = 0.7) +
+  geom_smooth(aes(linetype = group), method = 'gam', formula = y ~ s(x, k = 6), alpha = 0.1) +
+  geom_line(aes(y = neg), color = alpha("red", 0.5), linetype = "longdash", size = 0.7) +
+  labs(x = "decomposition day", y = "optical density (450 nm)") +
+  scale_color_colorblind() +
+  scale_fill_colorblind() +
+  guides(
+    linetype = guide_legend(override.aes = list(color = "cornflowerblue")),
+    color = guide_legend(order = 1),  # Set order for the color legend
+    fill = guide_legend(order = 1)   # Set order for the fill legend
+  ) +
+  theme_bw() +
+  theme(
+    axis.text = element_text(size = 12),
+    axis.title = element_text(size = 14),
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 14),
+    strip.text = element_text(size = 16)
+  )
+
+
 
 
 
@@ -467,6 +493,33 @@ z_scored_df <- data.frame()
 z_scored_mean_df=aggregate(z_score ~ treatment + tree_id + deploy + metabolite  + site_num + tree_num + decomp_day + group, data = z_scored_d_d_h_df, mean, na.rm=T)
 
 
+# plot
+z_scored_df %>%
+  filter(hours == "24")%>%
+  na.omit()%>%
+  ggplot(aes(x = as.numeric(decomp_day), y = z_score)) +
+  geom_smooth(aes(color = treatment, fill = treatment, linetype = group, group = interaction(group, treatment)), method = 'gam', formula = y ~ s(x, k=6), alpha = 0.1) +
+      geom_smooth(aes(y = neg), method = "gam", formula = y ~ s(x, k=4), color = alpha("red", 0.5), fill= alpha("red", 0.5), linetype = "longdash", size = 0.7) +
+  labs(x = "decomposition day", y = "standardized optical density (450 nm)")+
+  scale_x_continuous(breaks = c(1, 5, 9, 13, 17))+
+  scale_color_colorblind() +
+  scale_fill_colorblind() +
+guides(
+    linetype = guide_legend(override.aes = list(color = "cornflowerblue")),
+    color = guide_legend(order = 1),  # Set order for the color legend
+    fill = guide_legend(order = 1)   # Set order for the fill legend
+  ) +
+  theme_bw()+
+  theme(
+    axis.text = element_text(size = 12),      # Adjust text size for axis labels
+    axis.title = element_text(size = 14),     # Adjust text size for axis titles
+    legend.text = element_text(size = 12),    # Adjust text size for legend labels
+    legend.title = element_text(size = 14),   # Adjust text size for legend title
+    strip.text = element_text(size = 16)      # Adjust text size for facet labels
+  )
+
+
+
 #plot at 450 nm
 z_scored_df %>%
   filter(hours == "24")%>%
@@ -557,11 +610,30 @@ gam.check(gam1)
 #testing GAMs
 gam1=gam(od_corrected_b_n ~ treatment + group + s(decomp_day, k =6) + s(decomp_day, by =treatment, k=6) + s(decomp_day, by = group, k =6) + s(tree_id, tree_num, bs="re") + s(deploy, site_num, bs="re"), subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
 
+AIC(gam1, gam2)
+summary(gam1)
+gam.check(gam2)
+anova.gam(gam1)
+
 gam2=gam(od_corrected_b_n ~ treatment + group  + s(decomp_day, by =treatment, k=6) + s(decomp_day, by = group, k =6) + s(tree_id, tree_num, bs="re") + s(deploy, site_num, bs="re"), subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
 
 gam3=gam(od_corrected_b_n ~ treatment + group  + s(decomp_day, treatment, bs="fs" ,k=6) + s(decomp_day, group, bs="fs", k =6) + s(tree_id, tree_num, bs="re") + s(deploy, site_num, bs="re"), subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
 
 gam4=gam(od_corrected_b_n ~ treatment + group  + s(decomp_day, treatment, bs="fs" ,k=6) + s(decomp_day, group, bs="fs", k =6) + s(tree_id, bs = "re") + s(tree_num, bs="re") + s(deploy, bs="re") + s(site_num, bs="re"), subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
+summary(gam4)
+gam.check(gam4)
+anova.gam(gam4)
+
+gam5=gam(od_corrected_b_n ~ treatment + group  + s(decomp_day, by = treatment ,k=6) + s(decomp_day, by = group, k =6) + s(tree_id, bs = "re") + s(tree_num, bs="re") + s(deploy, bs="re") + s(site_num, bs="re"), subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
+AIC(gam4, gam5)
+gam.check(gam5)
+summary(gam6)
+summary(gam5)
+
+anova.gam(gam5)
+
+gam6=gam(od_corrected_b_n ~ treatment + group  + s(decomp_day, treatment, bs="fs" ,k=6, m=1) + s(decomp_day, group, bs="fs", k =6, m=1) + s(tree_id, bs = "re") + s(tree_num, bs="re") + s(deploy, bs="re") + s(site_num, bs="re"), subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
+AIC(gam5, gam6)
 
 
 gam5=gam(od_corrected_b_n ~ treatment*group  + s(decomp_day, treatment, bs="fs" ,k=6) + s(decomp_day, group, bs="fs", k =6) + s(tree_id, tree_num, bs="re") + s(deploy, site_num, bs="re"), subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
@@ -573,9 +645,7 @@ gam7=gam(od_corrected_b_n ~  s(decomp_day, treatment, bs="fs" ,k=6) + s(decomp_d
 gam8=gam(od_corrected_b_n ~ treatment * group  + s(decomp_day, by =treatment, k=6) + s(decomp_day, by = group, k =6) + s(tree_id, tree_num, bs="re") + s(deploy, site_num, bs="re"), subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
 
 
-summary(gam8)
-gam.check(gam8)
-plot(gam7)
+
 
 AIC(gam1, gam2, gam3, gam4, gam5, gam6, gam7, gam8)
 
@@ -4168,9 +4238,32 @@ pos_PCA_whole_scores %>%
             xlab = paste("PC1 (", round(pos_PCA_whole$prop_expl_var$X[1]*100, digits = 1),"%)", sep = ""), 
             ylab = paste("PC2 (", round(pos_PCA_whole$prop_expl_var$X[2]*100, digits = 1),"%)", sep = ""),
             ggtheme = theme_classic()) +
-  geom_point(data = pos_PCA_whole_scores %>% group_by(Attribute_type) %>% 
-               summarise_at(vars(matches("PC")), mean), aes(PC1, PC2, color = Attribute_type), size = 4, shape = 8) +
-  stat_ellipse(aes(PC1, PC2, color = Attribute_type), geom = "polygon", level = 0.95, alpha = 0.2) +  # Add ellipses
+  geom_point(data = pos_PCA_whole_scores %>% group_by(Attribute_type) %>%
+               summarise_at(vars(matches("PC")), mean), aes(PC1, PC2, color = Attribute_type), size = 4, shape = 8)+
+  stat_ellipse(aes(PC1, PC2, color = as.factor(Attribute_type)), geom = "polygon", level = 0.95, alpha = 0.2) +  # Add ellipses
+  theme(plot.title = element_text(size = 10), axis.title = element_text(size = 8),
+        axis.text = element_text(size = 4)) + coord_fixed()
+
+pos_PCA_whole_scores$Attribute_Sitenum=as.factor(pos_PCA_whole_scores$Attribute_Sitenum)
+
+pos_PCA_whole_scores %>%
+  ggscatter(
+    x = "PC1", y = "PC2",
+    color = "Attribute_TreeID",
+    shape = "Attribute_Sitenum",
+    alpha = 0.6,
+    title = paste("PCA RAW -", "Attribute_Sitenum", sep = " "),
+    xlab = paste("PC1 (", round(pos_PCA_whole$prop_expl_var$X[1] * 100, digits = 1), "%)", sep = ""),
+    ylab = paste("PC2 (", round(pos_PCA_whole$prop_expl_var$X[2] * 100, digits = 1), "%)", sep = ""),
+    ggtheme = theme_classic()
+  ) +geom_point(
+    data = pos_PCA_whole_scores %>% 
+      group_by(Attribute_TreeID, Attribute_Sitenum) %>% 
+      summarise_at(vars(matches("PC")), mean),
+    aes(PC1, PC2, color = Attribute_TreeID, shape = Attribute_Sitenum),
+    alpha = 0.6
+  )+
+  stat_ellipse(aes(PC1, PC2, color = Attribute_TreeID, shape = Attribute_Sitenum), geom = "polygon", level = 0.95, alpha = 0.1) +  # Add ellipses
   theme(plot.title = element_text(size = 10), axis.title = element_text(size = 8),
         axis.text = element_text(size = 4)) + coord_fixed()
 
@@ -4200,9 +4293,69 @@ neg_PCA_whole_ra_scores %>%
   theme(plot.title = element_text(size = 10), axis.title = element_text(size = 8),
         axis.text = element_text(size = 4)) + coord_fixed()
 
+neg_PCA_whole_ra_scores$Attribute_Sitenum=as.factor(neg_PCA_whole_ra_scores$Attribute_Sitenum)
+
+
+# plot with site
+
+neg_PCA_whole_ra_scores %>%
+  ggscatter(
+    x = "PC1", y = "PC2",
+    color = "Attribute_TreeID",
+    shape = "Attribute_Sitenum",
+    alpha = 0.6,
+    title = paste("PCA RAW -", "Attribute_Sitenum", sep = " "),
+    xlab = paste("PC1 (", round(neg_PCA_whole_ra$prop_expl_var$X[1] * 100, digits = 1), "%)", sep = ""),
+    ylab = paste("PC2 (", round(neg_PCA_whole_ra$prop_expl_var$X[2] * 100, digits = 1), "%)", sep = ""),
+    ggtheme = theme_classic()
+  ) +geom_point(
+    data = neg_PCA_whole_ra_scores %>% 
+      group_by(Attribute_TreeID, Attribute_Sitenum) %>% 
+      summarise_at(vars(matches("PC")), mean),
+    aes(PC1, PC2, color = Attribute_TreeID, shape = Attribute_Sitenum),
+    alpha = 0.6
+  )+
+  stat_ellipse(aes(PC1, PC2, color = Attribute_TreeID, shape = Attribute_Sitenum), geom = "polygon", level = 0.95, alpha = 0.1) +  # Add ellipses
+  theme(plot.title = element_text(size = 10), axis.title = element_text(size = 8),
+        axis.text = element_text(size = 4)) + coord_fixed()
+library(ggforce)
+
+neg_PCA_whole_ra_scores %>%
+  ggscatter(
+    x = "PC1", y = "PC2",
+    color = "Attribute_TreeID",
+    shape = "Attribute_Sitenum",
+    alpha = 0.6,
+    title = paste("PCA RAW -", "Attribute_Sitenum", sep = " "),
+    xlab = paste("PC1 (", round(neg_PCA_whole_ra$prop_expl_var$X[1] * 100, digits = 1), "%)", sep = ""),
+    ylab = paste("PC2 (", round(neg_PCA_whole_ra$prop_expl_var$X[2] * 100, digits = 1), "%)", sep = ""),
+    ggtheme = theme_classic()
+  ) +
+  geom_point(
+    data = neg_PCA_whole_ra_scores %>% 
+      group_by(Attribute_TreeID, Attribute_Sitenum) %>% 
+      summarise_at(vars(matches("PC")), mean),
+    aes(PC1, PC2, color = Attribute_TreeID, shape = Attribute_Sitenum),
+    alpha = 0.6
+  ) +
+  geom_encircle(
+    data = neg_PCA_whole_ra_scores %>% 
+      group_by(Attribute_TreeID, Attribute_Sitenum) %>% 
+      summarise_at(vars(matches("PC")), mean),
+    aes(PC1, PC2, color = Attribute_TreeID),
+    expand = 0.02, # Adjust the expansion factor as needed
+    linetype = "dashed",
+    alpha = 0.7
+  ) +
+  theme(plot.title = element_text(size = 10), axis.title = element_text(size = 8),
+        axis.text = element_text(size = 4)) + coord_fixed()
+
+
 # PERMANOVA
 neg_dist_metabolites_ra <- vegdist(neg_data_ra, method = "euclidean")
 neg_permanova_ra <- adonis2(neg_dist_metabolites_ra ~ neg_PCA_whole_ra_scores$Attribute_type, neg_PCA_whole_ra_scores, na.action = na.omit)
+
+############################
 
 #by tree ID
 adonis2(neg_dist_metabolites_ra ~ neg_PCA_whole_ra_scores$Attribute_TreeID, neg_PCA_whole_ra_scores, na.action = na.omit)
@@ -4254,6 +4407,7 @@ Loadings_CT_MPS_plot <- plotLoadings(neg_loadings, plot = FALSE, contrib = "max"
              dot.size = 2, add = "segments",                  
              add.params = list(color = "lightgray", size = 0.1),
              title = "Loadings PLS-DA - CT v MPS") + geom_hline(yintercept = 0, linetype = 2, color = "lightgray")
+
 
 
 
