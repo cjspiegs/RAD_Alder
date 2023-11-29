@@ -88,17 +88,28 @@ meta.day17.590.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day
 
 
 #merge 
-meta.df= rbind(
-  meta.day1.450.df, meta.day1.590.df, 
-  meta.day3.450.df, meta.day3.590.df, 
-  meta.day5.450.df, meta.day5.590.df,
-  meta.day7.450.df, meta.day7.590.df,
-  meta.day11.450.df, meta.day11.590.df,
-  meta.day17.450.df, meta.day17.590.df
+meta.450.df= rbind(
+  meta.day1.450.df, 
+  meta.day3.450.df,
+  meta.day5.450.df,
+  meta.day7.450.df, 
+  meta.day11.450.df, 
+  meta.day17.450.df
   )
 
+meta.590.df=rbind(
+  meta.day1.590.df,
+  meta.day3.590.df,
+  meta.day5.590.df,
+  meta.day7.590.df,
+  meta.day11.590.df, 
+  meta.day17.590.df
+)
+
 #remove well_id columns
-meta.df <- meta.df[, !colnames(meta.df) %in% "well_id"]
+meta.450.df <- meta.450.df[, !colnames(meta.450.df) %in% "well_id"]
+meta.590.df <- meta.590.df[, !colnames(meta.590.df) %in% "well_id"]
+
 
 #create groups based on deployment and metabolite pair
 
@@ -107,34 +118,69 @@ meta.df <- meta.df[, !colnames(meta.df) %in% "well_id"]
 #if deploy is HOK, metaboltie is SEK (away)
 #if deploy is SEK, metabolite is HOK (away)
 
-meta.df$group <- 
+meta.450.df$group <- 
   ifelse(
-  meta.df$deploy == "HOK" & meta.df$metabolite == "HOK", "H",
+  meta.450.df$deploy == "HOK" & meta.450.df$metabolite == "HOK", "H",
    ifelse(
-  meta.df$deploy == "SEK" & meta.df$metabolite == "SEK", "H",
+  meta.450.df$deploy == "SEK" & meta.450.df$metabolite == "SEK", "H",
    ifelse(
-   meta.df$deploy == "HOK" & meta.df$metabolite == "SEK", "AW",
+   meta.450.df$deploy == "HOK" & meta.450.df$metabolite == "SEK", "AW",
    ifelse(
-   meta.df$deploy == "SEK" & meta.df$metabolite == "HOK", "AW", NA  # Default value if none of the conditions are met
+   meta.450.df$deploy == "SEK" & meta.450.df$metabolite == "HOK", "AW", NA  # Default value if none of the conditions are met
                 )
               )
             )
           )
 
-#add hours rather than minutes
-meta.df$hours <- 
+meta.590.df$group <- 
   ifelse(
-  meta.df$time == "30", "0.5",
+  meta.590.df$deploy == "HOK" & meta.590.df$metabolite == "HOK", "H",
    ifelse(
-  meta.df$time == "120", "2",
+  meta.590.df$deploy == "SEK" & meta.590.df$metabolite == "SEK", "H",
    ifelse(
-   meta.df$time == "960", "16",
+   meta.590.df$deploy == "HOK" & meta.590.df$metabolite == "SEK", "AW",
    ifelse(
-   meta.df$time == "1440", "24",
+   meta.590.df$deploy == "SEK" & meta.590.df$metabolite == "HOK", "AW", NA  # Default value if none of the conditions are met
+                )
+              )
+            )
+          )
+
+
+#add hours rather than minutes
+meta.450.df$hours <- 
+  ifelse(
+  meta.450.df$time == "30", "0.5",
+   ifelse(
+  meta.450.df$time == "120", "2",
+   ifelse(
+   meta.450.df$time == "960", "16",
+   ifelse(
+   meta.450.df$time == "1440", "24",
     ifelse(
-   meta.df$time == "2880", "48",
+   meta.450.df$time == "2880", "48",
    ifelse(
-   meta.df$time == "4320", "72", NA  # Default value if none of the conditions are met
+   meta.450.df$time == "4320", "72", NA  # Default value if none of the conditions are met
+                )
+              )
+            )
+          )
+)
+)
+
+meta.590.df$hours <- 
+  ifelse(
+  meta.590.df$time == "30", "0.5",
+   ifelse(
+  meta.590.df$time == "120", "2",
+   ifelse(
+   meta.590.df$time == "960", "16",
+   ifelse(
+   meta.590.df$time == "1440", "24",
+    ifelse(
+   meta.590.df$time == "2880", "48",
+   ifelse(
+   meta.590.df$time == "4320", "72", NA  # Default value if none of the conditions are met
                 )
               )
             )
@@ -143,15 +189,23 @@ meta.df$hours <-
 )
 
 #reorder hours
-meta.df <- meta.df %>% mutate(hours = factor(hours, levels = c("0.5", "2", "16", "24", "48", "72")))
+meta.450.df <- meta.450.df %>% mutate(hours = factor(hours, levels = c("0.5", "2", "16", "24", "48", "72")))
+meta.590.df <- meta.590.df %>% mutate(hours = factor(hours, levels = c("0.5", "2", "16", "24", "48", "72")))
 
 #make colummn factors
-meta.df$treatment=as.factor(meta.df$treatment)
-meta.df$tree_id=as.factor(meta.df$tree_id)
-meta.df$deploy=as.factor(meta.df$deploy)
-meta.df$metabolite=as.factor(meta.df$metabolite)
-meta.df$group=as.factor(meta.df$group)
-meta.df$hours=factor(meta.df$hours)
+meta.450.df$treatment=as.factor(meta.450.df$treatment)
+meta.450.df$tree_id=as.factor(meta.450.df$tree_id)
+meta.450.df$deploy=as.factor(meta.450.df$deploy)
+meta.450.df$metabolite=as.factor(meta.450.df$metabolite)
+meta.450.df$group=as.factor(meta.450.df$group)
+meta.450.df$hours=factor(meta.450.df$hours)
+
+meta.590.df$treatment=as.factor(meta.590.df$treatment)
+meta.590.df$tree_id=as.factor(meta.590.df$tree_id)
+meta.590.df$deploy=as.factor(meta.590.df$deploy)
+meta.590.df$metabolite=as.factor(meta.590.df$metabolite)
+meta.590.df$group=as.factor(meta.590.df$group)
+meta.590.df$hours=factor(meta.590.df$hours)
 
 ```
 
@@ -4113,6 +4167,55 @@ neg_permanova_ra <- adonis2(neg_dist_metabolites_ra ~ neg_PCA_whole_ra_scores$At
 
 #by tree ID
 adonis2(neg_dist_metabolites_ra ~ neg_PCA_whole_ra_scores$Attribute_TreeID, neg_PCA_whole_ra_scores, na.action = na.omit)
+
+### Create PLSDA for AB vs No AB in HF diet mice
+# Pairwise PLS_DA
+data_clr_CT_MPS <- data_clr %>% dplyr::filter(metadata$Attribute_type != "H2O2")
+metadata_clr_CT_MPS <- metadata %>% dplyr::filter(metadata$Attribute_type != "H2O2")
+
+# Create PLSDA for AB vs No AB in HF diet mice
+PLSDA_CT_MPS <- mixOmics::plsda(data_clr_CT_MPS, metadata_clr_CT_MPS$Attribute_type, ncomp = 3, scale = TRUE)
+PLSDA_CT_MPS_scores <- data.frame(PLSDA_CT_MPS$variates$X, metadata_clr_CT_MPS)
+
+numeric_matrix <- data.matrix(neg_data)
+neg_data_numeric <- sapply(neg_data, function(x) as.numeric(as.character(x)))
+
+neg_PLSDA<- mixOmics::plsda(neg_data_numeric, neg_metadata$Attribute_type, ncomp = 3, scale = TRUE)
+neg_PLSDA_scores <- data.frame(neg_PLSDA$variates$X, neg_metadata)
+
+neg_PLSDA_scores %>%
+  ggscatter(x = "comp1", y = "comp2", color = "Attribute_type", alpha = 0.6, title = "PLS-DA AB vs P",
+            xlab = paste("Component 1 (", round(neg_PLSDA$prop_expl_var$X[1]*100, digits = 1),"%)", sep = ""), 
+            ylab = paste("Component 2 (", round(neg_PLSDA$prop_expl_var$X[2]*100, digits = 1),"%)", sep = ""),
+            legend.title = "Group", ggtheme = theme_classic()) +
+  geom_point(data = neg_PLSDA_scores %>% group_by(Attribute_type) %>% 
+               summarise_at(vars(matches("comp")), mean), aes(comp1, comp2, color = Attribute_type), size = 3, shape = 8) +
+  theme(plot.title = element_text(size = 10),axis.title = element_text(size = 8),
+        axis.text = element_text(size = 5)) + coord_fixed()
+
+
+
+perf_neg_plsda <- mixOmics::perf(neg_PLSDA, validation = "Mfold", progressBar = FALSE, auc = TRUE, folds = 4, nrepeat = 100) 
+
+plot(perf_plsda_CT_MPS, legend = FALSE)
+
+neg_VIPs <- as.data.frame(mixOmics::vip(neg_PLSDA))
+neg_VIPs_filter <- dplyr::filter(neg_VIPs, neg_VIPs$comp1 > 1)
+neg_VIPs_filter$ID <- rownames(neg_VIPs_filter)
+neg_VIPs_select <- neg_VIPs_filter %>% dplyr::select(ID, comp1)
+neg_VIPs_Load <- neg_VIPs_select %>% left_join(neg_loadings, by = c("ID" = "rowname")) %>% arrange(desc(comp1))
+neg_VIPs_Load_top <- VIPs_CT_MPS_Load %>% head(., 50)
+
+Loadings_CT_MPS_plot <- plotLoadings(neg_loadings, plot = FALSE, contrib = "max") %>%
+  arrange(GroupContrib) %>%
+  rownames_to_column(var = "Feature") %>%
+  dplyr::filter(Feature %in% VIPs_CT_MPS_Load_top$ID) %>%
+  ggdotchart(x = "Feature", y = "importance",
+             color = "GroupContrib", sorting = "ascending",  
+             dot.size = 2, add = "segments",                  
+             add.params = list(color = "lightgray", size = 0.1),
+             title = "Loadings PLS-DA - CT v MPS") + geom_hline(yintercept = 0, linetype = 2, color = "lightgray")
+
 
 
 
