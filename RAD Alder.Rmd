@@ -88,6 +88,8 @@ meta.day17.590.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/assay/day
 
 
 #merge 
+
+
 meta.450.df= rbind(
   meta.day1.450.df, 
   meta.day3.450.df,
@@ -98,12 +100,7 @@ meta.450.df= rbind(
   )
 
 meta.590.df=rbind(
-  meta.day1.590.df,
-  meta.day3.590.df,
-  meta.day5.590.df,
-  meta.day7.590.df,
-  meta.day11.590.df, 
-  meta.day17.590.df
+  
 )
 
 #remove well_id columns
@@ -213,7 +210,6 @@ meta.590.df$hours=factor(meta.590.df$hours)
 
 Let's first visualize the raw OD readings at both 450 and 590 nm.
 ```{r}
-
 #plot at 450 nm
 meta.df %>%
     filter(nm == "450", time == "1440")%>%
@@ -253,10 +249,13 @@ meta.df %>%
   )
 
 
-#we will use 450 nm
-## create subset 450 nm
-meta.450.df=as.data.frame(meta.df[meta.df$nm=="450",])
-meta.590.df=as.data.frame(meta.df[meta.df$nm=="590",])
+```
+
+
+### Use 450 nm absorbance readings
+```{r}
+
+View(meta.450.df[meta.450.df$decomp_day == "1",])
 
 #by group and treatment using loess
 meta.450.df %>%
@@ -305,6 +304,9 @@ guides(
     legend.title = element_text(size = 14),   # Adjust text size for legend title
     strip.text = element_text(size = 16)      # Adjust text size for facet labels
   )
+
+
+
 #This pattern suggests that microbial communities from the intermediate stages of decomposition may be particularly well-equipped or adapted to metabolize the plant metabolites. 
 
 #The hypothesis about a unimodal trend in abundance and diversity, where early and low decomposition days show low abundance and diversity, and intermediate decomposition days show high abundance and diversity, is a reasonable expectation. It aligns with the concept of priority effects, where early colonizers influence substrate conditions and, in some cases, facilitate the establishment of subsequent colonizers.
@@ -313,28 +315,7 @@ guides(
 
 #This discrepancy suggests that the relationship between microbial community composition, their functional attributes (such as enzyme production), and the metabolization of plant extracts is more complex than initially anticipated. It's possible that other factors, such as the specific secondary metabolites present in the plant extracts, microbial interactions, or ecological conditions, influence the metabolic activity of the communities.
 
-#boxplot
-meta.450.df %>%
-  filter(hours == "24")%>%
-  na.omit()%>%
-  ggplot(aes(x = treatment, y = od_corrected_b_n)) +
-  geom_boxplot(aes(color = group, fill = group), alpha = 0.1) +
-  labs(x = "treatment", y = "optical density (450 nm)")+
-  scale_color_colorblind() +
-  scale_fill_colorblind() +
-  facet_wrap(.~decomp_day)+
-  theme_bw()+
-  theme(
-    axis.text = element_text(size = 12),      # Adjust text size for axis labels
-    axis.title = element_text(size = 14),     # Adjust text size for axis titles
-    legend.text = element_text(size = 12),    # Adjust text size for legend labels
-    legend.title = element_text(size = 14),   # Adjust text size for legend title
-    strip.text = element_text(size = 16)      # Adjust text size for facet labels
-  )
 
-
-qqnorm(sqrt(na.omit(meta.450.df$od_corrected_b_n)))
-qqline(sqrt(na.omit(meta.450.df$od_corrected_b_n)))
 
 #by 4 treatments
 meta.450.df %>%
