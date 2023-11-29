@@ -261,9 +261,9 @@ meta.df %>%
 meta.450.df %>%
   na.omit() %>%
   ggplot(aes(x = hours, y = (blank+neg/blank-neg))) +
-  ylim(0,1.6)+
-  geom_smooth(aes(group = 1), method = "loess", span = 4) +
-      geom_point(data = . %>% filter(hours == "24"), color = "red", size = 3) +  # Add geom_point for hours == "24"
+  ylim(0.6,1.6)+
+  geom_smooth(aes(group = 1), method = "gam", formula = y ~ s(x, k=3)) +
+      hline(data = . %>% filter(hours == "24"), color = "red", size = 3) +  # Add geom_point for hours == "24"
   labs(x = "hours", y = "blank OD (450 nm)") +
   scale_color_manual(values = c("blank" = "black")) +
   theme_bw() +
@@ -277,18 +277,45 @@ meta.450.df %>%
   )
 
 
-
 ```
 
 
 ### Use 450 nm absorbance readings
 ```{r}
 #by group and treatment using loess
+library(dplyr)
+
 meta.450.df %>%
   filter(hours == "24")%>%
   na.omit()%>%
   ggplot(aes(x = as.numeric(decomp_day), y = od_corrected_b_n)) +
   geom_smooth(aes(color = treatment, fill = treatment, linetype = group, group = interaction(group, treatment)), method = 'loess', formula = y ~ x, alpha = 0.1) +
+    geom_line(aes(y = neg), color = "red", linetype = "dashed", size = 0.5, alpha = 0.5) +
+    geom_ribbon(aes(ymin = neg - sd(neg), ymax = neg + sd(neg)), fill = "red", alpha = 0.2) +
+  labs(x = "decomposition day", y = "optical density (450 nm)")+
+  scale_x_continuous(breaks = c(1, 5, 9, 13, 17))+
+  scale_color_colorblind() +
+  scale_fill_colorblind() +
+guides(
+    linetype = guide_legend(override.aes = list(color = "cornflowerblue")),
+    color = guide_legend(order = 1),  # Set order for the color legend
+    fill = guide_legend(order = 1)   # Set order for the fill legend
+  ) +
+  theme_bw()+
+  theme(
+    axis.text = element_text(size = 12),      # Adjust text size for axis labels
+    axis.title = element_text(size = 14),     # Adjust text size for axis titles
+    legend.text = element_text(size = 12),    # Adjust text size for legend labels
+    legend.title = element_text(size = 14),   # Adjust text size for legend title
+    strip.text = element_text(size = 16)      # Adjust text size for facet labels
+  )
+
+meta.450.df %>%
+  filter(hours == "24")%>%
+  na.omit()%>%
+  ggplot(aes(x = as.numeric(decomp_day), y = od_corrected_b_n)) +
+  geom_smooth(aes(color = treatment, fill = treatment, linetype = group, group = interaction(group, treatment)), method = 'gam', formula = y ~ s(x, k =6), alpha = 0.1) +
+    geom_smooth(aes(y = neg), method = "gam", color = "red", fill= "red", linetype = "dashed", size = 0.5, alpha = 0.5) +
   labs(x = "decomposition day", y = "optical density (450 nm)")+
   scale_x_continuous(breaks = c(1, 5, 9, 13, 17))+
   scale_color_colorblind() +
@@ -313,6 +340,7 @@ meta.450.df %>%
   na.omit()%>%
   ggplot(aes(x = as.numeric(decomp_day), y = od_corrected_b_n)) +
   geom_smooth(aes(color = treatment, fill = treatment, linetype = group, group = interaction(group, treatment)), method = 'gam', formula = y ~ s(x, k=6), alpha = 0.1) +
+      geom_smooth(aes(y = neg), method = "gam", formula = y ~ s(x, k=4), color = alpha("red", 0.5), fill= alpha("red", 0.5), linetype = "longdash", size = 0.7) +
   labs(x = "decomposition day", y = "optical density (450 nm)")+
   scale_x_continuous(breaks = c(1, 5, 9, 13, 17))+
   scale_color_colorblind() +
