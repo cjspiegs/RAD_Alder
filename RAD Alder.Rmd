@@ -41,7 +41,7 @@ if (!require("pacman")) install.packages("pacman") # for rapid install if not in
 
 # use pacman to load all the packages you are missing!
 pacman::p_load('knitr', 'lme4', 'lmerTest', 'tidyverse', 'magrittr', 'effects', 'plyr', 'dplyr', 
-               'plotrix', 'car',"gridExtra", "cowplot", "tools", "mgcv", "gratia", "tidymv")
+               'plotrix', 'car',"gridExtra", "cowplot", "tools", "mgcv", "gratia", "tidymv", "ggthemes", "ggpubr")
 
 Fig.formatting<-(theme_classic()) +
   theme(text=element_text(size=25),
@@ -54,7 +54,8 @@ Fig.formatting<-(theme_classic()) +
         axis.text.x=element_text(
         margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm"), colour="black", size=20)) +
   theme(legend.key.size = unit(0.4, "cm"), legend.position = "right") +
-  theme(aspect.ratio=1.3) 
+  theme(aspect.ratio=0.5) 
+
 
 ```
 
@@ -255,36 +256,12 @@ meta.df %>%
     strip.text = element_text(size = 16)      # Adjust text size for facet labels
   )
 
-
-
-#plot 450 blanks
-meta.450.df %>%
-  na.omit() %>%
-  ggplot(aes(x = hours, y = (blank+neg/blank-neg))) +
-  ylim(0.6,1.6)+
-  geom_smooth(aes(group = 1), method = "gam", formula = y ~ s(x, k=3)) +
-      hline(data = . %>% filter(hours == "24"), color = "red", size = 3) +  # Add geom_point for hours == "24"
-  labs(x = "hours", y = "blank OD (450 nm)") +
-  scale_color_manual(values = c("blank" = "black")) +
-  theme_bw() +
-  facet_wrap(. ~ decomp_day) +
-  theme(
-    axis.text = element_text(size = 12),
-    axis.title = element_text(size = 14),
-    legend.text = element_text(size = 12),
-    legend.title = element_text(size = 14),
-    strip.text = element_text(size = 16)
-  )
-
-
 ```
 
-
+Based on the literature, we will use an absorbance wavelength of 450 nm which is appropriate for the metabolic indicator (INT) in the assay. 
 ### Use 450 nm absorbance readings
 ```{r}
 #by group and treatment using loess
-library(dplyr)
-
 meta.450.df %>%
   filter(hours == "24")%>%
   na.omit()%>%
@@ -310,6 +287,7 @@ guides(
     strip.text = element_text(size = 16)      # Adjust text size for facet labels
   )
 
+#by group and treatment using gam
 meta.450.df %>%
   filter(hours == "24")%>%
   na.omit()%>%
@@ -334,7 +312,6 @@ guides(
     strip.text = element_text(size = 16)      # Adjust text size for facet labels
   )
 
-#by group and treatment using gam
 meta.450.df %>%
   filter(hours == "24")%>%
   na.omit()%>%
@@ -359,13 +336,17 @@ guides(
     strip.text = element_text(size = 16)      # Adjust text size for facet labels
   )
 
+
+#####################
+
 meta.450.df %>%
   filter(hours == "24") %>%
   na.omit() %>%
   ggplot(aes(x = as.factor(decomp_day), y = od_corrected_b_n, group = interaction(group, treatment), color = treatment, fill = treatment)) +
-  stat_summary(fun = mean, geom = "point", position = position_dodge(width = 0.02), aes(shape = treatment), show.legend = F, size = 2, alpha = 0.7) +
-  geom_smooth(aes(linetype = group), method = 'gam', formula = y ~ s(x, k = 6), alpha = 0.1) +
-  geom_line(aes(y = neg), color = alpha("red", 0.5), linetype = "longdash", size = 0.7) +
+  stat_summary(fun = mean, geom = "point", aes(shape = treatment), show.legend = F, size = 2.3) +
+  geom_smooth(aes(color = treatment,fill = treatment, linetype=group), method = 'gam', formula = y ~ s(x, k = 6), alpha = 0.15) +
+  geom_point(aes(y= neg), color = alpha("red", 0.3), shape = 15)+
+  geom_line(aes(y = neg), color = alpha("red", 0.3), linetype = "longdash", size = 0.7) +
   labs(x = "decomposition day", y = "optical density (450 nm)") +
   scale_color_colorblind() +
   scale_fill_colorblind() +
@@ -384,8 +365,71 @@ meta.450.df %>%
   )
 
 
+#####################
+#this is the final plot
+assay.plot=meta.450.df %>%
+  filter(hours == "24") %>%
+  na.omit() %>%
+  ggplot(aes(x = as.factor(decomp_day), y = od_corrected_b_n, group = interaction(group, treatment), color = treatment, fill = treatment)) +
+  stat_summary(fun = mean, geom = "point", aes(shape = treatment), show.legend = T, size = 2.3) +
+  geom_smooth(aes(color = treatment,fill = treatment, linetype=group), method = 'gam', formula = y ~ s(x, k = 6), alpha = 0.15) +
+  geom_point(aes(y= neg,  shape = "neg"), color = alpha("red", 0.3), show.legend = F)+
+  geom_line(aes(y = neg), color = alpha("red", 0.3), show.legend = F, linetype = "longdash", size = 0.7) +
+  labs(x = "decomposition day", y = "optical density (450 nm)") +
+  scale_color_colorblind() +
+  scale_fill_colorblind() +
+  guides(
+    linetype = guide_legend(override.aes = list(color = "cornflowerblue")),
+    color = guide_legend(order = 1),  # Set order for the color legend
+    fill = guide_legend(order = 1)   # Set order for the fill legend
+  ) +
+  theme_bw() +
+  theme(
+    axis.text = element_text(size = 12),
+    axis.title = element_text(size = 14),
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 14),
+    strip.text = element_text(size = 16)
+  )+
+  Fig.formatting
 
+assay.plot
 
+ggsave("figures/assay.plot.pdf", assay.plot, width = 17, height = 8)
+
+#make pairing for 4 treatments
+meta.450.df <- meta.450.df %>%
+  mutate(pairing = paste(treatment, group, sep = "-"))
+
+meta.450.df <- meta.450.df %>% 
+  mutate(pairing = factor(pairing, levels = c("P-AW", "P-H", "AB-AW", "AB-H")))
+
+#4 treatment plot
+trt.assay.plot=meta.450.df %>%
+  filter(hours == "24") %>%
+  na.omit() %>%
+  ggplot(aes(x = as.factor(decomp_day), y = od_corrected_b_n, color = pairing, group = pairing)) +
+  stat_summary(fun = mean, geom = "point", show.legend = F, size = 2) +
+    geom_point(aes(y= neg,  shape = "neg"), size= 2, color = alpha("red", 0.3), show.legend = F)+
+  geom_smooth(aes(linetype= pairing, fill = pairing),method = 'gam', formula = y ~ s(x, k = 6), alpha = 0.15) +
+  geom_smooth(aes(y = neg), fill = alpha ("red", 0.3), method = 'loess', formula = y ~ x, span= 0.6, color = alpha("red", 0.3), show.legend = F, linetype = "longdash") +
+  labs(x = "decomposition day", y = "optical density (450 nm)") +
+  coord_cartesian(ylim = c(0,3))+
+  scale_color_colorblind()+
+  scale_fill_colorblind()+
+  theme_bw() +
+  theme(
+    axis.text = element_text(size = 12),
+    axis.title = element_text(size = 14),
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 14),
+    strip.text = element_text(size = 16)
+  )+
+  Fig.formatting
+
+trt.assay.plot
+
+ggsave("figures/trt.assay.plot.pdf", trt.assay.plot, width = 15, height = 8)
 
 
 ```
@@ -539,11 +583,6 @@ z_scored_df %>%
     strip.text = element_text(size = 16)      # Adjust text size for facet labels
   )
 
-meta.450.df <- meta.450.df %>%
-  mutate(pairing = paste(treatment, group, sep = "-"))
-
-meta.450.df <- meta.450.df %>% 
-  mutate(pairing = factor(pairing, levels = c("P-AW", "P-H", "AB-AW", "AB-H")))
 
 
 meta.450.df %>%
@@ -623,6 +662,23 @@ gam4=gam(od_corrected_b_n ~ treatment + group  + s(decomp_day, treatment, bs="fs
 summary(gam4)
 gam.check(gam4)
 anova.gam(gam4)
+
+fl.T0.mod.plot<-
+  plot_smooths(
+  model = m1.fl.T0.gam,
+  series = plant.mass..g,
+  comparison = Treatment
+) + 
+  geom_point(data=DOC.df[(DOC.df$Time.point=="T0"),], 
+             aes(x=plant.mass..g, y=fl, color=Treatment)) +
+  scale_color_manual(values = c("brown1", "mediumseagreen")) + 
+    scale_fill_manual(values = c("brown1", "mediumseagreen")) +
+  ggtitle("Day-0") +
+  coord_cartesian(ylim = c(0.5,2.5))+
+    ylab("FI")+
+  xlab("plant material (g)") +
+  Fig.formatting
+
 
 gam5=gam(od_corrected_b_n ~ treatment + group  + s(decomp_day, by = treatment ,k=6) + s(decomp_day, by = group, k =6) + s(tree_id, bs = "re") + s(tree_num, bs="re") + s(deploy, bs="re") + s(site_num, bs="re"), subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
 AIC(gam4, gam5)
