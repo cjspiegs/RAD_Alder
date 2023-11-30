@@ -409,14 +409,15 @@ trt.assay.plot=meta.450.df %>%
   filter(hours == "24") %>%
   na.omit() %>%
   ggplot(aes(x = as.factor(decomp_day), y = od_corrected_b_n, color = pairing, group = pairing)) +
-  stat_summary(fun = mean, geom = "point", show.legend = F, size = 2) +
-    geom_point(aes(y= neg,  shape = "neg"), size= 2, color = alpha("red", 0.3), show.legend = F)+
+  stat_summary(fun = mean, geom = "point", show.legend = F, size = 2.3) +
+    geom_point(aes(y= neg,  shape = "neg"), size= 2.3, color = alpha("red", 0.3), show.legend = F)+
   geom_smooth(aes(linetype= pairing, fill = pairing),method = 'gam', formula = y ~ s(x, k = 6), alpha = 0.15) +
   geom_smooth(aes(y = neg), fill = alpha ("red", 0.3), method = 'loess', formula = y ~ x, span= 0.6, color = alpha("red", 0.3), show.legend = F, linetype = "longdash") +
   labs(x = "decomposition day", y = "optical density (450 nm)") +
   coord_cartesian(ylim = c(0,3))+
   scale_color_colorblind()+
   scale_fill_colorblind()+
+    scale_x_discrete(expand = c(0.01, 0.01)) +  # Adjust the expand argument
   theme_bw() +
   theme(
     axis.text = element_text(size = 12),
