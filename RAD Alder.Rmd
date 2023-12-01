@@ -41,7 +41,7 @@ if (!require("pacman")) install.packages("pacman") # for rapid install if not in
 
 # use pacman to load all the packages you are missing!
 pacman::p_load('knitr', 'lme4', 'lmerTest', 'tidyverse', 'magrittr', 'effects', 'plyr', 'dplyr', 
-               'plotrix', 'car',"gridExtra", "cowplot", "tools", "mgcv", "gratia", "tidymv", "ggthemes", "ggpubr")
+               'plotrix', 'car',"gridExtra", "cowplot", "tools", "mgcv", "gratia", "tidymv", "ggthemes", "ggpubr", "scales", "visreg", "mgcViz")
 
 Fig.formatting<-(theme_classic()) +
   theme(text=element_text(size=25),
@@ -210,6 +210,14 @@ meta.590.df$metabolite=as.factor(meta.590.df$metabolite)
 meta.590.df$group=as.factor(meta.590.df$group)
 meta.590.df$hours=factor(meta.590.df$hours)
 
+#make pairing for 4 treatments
+meta.450.df <- meta.450.df %>%
+  mutate(pairing = paste(treatment, group, sep = "-"))
+
+meta.450.df <- meta.450.df %>% 
+  mutate(pairing = factor(pairing, levels = c("P-AW", "P-H", "AB-AW", "AB-H")))
+
+class(meta.450.df$decomp_day)
 ```
 
 #### determine which absorbance wavelength to use. Various studies (as those cited above) measured the absorbance of INT at both 450 and 590 nm. This provides some flexibility for us to determine exactly which to use based on the conditions present in our system (i.e., rivers, within the wells, external conditions of the lab space, etc). Factors such as these can influence the rate of metabolization, and thus the OD values from the absorbance reader. Additionally, determining which reading time (30 mins, 2 hrs, 16 hrs, etc.) at which the OD values were measured is important. Past work has measured absorbance at 30 mins, while other recommend 2-16 hrs. However, given the specific conditions of our field experiment, it has been suggested that 24 hrs may be required for an accurate metabolic reading. Additionally, we need to include a hierarchical modeling framework to capture the nonlinear trends in the data (a priori parabolic, or unimodal, metabolization curves across decomposition day) and repeated measures for each leaf pack. 
@@ -289,10 +297,10 @@ guides(
 
 #by group and treatment using gam
 meta.450.df %>%
-  filter(hours == "24")%>%
+  filter(hours == "16")%>%
   na.omit()%>%
-  ggplot(aes(x = as.numeric(decomp_day), y = od_corrected_b_n)) +
-  geom_smooth(aes(color = treatment, fill = treatment, linetype = group, group = interaction(group, treatment)), method = 'gam', formula = y ~ s(x, k =6), alpha = 0.1) +
+  ggplot(aes(x = as.factor(decomp_day), y = od_corrected_b_n)) +
+  geom_smooth(aes(color = treatment, fill = treatment, linetype = group, group = interaction(group, treatment)), method = 'gam', formula = y ~ s(x, k =4), alpha = 0.1) +
     geom_smooth(aes(y = neg), method = "gam", color = "red", fill= "red", linetype = "dashed", size = 0.5, alpha = 0.5) +
   labs(x = "decomposition day", y = "optical density (450 nm)")+
   scale_x_continuous(breaks = c(1, 5, 9, 13, 17))+
@@ -317,7 +325,7 @@ meta.450.df %>%
   na.omit()%>%
   ggplot(aes(x = as.factor(decomp_day), y = od_corrected_b_n)) +
   geom_point(aes(y = od_corrected_b_n, group = interaction (group, treatment, tree_num)))+
-  geom_smooth(aes(color = treatment, fill = treatment, linetype = group, group = interaction(group, treatment)), method = 'gam', formula = y ~ s(x, k=6), alpha = 0.1) +
+  geom_smooth(aes(color = treatment, fill = treatment, linetype = group, group = interaction(group, treatment)), method = 'gam', formula = y ~ s(x, k=4), alpha = 0.1) +
       geom_smooth(aes(y = neg), method = "gam", formula = y ~ s(x, k=4), color = alpha("red", 0.5), fill= alpha("red", 0.5), linetype = "longdash", size = 0.7) +
   labs(x = "decomposition day", y = "optical density (450 nm)")+
 scale_color_colorblind() +
@@ -365,6 +373,11 @@ meta.450.df %>%
   )
 
 
+```
+
+
+These are the final plots
+```{r}
 #####################
 #this is the final plot
 assay.plot=meta.450.df %>%
@@ -397,12 +410,6 @@ assay.plot
 
 ggsave("figures/assay.plot.pdf", assay.plot, width = 17, height = 8)
 
-#make pairing for 4 treatments
-meta.450.df <- meta.450.df %>%
-  mutate(pairing = paste(treatment, group, sep = "-"))
-
-meta.450.df <- meta.450.df %>% 
-  mutate(pairing = factor(pairing, levels = c("P-AW", "P-H", "AB-AW", "AB-H")))
 
 #4 treatment plot
 trt.assay.plot=meta.450.df %>%
@@ -413,7 +420,7 @@ trt.assay.plot=meta.450.df %>%
     geom_point(aes(y= neg,  shape = "neg"), size= 2.3, color = alpha("red", 0.3), show.legend = F)+
   geom_smooth(aes(linetype= pairing, fill = pairing),method = 'gam', formula = y ~ s(x, k = 6), alpha = 0.15) +
   geom_smooth(aes(y = neg), fill = alpha ("red", 0.3), method = 'loess', formula = y ~ x, span= 0.6, color = alpha("red", 0.3), show.legend = F, linetype = "longdash") +
-  labs(x = "decomposition day", y = "optical density (450 nm)") +
+  labs(x = "decomposition day", y = "absorbance (OD450 nm)") +
   coord_cartesian(ylim = c(0,3))+
   scale_color_colorblind()+
   scale_fill_colorblind()+
@@ -431,6 +438,32 @@ trt.assay.plot=meta.450.df %>%
 trt.assay.plot
 
 ggsave("figures/trt.assay.plot.pdf", trt.assay.plot, width = 15, height = 8)
+
+meta.450.df$decomp_day=as.numeric(meta.450.df$decomp_day)
+
+meta.450.df %>%
+  filter(hours == "24") %>%
+  na.omit() %>%
+  ggplot(aes(x = as.factor(decomp_day), y = od_corrected_b_n, color = pairing, group = pairing)) +
+  stat_summary(fun = mean, geom = "point", show.legend = F, size = 2.3) +
+    geom_point(aes(y= neg,  shape = "neg"), size= 2.3, color = alpha("red", 0.3), show.legend = F)+
+  geom_smooth(aes(linetype= pairing, fill = pairing), method = 'gam', formula = y ~ s(x, k = 6), alpha = 0.15) +
+  geom_smooth(aes(y = neg), fill = alpha ("red", 0.3), method = 'loess', formula = y ~ x, span= 0.6, color = alpha("red", 0.3), show.legend = F, linetype = "longdash") +
+  labs(x = "decomposition day", y = "absorbance (450 nm)") +
+  coord_cartesian(ylim = c(0,3))+
+  scale_x_discrete(breaks = c(1,3,5,7,11,17)) +
+      scale_x_discrete(expand = c(0.01, 0.01)) +
+  scale_color_colorblind()+
+  scale_fill_colorblind()+
+  theme_bw() +
+  theme(
+    axis.text = element_text(size = 12),
+    axis.title = element_text(size = 14),
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 14),
+    strip.text = element_text(size = 16)
+  )+
+  Fig.formatting
 
 
 ```
@@ -537,99 +570,10 @@ z_scored_df <- data.frame()
 
 z_scored_mean_df=aggregate(z_score ~ treatment + tree_id + deploy + metabolite  + site_num + tree_num + decomp_day + group, data = z_scored_d_d_h_df, mean, na.rm=T)
 
-
-# plot
-z_scored_df %>%
-  filter(hours == "24")%>%
-  na.omit()%>%
-  ggplot(aes(x = as.numeric(decomp_day), y = z_score)) +
-  geom_smooth(aes(color = treatment, fill = treatment, linetype = group, group = interaction(group, treatment)), method = 'gam', formula = y ~ s(x, k=6), alpha = 0.1) +
-      geom_smooth(aes(y = neg), method = "gam", formula = y ~ s(x, k=4), color = alpha("red", 0.5), fill= alpha("red", 0.5), linetype = "longdash", size = 0.7) +
-  labs(x = "decomposition day", y = "standardized optical density (450 nm)")+
-  scale_x_continuous(breaks = c(1, 5, 9, 13, 17))+
-  scale_color_colorblind() +
-  scale_fill_colorblind() +
-guides(
-    linetype = guide_legend(override.aes = list(color = "cornflowerblue")),
-    color = guide_legend(order = 1),  # Set order for the color legend
-    fill = guide_legend(order = 1)   # Set order for the fill legend
-  ) +
-  theme_bw()+
-  theme(
-    axis.text = element_text(size = 12),      # Adjust text size for axis labels
-    axis.title = element_text(size = 14),     # Adjust text size for axis titles
-    legend.text = element_text(size = 12),    # Adjust text size for legend labels
-    legend.title = element_text(size = 14),   # Adjust text size for legend title
-    strip.text = element_text(size = 16)      # Adjust text size for facet labels
-  )
-
-
-
-#plot at 450 nm
-z_scored_df %>%
-  filter(hours == "24")%>%
-  na.omit()%>%
-  ggplot(aes(x = as.numeric(decomp_day), y = z_score)) +
-  geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'gam', formula = y ~ s(x, k = 4), alpha = 0.1) +
-  labs(x = "decomposition day", y = "standardized optical density (z score)")+
-  scale_color_colorblind() +
-  scale_fill_colorblind() +
-   guides(linetype = guide_legend(override.aes = list(color = "cornflowerblue")))+
-  theme_bw()+
-  theme(
-    axis.text = element_text(size = 12),      # Adjust text size for axis labels
-    axis.title = element_text(size = 14),     # Adjust text size for axis titles
-    legend.text = element_text(size = 12),    # Adjust text size for legend labels
-    legend.title = element_text(size = 14),   # Adjust text size for legend title
-    strip.text = element_text(size = 16)      # Adjust text size for facet labels
-  )
-
-
-
-meta.450.df %>%
-  filter(hours == "24")%>%
-  na.omit()%>%
-  ggplot(aes(x = as.numeric(decomp_day), y = od_corrected_b_n)) +
-  geom_smooth(aes(linetype = ifelse(substr(interaction(treatment, group), 1, 2) == "AB", "dashed", "solid"), color = interaction(treatment,group), fill = interaction(treatment,group)), method = 'gam', formula = y ~ s(x, k = 4), alpha = 0.1) +
-  labs(x = "decomposition day", y = "standardized optical density (z score)")+
-    guides(color = guide_legend(title = "Treatment"), fill= guide_legend(title = "Treatment"), linetype = guide_legend(override.aes = list( linetype = NULL)))+  # Remove the linetype legend
-  scale_color_colorblind() +
-  scale_fill_colorblind() +
-theme_bw()+
-  theme(
-    axis.text = element_text(size = 12),      # Adjust text size for axis labels
-    axis.title = element_text(size = 14),     # Adjust text size for axis titles
-    legend.text = element_text(size = 12),    # Adjust text size for legend labels
-    legend.title = element_text(size = 14),   # Adjust text size for legend title
-    strip.text = element_text(size = 16)      # Adjust text size for facet labels
-  )
-
-meta.450.df %>%
-  filter(hours == "24")%>%
-  na.omit()%>%
-  ggplot(aes(x = as.numeric(decomp_day), y = od_corrected_b_n)) +
-  geom_smooth(aes(linetype = ifelse(substr(interaction(pairing), 1, 2) == "AB", "dashed", "solid"), color = pairing, fill = pairing), method = 'gam', formula = y ~ s(x, k = 4), alpha = 0.1) +
-  labs(x = "decomposition day", y = "standardized optical density (z score)")+
-    guides(color = guide_legend(title = "Treatment"), fill= guide_legend(title = "Treatment"), linetype = guide_legend(title = "Treatment"))+  # Remove the linetype legend
-  scale_color_colorblind() +
-  scale_fill_colorblind() +
-theme_bw()+
-  theme(
-    axis.text = element_text(size = 12),      # Adjust text size for axis labels
-    axis.title = element_text(size = 14),     # Adjust text size for axis titles
-    legend.text = element_text(size = 12),    # Adjust text size for legend labels
-    legend.title = element_text(size = 14),   # Adjust text size for legend title
-    strip.text = element_text(size = 16)      # Adjust text size for facet labels
-  )
-
-
-
-
 ```
 
 Model exploration
 ```{r}
-
 lmer1 = lmer(od_corrected_b_n ~ treatment * group + (1 | decomp_day) + (1 | deploy) +  (1 | tree_id) + (1|tree_num), subset = hours == "24", data = meta.450.df)
 
 lmer2 = lmer(od_corrected_b_n ~ pairing + (1 | decomp_day) + (1 | deploy) +  (1 | tree_id) + (1|tree_num), subset = hours == "24", data = meta.450.df)
@@ -648,13 +592,176 @@ gam.check(gam1)
 
 
 #testing GAMs
-gam1=gam(od_corrected_b_n ~ treatment + group + s(decomp_day, k =6) + s(decomp_day, by =treatment, k=6) + s(decomp_day, by = group, k =6) + s(tree_id, tree_num, bs="re") + s(deploy, site_num, bs="re"), subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
 
-AIC(gam1, gam2)
-summary(gam1)
-gam.check(gam2)
-anova.gam(gam1)
+gam1=gam(od_corrected_b_n ~ pairing + s(decomp_day ,k =6) + s(tree_id, tree_num, bs="re") + s(deploy, site_num, bs="re"), subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
 
+gam2=gam(od_corrected_b_n ~ pairing + s(decomp_day, by= pairing, k =6) + s(tree_id,bs="re") + s(tree_num, bs="re") + s(deploy,bs="re") + s(site_num, bs="re"), subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
+
+gam3=gam(od_corrected_b_n ~ treatment * group + s(decomp_day, by= treatment, k =6) + s(decomp_day, by= group, k =6)+ s(tree_id,bs="re") + s(tree_num, bs="re") + s(deploy,bs="re") + s(site_num, bs="re"), subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
+#####
+gam4=gam(od_corrected_b_n ~ treatment + group + s(decomp_day, by= treatment, k =6) + s(decomp_day, by= group, k =6)+ s(tree_id,bs="re") + s(tree_num, bs="re") + s(deploy,bs="re") + s(site_num, bs="re"), subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
+########
+
+gam5=gam(od_corrected_b_n ~ pairing + s(decomp_day, by= pairing, k=6)  + s(tree_num, bs="re") + s(deploy,bs="re") + s(site_num, bs="re"),  subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
+
+gam6=gam(od_corrected_b_n ~ pairing + s(decomp_day, by= pairing, k=6)  + s(tree_num, tree_id, bs="re") +  s(site_num, deploy, bs="re"),  subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
+
+
+gam7=gam(od_corrected_b_n ~ treatment + group + s(decomp_day, by= treatment, k=6)  + s(decomp_day, by= group, k=6)+s(tree_num, bs="re") + s(deploy,bs="re") + s(site_num, bs="re"),  subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
+
+gam8=gam(od_corrected_b_n ~ treatment + group + s(decomp_day, by= treatment, k=6)  + s(decomp_day, by= group, k=6)+s(tree_id, tree_num, bs="re")+ s(deploy, site_num, bs="re"),  subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
+
+#########
+
+gam9=gam(od_corrected_b_n ~ treatment * group + s(decomp_day, by= treatment, k=6)  + s(decomp_day, by= group, k=6)+s(tree_num, bs="re") + s(deploy,bs="re") + s(site_num, bs="re"),  subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
+
+gam10=gam(od_corrected_b_n ~ treatment * group + s(decomp_day, by= treatment, k=6)  + s(decomp_day, by= group, k =6)+ s( tree_id, tree_num, bs="re", k= 20) + s(deploy, site_num, bs="re"),  subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
+
+gam11=gam(od_corrected_b_n ~ treatment * group + s(decomp_day, by= treatment, k=6)  + s(decomp_day, by= group, k =6)+ s( tree_num, tree_id, bs="re") + s(site_num,bs="re") + s(deploy, bs="re"),  subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
+
+gam12=gam(od_corrected_b_n ~ treatment * group + s(decomp_day, by= treatment, k=6)  + s(decomp_day, by= group, k =6)+ s( site_num, tree_num, bs="re") + s(tree_id, bs="re") +  + s(deploy, bs="re"),  subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
+
+
+
+AIC( gam10, gam11, gam12)
+
+####### 2 canditate models
+
+# looks at interaction between main effects
+gam_trt.grp=gam(od_corrected_b_n ~ treatment * group + s(decomp_day, by= treatment, k=6)  + s(decomp_day, by= group, k =6)+ s( tree_num, tree_id, bs="re") + s(site_num,bs="re") + s(deploy, bs="re"),  subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
+summary(gam_trt.grp)
+gam.check(gam_trt.grp)
+
+#looks at individual treatments
+gam_pair=gam(od_corrected_b_n ~ pairing + s(decomp_day, by= pairing, k=6) + s( tree_num, tree_id, bs="re") + s(site_num,bs="re") + s(deploy, bs="re"),  subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
+summary(gam_pair)
+gam.check(gam_pair)
+
+AIC(gam_trt.grp, gam_pair)
+BIC(gam_trt.grp, gam_pair)
+
+
+##both models are the same but allow you to analyze the data at 
+
+gam.check(gam10)
+summary(gam6)
+summary(gam5)
+summary(gam7)
+summary(gam11)
+anova.gam(gam7)
+
+
+anova.gam(gam4)
+draw(gam7)
+
+
+plot_difference(
+  gam4,
+  series = decomp_day,
+  difference = list(treatment = c("P", "AB"))
+) + 
+  Fig.formatting 
+
+plot_difference(
+  gam4,
+  series = decomp_day,
+  difference = list(group = c("H", "AW"))
+)+
+  Fig.formatting
+
+
+
+# Plot smooths with mean data points
+plot_smooths(
+  model = gam5,
+  series = decomp_day,
+  comparison = pairing
+) + 
+stat_summary(
+  data = meta.450.df[meta.450.df$hours == "24", ],
+  aes(x = decomp_day, y = od_corrected_b_n, color = pairing),
+  fun = mean,
+  geom = "point",
+  size = 2
+) +
+labs(x = "decomposition day", y = "absorbance (450 nm)") +
+scale_color_colorblind() +
+scale_fill_colorblind() +
+scale_x_continuous(breaks = c(1, 3, 5, 7, 11, 17)) +
+theme_bw() +
+theme(
+  axis.text = element_text(size = 12),
+  axis.title = element_text(size = 14),
+  legend.text = element_text(size = 12),
+  legend.title = element_text(size = 14),
+  strip.text = element_text(size = 16)
+) +
+Fig.formatting
+
+
+
+
+```
+
+Model 1 (gam_trt.grp):
+Overall Treatment Effect:
+"Relative to the reference level, treatment P shows a greater mean response that is statistically significant."
+Group Effect:
+"There is no significant difference in mean response between groups H and AW."
+Interaction Effect:
+"The interaction term P-H is not statistically significant, suggesting that the effect of treatment P does not depend on the group, and vice versa."
+Model 2 (gam_pair):
+Overall Pairwise Comparisons:
+"Relative to the reference level (P-AW), the AB-AW treatment shows a lower mean response (-0.08) that is statistically significant."
+"Relative to the reference level, the AB-H treatment shows a lower mean response (-0.17) that is statistically significant."
+Treatment Effect within Pairs:
+"This model explicitly looks at the difference between categorical treatments within pairs, providing additional insights into the variations among treatments within groups."
+Conclusion:
+"Combining the results from both models, we can confirm that treatment effects are significant, with treatment P showing a greater mean response compared to the reference level. Additionally, within the pairs analyzed in Model 2, specific pairwise differences were observed, indicating variations within treatments."
+
+more detail about model 1:
+Model 1 (gam_trt.grp):
+
+Intercept: Represents the estimated mean response when all predictors are at their reference levels. In this case, it corresponds to the baseline condition of treatment AB and group AW.
+
+TreatmentP: Represents the estimated change in the mean response when moving from treatment AB to treatment P while holding group constant. The estimate is 0.10648 with a standard error of 0.04688. The t-value is 2.271, and the p-value is 0.0234.
+
+GroupH: Represents the estimated change in the mean response when moving from group AW to group H while holding treatment constant. The estimate is -0.05338 with a standard error of 0.04225. The t-value is -1.263, and the p-value is 0.2068.
+
+TreatmentP:GroupH Interaction: Represents the additional change in the mean response when both treatment is P and group is H compared to the reference level (treatment AB, group AW). The estimate is 0.03843 with a standard error of 0.06137. The t-value is 0.626, and the p-value is 0.5314.
+
+Interpretation:
+
+The interaction term, TreatmentP:GroupH, provides information about whether the effect of treatment P differs when the group is H compared to the reference level (group AW).
+
+A positive estimate (0.03843) suggests that, relative to the baseline condition (AB-AW), the mean response is higher when both treatment is P and group is H. However, this effect is not statistically significant since the p-value is 0.5314, which is greater than the commonly used significance level of 0.05.
+
+In simpler terms, the interaction suggests that there is no significant difference in the effect of treatment P between groups H and AW. It indicates that the effect of treatment P on the mean response is consistent across both groups.
+
+
+TreatmentP:GroupH Interaction Term:
+
+The estimate (0.03843) represents the additional change in the mean response when both treatment is P and group is H compared to the reference level (AB-AW).
+Interpretation:
+
+If we consider the levels of the categorical variables:
+
+Treatment: AB is the reference level.
+Group: AW is the reference level.
+The interaction term captures the additional change in the mean response when we move from the reference condition (AB-AW) to a specific condition, which is Treatment P and Group H.
+
+However, the interpretation does not directly provide information about the situation where Treatment is AB and Group is H. This is because the interaction term explicitly involves Treatment P.
+
+If you want to assess the difference in the mean response between Treatment AB and Treatment P specifically within Group H, you can do so by comparing the individual estimates for Treatment AB and Treatment P within Group H.
+
+Here's a simplified interpretation:
+
+AB-H vs. AB-AW: The effect of moving from AB to H within the same treatment (AB) is represented by the main effect of Group (GroupH). This is estimated to be -0.05338 (not statistically significant in this case).
+
+P-H vs. AB-AW: The interaction term (TreatmentP:GroupH) captures the additional change when both Treatment is P and Group is H compared to the reference level (AB-AW). The estimate is 0.03843 (not statistically significant in this case).
+
+
+```{r}
 gam2=gam(od_corrected_b_n ~ treatment + group  + s(decomp_day, by =treatment, k=6) + s(decomp_day, by = group, k =6) + s(tree_id, tree_num, bs="re") + s(deploy, site_num, bs="re"), subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
 
 gam3=gam(od_corrected_b_n ~ treatment + group  + s(decomp_day, treatment, bs="fs" ,k=6) + s(decomp_day, group, bs="fs", k =6) + s(tree_id, tree_num, bs="re") + s(deploy, site_num, bs="re"), subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
@@ -664,21 +771,7 @@ summary(gam4)
 gam.check(gam4)
 anova.gam(gam4)
 
-fl.T0.mod.plot<-
-  plot_smooths(
-  model = m1.fl.T0.gam,
-  series = plant.mass..g,
-  comparison = Treatment
-) + 
-  geom_point(data=DOC.df[(DOC.df$Time.point=="T0"),], 
-             aes(x=plant.mass..g, y=fl, color=Treatment)) +
-  scale_color_manual(values = c("brown1", "mediumseagreen")) + 
-    scale_fill_manual(values = c("brown1", "mediumseagreen")) +
-  ggtitle("Day-0") +
-  coord_cartesian(ylim = c(0.5,2.5))+
-    ylab("FI")+
-  xlab("plant material (g)") +
-  Fig.formatting
+
 
 
 gam5=gam(od_corrected_b_n ~ treatment + group  + s(decomp_day, by = treatment ,k=6) + s(decomp_day, by = group, k =6) + s(tree_id, bs = "re") + s(tree_num, bs="re") + s(deploy, bs="re") + s(site_num, bs="re"), subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
