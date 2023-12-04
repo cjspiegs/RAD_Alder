@@ -573,6 +573,15 @@ z_scored_mean_df=aggregate(z_score ~ treatment + tree_id + deploy + metabolite  
 ```
 
 Model exploration
+**A note on GAMs**
+The term "parametric" is often used to describe statistical models with a fixed, finite number of parameters. In contrast, "nonparametric" models are more flexible and can adapt to the complexity of the data without assuming a specific functional form.
+
+Generalized Additive Models (GAMs) can be considered semiparametric. They are a type of regression model that extends generalized linear models (GLMs) by allowing for more flexible, nonlinear relationships between predictors and the response variable. The "additive" part refers to the fact that the model is built by adding together multiple smooth functions, each representing the relationship between a predictor and the response.
+
+While GAMs introduce flexibility with the smooth functions, they still include parametric components, such as linear terms and parametric link functions. The parametric components provide a structured foundation, and the smooth functions capture additional complexity in the data.
+
+So, we are using GAMsm that combine parametric and nonparametric elements to provide a flexible framework for modeling complex relationships in the metabolism assay data.
+
 ```{r}
 lmer1 = lmer(od_corrected_b_n ~ treatment * group + (1 | decomp_day) + (1 | deploy) +  (1 | tree_id) + (1|tree_num), subset = hours == "24", data = meta.450.df)
 
@@ -626,12 +635,33 @@ gam12=gam(od_corrected_b_n ~ treatment * group + s(decomp_day, by= treatment, k=
 AIC( gam10, gam11, gam12)
 
 ####### 2 canditate models
+####### first lets look at main effects and interaction of treatment and group
 
 # looks at interaction between main effects
 gam_trt.grp=gam(od_corrected_b_n ~ treatment * group + s(decomp_day, by= treatment, k=6)  + s(decomp_day, by= group, k =6)+ s( tree_num, tree_id, bs="re") + s(site_num,bs="re") + s(deploy, bs="re"),  subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
 summary(gam_trt.grp)
 gam.check(gam_trt.grp)
+anova.gam(gam_trt.grp)
 
+#plot difference for P vs AB
+plot_difference(
+  gam_trt.grp,
+  series = decomp_day,
+  difference = list(treatment = c("P", "AB"))
+) + 
+  Fig.formatting 
+  #this is important to see where the differences in the smooths lie given that the term is significant (p = 0.002)
+
+
+#plot difference for P vs AB
+plot_difference(
+  gam_trt.grp,
+  series = decomp_day,
+  difference = list(group = c("H", "AW"))
+) + 
+  Fig.formatting 
+
+####### next we can look at paired main effects for pairwise comparison
 #looks at individual treatments
 gam_pair=gam(od_corrected_b_n ~ pairing + s(decomp_day, by= pairing, k=6) + s( tree_num, tree_id, bs="re") + s(site_num,bs="re") + s(deploy, bs="re"),  subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
 summary(gam_pair)
@@ -639,87 +669,96 @@ gam.check(gam_pair)
 
 AIC(gam_trt.grp, gam_pair)
 BIC(gam_trt.grp, gam_pair)
+anova.gam(gam_pair)
 
+#### in our model (gam_pair), the reference level is set to P-AW, so we can inspect the differences between smooths relative to P-AW
 
-##both models are the same but allow you to analyze the data at 
-
-gam.check(gam10)
-summary(gam6)
-summary(gam5)
-summary(gam7)
-summary(gam11)
-anova.gam(gam7)
-
-
-anova.gam(gam4)
-draw(gam7)
-
-
-plot_difference(
-  gam4,
+#plot difference for PAW and PH
+paw.vs.ph.diff=plot_difference(
+  gam_pair,
   series = decomp_day,
-  difference = list(treatment = c("P", "AB"))
-) + 
-  Fig.formatting 
-
-plot_difference(
-  gam4,
-  series = decomp_day,
-  difference = list(group = c("H", "AW"))
+  difference = list(pairing = c("P-AW", "P-H"))
 )+
+   xlab("")+
+  ylab("")+
+      ggtitle("P-AW vs. P-H")+
+  Fig.formatting
+
+#plot difference for PAW and ABAW
+paw.vs.abaw.diff=plot_difference(
+  gam_pair,
+  series = decomp_day,
+  difference = list(pairing = c("P-AW", "AB-AW"))
+)+
+    xlab("")+
+    ggtitle("P-AW vs. AB-AW")+
+  Fig.formatting
+
+#plot difference for PAW and ABH
+paw.vs.abh.diff=plot_difference(
+  gam_pair,
+  series = decomp_day,
+  difference = list(pairing = c("P-AW", "AB-H"))
+)+
+  xlab("")+
+  ylab("")+
+  ggtitle("P-AW vs. AB-H")+
+  Fig.formatting
+
+#plot difference for PH and ABH
+ph.vs.abh.diff=plot_difference(
+  gam_pair,
+  series = decomp_day,
+  difference = list(pairing = c("P-H", "AB-H"))
+)+
+  xlab("")+
+  ylab("")+
+  ggtitle("P-H vs. AB-H")+
+  Fig.formatting
+
+#plot difference for PH and ABAW
+ph.vs.abaw.diff=plot_difference(
+  gam_pair,
+  series = decomp_day,
+  difference = list(pairing = c("P-H", "AB-AW"))
+)+
+  xlab("")+
+  ylab("")+
+  ggtitle("P-H vs. AB-AW")+
+  Fig.formatting
+
+#plot difference for ABAW and ABH
+abaw.vs.abh.diff=plot_difference(
+  gam_pair,
+  series = decomp_day,
+  difference = list(pairing = c("AB-AW", "AB-H"))
+)+
+  xlab("")+
+  ylab("")+
+  ggtitle("AB-AW vs. AB-H")+
   Fig.formatting
 
 
 
-# Plot smooths with mean data points
-plot_smooths(
-  model = gam5,
-  series = decomp_day,
-  comparison = pairing
-) + 
-stat_summary(
-  data = meta.450.df[meta.450.df$hours == "24", ],
-  aes(x = decomp_day, y = od_corrected_b_n, color = pairing),
-  fun = mean,
-  geom = "point",
-  size = 2
-) +
-labs(x = "decomposition day", y = "absorbance (450 nm)") +
-scale_color_colorblind() +
-scale_fill_colorblind() +
-scale_x_continuous(breaks = c(1, 3, 5, 7, 11, 17)) +
-theme_bw() +
-theme(
-  axis.text = element_text(size = 12),
-  axis.title = element_text(size = 14),
-  legend.text = element_text(size = 12),
-  legend.title = element_text(size = 14),
-  strip.text = element_text(size = 16)
-) +
-Fig.formatting
 
+pair_diffs=plot_grid(
+  paw.vs.ph.diff,
+  paw.vs.abaw.diff,
+  paw.vs.abh.diff,
+  ph.vs.abh.diff,
+  ph.vs.abaw.diff,
+  abaw.vs.abh.diff,
+  rel_widths = c(1,1,1,1,1,1), nrow=2, ncol=3
+)
+
+pair_diffs
+
+ggsave("figures/pair_diffs.pdf", pair_diffs, width = 16, height = 8)
 
 
 
 ```
 
-Model 1 (gam_trt.grp):
-Overall Treatment Effect:
-"Relative to the reference level, treatment P shows a greater mean response that is statistically significant."
-Group Effect:
-"There is no significant difference in mean response between groups H and AW."
-Interaction Effect:
-"The interaction term P-H is not statistically significant, suggesting that the effect of treatment P does not depend on the group, and vice versa."
-Model 2 (gam_pair):
-Overall Pairwise Comparisons:
-"Relative to the reference level (P-AW), the AB-AW treatment shows a lower mean response (-0.08) that is statistically significant."
-"Relative to the reference level, the AB-H treatment shows a lower mean response (-0.17) that is statistically significant."
-Treatment Effect within Pairs:
-"This model explicitly looks at the difference between categorical treatments within pairs, providing additional insights into the variations among treatments within groups."
-Conclusion:
-"Combining the results from both models, we can confirm that treatment effects are significant, with treatment P showing a greater mean response compared to the reference level. Additionally, within the pairs analyzed in Model 2, specific pairwise differences were observed, indicating variations within treatments."
-
-more detail about model 1:
 Model 1 (gam_trt.grp):
 
 Intercept: Represents the estimated mean response when all predictors are at their reference levels. In this case, it corresponds to the baseline condition of treatment AB and group AW.
@@ -761,51 +800,7 @@ AB-H vs. AB-AW: The effect of moving from AB to H within the same treatment (AB)
 P-H vs. AB-AW: The interaction term (TreatmentP:GroupH) captures the additional change when both Treatment is P and Group is H compared to the reference level (AB-AW). The estimate is 0.03843 (not statistically significant in this case).
 
 
-```{r}
-gam2=gam(od_corrected_b_n ~ treatment + group  + s(decomp_day, by =treatment, k=6) + s(decomp_day, by = group, k =6) + s(tree_id, tree_num, bs="re") + s(deploy, site_num, bs="re"), subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
-
-gam3=gam(od_corrected_b_n ~ treatment + group  + s(decomp_day, treatment, bs="fs" ,k=6) + s(decomp_day, group, bs="fs", k =6) + s(tree_id, tree_num, bs="re") + s(deploy, site_num, bs="re"), subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
-
-gam4=gam(od_corrected_b_n ~ treatment + group  + s(decomp_day, treatment, bs="fs" ,k=6) + s(decomp_day, group, bs="fs", k =6) + s(tree_id, bs = "re") + s(tree_num, bs="re") + s(deploy, bs="re") + s(site_num, bs="re"), subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
-summary(gam4)
-gam.check(gam4)
-anova.gam(gam4)
-
-
-
-
-gam5=gam(od_corrected_b_n ~ treatment + group  + s(decomp_day, by = treatment ,k=6) + s(decomp_day, by = group, k =6) + s(tree_id, bs = "re") + s(tree_num, bs="re") + s(deploy, bs="re") + s(site_num, bs="re"), subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
-AIC(gam4, gam5)
-gam.check(gam5)
-summary(gam6)
-summary(gam5)
-
-anova.gam(gam5)
-
-gam6=gam(od_corrected_b_n ~ treatment + group  + s(decomp_day, treatment, bs="fs" ,k=6, m=1) + s(decomp_day, group, bs="fs", k =6, m=1) + s(tree_id, bs = "re") + s(tree_num, bs="re") + s(deploy, bs="re") + s(site_num, bs="re"), subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
-AIC(gam5, gam6)
-
-
-gam5=gam(od_corrected_b_n ~ treatment*group  + s(decomp_day, treatment, bs="fs" ,k=6) + s(decomp_day, group, bs="fs", k =6) + s(tree_id, tree_num, bs="re") + s(deploy, site_num, bs="re"), subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
-
-gam6=gam(od_corrected_b_n ~ treatment*group  + s(decomp_day, treatment, bs="fs" ,k=6) + s(decomp_day, group, bs="fs", k =6) + s(tree_id, bs = "re") + s(tree_num, bs="re") + s(deploy, bs="re") + s(site_num, bs="re"), subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
-
-gam7=gam(od_corrected_b_n ~  s(decomp_day, treatment, bs="fs" ,k=6) + s(decomp_day, group, bs="fs", k =6) + s(metabolite, bs = "re") + s(tree_id, bs = "re") + s(tree_num, bs="re") + s(deploy, bs="re") + s(site_num, bs="re"), subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
-
-gam8=gam(od_corrected_b_n ~ treatment * group  + s(decomp_day, by =treatment, k=6) + s(decomp_day, by = group, k =6) + s(tree_id, tree_num, bs="re") + s(deploy, site_num, bs="re"), subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
-
-
-
-
-AIC(gam1, gam2, gam3, gam4, gam5, gam6, gam7, gam8)
-
-
-
-
-```
-
-
-Background information regarding Home-field Advantage:
+**Background information regarding Home-field Advantage:**
 
 The Home Field Advantage Index (HFAI) derived from Ayres et al. (2009) uses the relative mass loss values (rml) of species A and B at different sites. The HFAI therefore represents the difference in the rate of litter decomposition between two different sites ("Hoko" and "Sekiu") for both species A and B. Species A and B, in this case, are alder trees of different origin. For example, species A is Hoko alder and species B is Sekiu alder. There are 10 alder trees per river, representing biological replicates. So, the HFAI quantifies the *advantage* or *disadvantage* of each "species" in their respective home environment compared to an away environment.
 
@@ -815,7 +810,7 @@ Interpreting HFAI values involves considering their sign and magnitude:
 Positive values indicate that both species A and B experience faster decomposition rates at their home site compared to the away site. This suggests that both species are better adapted to their home environment in terms of litter decomposition.
 
 **Negative** HFAI Values:
-Negative values indicate that both species A and B experience slower decomposition rates at their home site compared to the away site. This suggests that both species might not be well-suited for decomposition in their own environment and may decompose more efficiently in a different environment.
+Negative values indicate that both species A and B experience slower decomposition rates at their home site (HF disadvantage (HFDA)) compared to the away site. This suggests that both species might not be well-suited for decomposition in their own environment and may decompose more efficiently in a different environment.
 
 **Magnitude** of HFAI:
 The magnitude of the HFAI values indicates the strength of the advantage or disadvantage. Larger absolute values (positive or negative) suggest a greater difference in decomposition rates between the home and away sites.
