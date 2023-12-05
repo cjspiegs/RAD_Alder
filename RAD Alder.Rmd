@@ -57,6 +57,8 @@ Fig.formatting<-(theme_classic()) +
   theme(aspect.ratio=0.5) 
 
 
+
+
 ```
 
 **Note on absorbance**
@@ -638,7 +640,16 @@ AIC( gam10, gam11, gam12)
 ####### first lets look at main effects and interaction of treatment and group
 
 # looks at interaction between main effects
-gam_trt.grp=gam(od_corrected_b_n ~ treatment * group + s(decomp_day, by= treatment, k=6)  + s(decomp_day, by= group, k =6)+ s( tree_num, tree_id, bs="re") + s(site_num,bs="re") + s(deploy, bs="re"),  subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
+tw_gam_trt.grp=gam(od_corrected_b_n ~ treatment * group + s(decomp_day, by= treatment, k=6)  + s(decomp_day, by= group, k =6)+ s( tree_num, tree_id, bs="re") + s(site_num,bs="re") + s(deploy, bs="re"),  subset = hours == "24",family = tw(link = "identity"), method = "REML", data = na.omit(meta.450.df))
+
+inv_gam_trt.grp=gam(od_corrected_b_n ~ treatment * group + s(decomp_day, by= treatment, k=6)  + s(decomp_day, by= group, k =6)+ s( tree_num, tree_id, bs="re") + s(site_num,bs="re") + s(deploy, bs="re"),  subset = hours == "24",family = gaussian(link = "inverse"), method = "REML", data = na.omit(meta.450.df))
+
+log_gam_trt.grp=gam(od_corrected_b_n ~ treatment * group + s(decomp_day, by= treatment, k=6)  + s(decomp_day, by= group, k =6)+ s( tree_num, tree_id, bs="re") + s(site_num,bs="re") + s(deploy, bs="re"),  subset = hours == "24",family = gaussian(link = "log"), method = "REML", data = na.omit(meta.450.df))
+
+gam_trt.grp=gam(od_corrected_b_n ~ treatment * group + s(decomp_day, by= treatment, k=6)  + s(decomp_day, by= group, k =6)+ s( tree_num, tree_id, bs="re") + s(site_num,bs="re") + s(deploy, bs="re"),  subset = hours == "24",family = gaussian(link = "identity"), method = "REML", data = na.omit(meta.450.df))
+
+AIC(tw_gam_trt.grp, inv_gam_trt.grp, log_gam_trt.grp, gam_trt.grp)
+
 summary(gam_trt.grp)
 gam.check(gam_trt.grp)
 anova.gam(gam_trt.grp)
@@ -836,12 +847,16 @@ mass.df <- mass.df %>%
 # Calculate the constant C, adding 1 for safety
 C <- abs(min(mass.df$perc.mass_loss)) + 1  
 
-#create new column with perc.mass_loss + constant
+#create arcsine trans column with perc.mass_loss + constant 
 mass.df <- mass.df %>%
   mutate(perc.mass_loss = perc.mass_loss + C) %>%
   mutate(prop.mass_loss = perc.mass_loss/100) %>%
 mutate(arcsine_trans = asin(sqrt(prop.mass_loss)))
 
+mass.df <- mass.df %>%
+  mutate(prop.mass_loss = perc.mass_loss/100) %>%
+mutate(arcsine_trans = asin(sqrt(prop.mass_loss)))
+hist(mass.df$arcsine_trans)
 
 #subset P treatment only for "true" HFA  
 mass.present.df=mass.df %>%
@@ -886,19 +901,15 @@ mass.hok1.df <- data.frame(mass.df[mass.df$deploy == "HOK" & mass.df$site_num ==
 # Calculate z-scores 
 mass.hok1.df=mass.hok1.df%>%
   mutate(z_score= (perc.mass_loss - mean(perc.mass_loss))/sd(perc.mass_loss))
-#z score arcsine_trans 
-mass.hok1.df=mass.hok1.df%>%
-  mutate(arcsine_z_score= (arcsine_trans - mean(arcsine_trans))/sd(arcsine_trans))
 
 
 #HOK 1 P subset
-mass.hok1.present.df = data.frame(mass.present.df[mass.present.df$deploy == "HOK" & mass.present.df$site_num == "1", ])
+mass.hok1.present.df = data.frame(mass.hok1.df[mass.hok1.df$deploy == "HOK" & mass.hok1.df$treatment == "P" & mass.hok1.df$site_num == "1", ])
 # Calculate z-scores 
 mass.hok1.present.df=mass.hok1.present.df%>%
   mutate(z_score= (perc.mass_loss - mean(perc.mass_loss))/sd(perc.mass_loss))
-#z score arcsine_trans 
-mass.hok1.present.df=mass.hok1.present.df%>%
-  mutate(arcsine_z_score= (arcsine_trans - mean(arcsine_trans))/sd(arcsine_trans))
+  #HOK 1 AB subet
+mass.hok1.absent.df = data.frame(mass.hok1.df[mass.hok1.df$deploy == "HOK" & mass.hok1.df$treatment == "AB" & mass.hok1.df$site_num == "1", ])
 
 
 
@@ -907,40 +918,30 @@ mass.hok2.df <- data.frame(mass.df[mass.df$deploy == "HOK" & mass.df$site_num ==
 # Calculate z-scores 
 mass.hok2.df=mass.hok2.df%>%
   mutate(z_score= (perc.mass_loss - mean(perc.mass_loss))/sd(perc.mass_loss))
-#z score arcsine_trans 
-mass.hok2.df=mass.hok2.df%>%
-  mutate(arcsine_z_score= (arcsine_trans - mean(arcsine_trans))/sd(arcsine_trans))
 
 
 #HOK 2 P subset
-mass.hok2.present.df = data.frame(mass.present.df[mass.present.df$deploy == "HOK" & mass.present.df$site_num == "2", ])
+mass.hok2.present.df =data.frame(mass.hok2.df[mass.hok2.df$deploy == "HOK" & mass.hok2.df$treatment == "P" & mass.hok2.df$site_num == "2", ])
 # Calculate z-scores 
 mass.hok2.present.df=mass.hok2.present.df%>%
   mutate(z_score= (perc.mass_loss - mean(perc.mass_loss))/sd(perc.mass_loss))
-#z score arcsine_trans 
-mass.hok2.present.df=mass.hok2.present.df%>%
-  mutate(arcsine_z_score= (arcsine_trans - mean(arcsine_trans))/sd(arcsine_trans))
-
-
+  #HOK 2 AB subset
+mass.hok2.absent.df =data.frame(mass.hok2.df[mass.hok2.df$deploy == "HOK" & mass.hok2.df$treatment == "AB" & mass.hok2.df$site_num == "2", ])
 
 #SEK 1 subset
 mass.sek1.df <- data.frame(mass.df[mass.df$deploy == "SEK" & mass.df$site_num == "1", ])
 # Calculate z-scores 
 mass.sek1.df=mass.sek1.df%>%
   mutate(z_score= (perc.mass_loss - mean(perc.mass_loss))/sd(perc.mass_loss))
-#z score arcsine_trans 
-mass.sek1.df=mass.sek1.df%>%
-  mutate(arcsine_z_score= (arcsine_trans - mean(arcsine_trans))/sd(arcsine_trans))
 
 
 #SEK 1 P subset
-mass.sek1.present.df = data.frame(mass.present.df[mass.present.df$deploy == "SEK" & mass.present.df$site_num == "1", ])
+mass.sek1.present.df = data.frame(mass.sek1.df[mass.sek1.df$deploy == "SEK" & mass.sek1.df$treatment == "P" & mass.sek1.df$site_num == "1", ])
 # Calculate z-scores 
 mass.sek1.present.df=mass.sek1.present.df%>%
   mutate(z_score= (perc.mass_loss - mean(perc.mass_loss))/sd(perc.mass_loss))
-#z score arcsine_trans 
-mass.sek1.present.df=mass.sek1.present.df%>%
-  mutate(arcsine_z_score= (arcsine_trans - mean(arcsine_trans))/sd(arcsine_trans))
+  #SEK 1 AB subset
+mass.sek1.absent.df = data.frame(mass.sek1.df[mass.sek1.df$deploy == "SEK" & mass.sek1.df$treatment == "AB" & mass.sek1.df$site_num == "1", ])
 
 
 #SEK 2 subset
@@ -948,37 +949,36 @@ mass.sek2.df <- data.frame(mass.df[mass.df$deploy == "SEK" & mass.df$site_num ==
 # Calculate z-scores 
 mass.sek2.df=mass.sek2.df%>%
   mutate(z_score= (perc.mass_loss - mean(perc.mass_loss))/sd(perc.mass_loss))
-#z score arcsine_trans 
-mass.sek2.df=mass.sek2.df%>%
-  mutate(arcsine_z_score= (arcsine_trans - mean(arcsine_trans))/sd(arcsine_trans))
 
 
 #SEK 2 P subset
-mass.sek2.present.df = data.frame(mass.present.df[mass.present.df$deploy == "SEK" & mass.present.df$site_num == "2", ])
+mass.sek2.present.df = data.frame(mass.sek2.df[mass.sek2.df$deploy == "SEK" & mass.sek2.df$treatment == "P" & mass.sek2.df$site_num == "2", ])
 # Calculate z-scores 
 mass.sek2.present.df=mass.sek2.present.df%>%
   mutate(z_score= (perc.mass_loss - mean(perc.mass_loss))/sd(perc.mass_loss))
-#z score arcsine_trans 
-mass.sek2.present.df=mass.sek2.present.df%>%
-  mutate(arcsine_z_score= (arcsine_trans - mean(arcsine_trans))/sd(arcsine_trans))
-
-
+  #SEK 2 AB subset
+mass.sek2.absent.df = data.frame(mass.sek2.df[mass.sek2.df$deploy == "SEK" & mass.sek2.df$treatment == "AB" & mass.sek2.df$site_num == "2", ])
 
 ##merge all sites
 mass.deploy.merged.df=rbind(mass.hok1.df, mass.hok2.df, mass.sek1.df, mass.sek2.df)
-mass.deploy.merged.df$treatment=as.factor(as.character(mass.deploy.merged.df$treatment))
-mass.deploy.merged.df$tree_id=as.factor(as.character(mass.deploy.merged.df$tree_id))
-mass.deploy.merged.df$tree_id=as.factor(as.character(mass.deploy.merged.df$tree_id))
-mass.deploy.merged.df$deploy=as.factor(as.character(mass.deploy.merged.df$deploy))
-mass.deploy.merged.df$hfa=as.factor(as.character(mass.deploy.merged.df$hfa))
+mass.deploy.merged.df$treatment=as.factor(as.factor(mass.deploy.merged.df$treatment))
+mass.deploy.merged.df$tree_id=as.factor(as.factor(mass.deploy.merged.df$tree_id))
+mass.deploy.merged.df$deploy=as.factor(as.factor(mass.deploy.merged.df$deploy))
+mass.deploy.merged.df$hfa=as.factor(as.factor(mass.deploy.merged.df$hfa))
 
 #merge all P treatment sites 
 mass.present.deploy.merged.df=rbind(mass.hok1.present.df, mass.hok2.present.df, mass.sek1.present.df, mass.sek2.present.df)
-mass.present.deploy.merged.df$treatment=as.factor(as.character(mass.present.deploy.merged.df$treatment))
-mass.present.deploy.merged.df$tree_id=as.factor(as.character(mass.present.deploy.merged.df$tree_id))
-mass.present.deploy.merged.df$tree_id=as.factor(as.character(mass.present.deploy.merged.df$tree_id))
-mass.present.deploy.merged.df$deploy=as.factor(as.character(mass.present.deploy.merged.df$deploy))
-mass.present.deploy.merged.df$hfa=as.factor(as.character(mass.present.deploy.merged.df$hfa))
+mass.present.deploy.merged.df$treatment=as.factor(mass.present.deploy.merged.df$treatment)
+mass.present.deploy.merged.df$tree_id=as.factor(mass.present.deploy.merged.df$tree_id)
+mass.present.deploy.merged.df$deploy=as.factor(mass.present.deploy.merged.df$deploy)
+mass.present.deploy.merged.df$hfa=as.factor(mass.present.deploy.merged.df$hfa)
+
+#merge all AB treatment sites 
+mass.absent.deploy.merged.df=rbind(mass.hok1.absent.df, mass.hok2.absent.df, mass.sek1.absent.df, mass.sek2.absent.df)
+mass.absent.deploy.merged.df$treatment=as.factor(mass.absent.deploy.merged.df$treatment)
+mass.absent.deploy.merged.df$tree_id=as.factor(mass.absent.deploy.merged.df$tree_id)
+mass.absent.deploy.merged.df$deploy=as.factor(mass.absent.deploy.merged.df$deploy)
+mass.absent.deploy.merged.df$hfa=as.factor(mass.absent.deploy.merged.df$hfa)
 
 ```
 
@@ -988,19 +988,69 @@ Let's first look at the P only to see if HFA is there
 #create a proper "site" column for the figure
 
 #plot
-ggplot(mass.present.deploy.merged.df, aes(x = hfa, y = z_score)) +
+ggplot(mass.deploy.merged.df, aes(x = treatment, y = z_score)) +
   geom_boxplot(alpha= 0.3) +
   geom_point(aes(shape = as.factor(deploy)), position = position_jitter(width = 0.2)) +
   labs(x = "", y = "mass loss (z score)") +
   theme(legend.position = "right") +
-  scale_x_discrete(labels = c("away", "home")) +
   scale_shape_manual(values = c(7,10), name= "site") +
   geom_hline(data = mass.present.deploy.merged.df, aes(yintercept = mean(z_score), linetype = "Average"), color = "red", linetype = "dotted") +
   theme(plot.title = element_text(size = 12)) +
   Fig.formatting
 
-```
+ggplot(mass.deploy.merged.df, aes(x = interaction(treatment,hfa), y = perc.mass_loss, group = interaction(treatment, hfa))) +
+  geom_boxplot(alpha= 0.3) +
+  geom_point(aes(shape = as.factor(deploy)), position = position_jitter(width = 0.2)) +
+  labs(x = "", y = "mass loss (z score)") +
+  theme(legend.position = "right") +
+  scale_shape_manual(values = c(7,10), name= "site") +
+  theme(plot.title = element_text(size = 12)) +
+  Fig.formatting
 
+#visually, it seems like home shows overall slightly greater mass loss than away. This can be verified by some stats.
+
+
+mass.deploy.merged.df$k <- with(mass.deploy.merged.df, log(initial_mass / final_correct) / 19)
+
+decomp_days = seq()
+ggplot(mass.deploy.merged.df, aes(x = decomp_days, y = perc.mass_loss, group = interaction(treatment, hfa))) +
+  geom_boxplot(alpha= 0.3) +
+  geom_point(aes(shape = as.factor(deploy)), position = position_jitter(width = 0.2)) +
+  labs(x = "", y = "mass loss (z score)") +
+  theme(legend.position = "right") +
+  scale_shape_manual(values = c(7,10), name= "site") +
+  theme(plot.title = element_text(size = 12)) +
+  Fig.formatting
+
+# Assuming you have initial and final values
+initial_value = mass.deploy.merged.df$initial_mass  # Replace with your initial value
+final_value <- mass.deploy.merged.df$final_correct  # Replace with your final value
+
+# Assuming the time difference is known
+time_difference <- 19  # Replace with your time difference
+
+# Calculate decay constant (k)
+k <- -log(final_value / initial_value) / time_difference
+
+# Generate time values for the plot
+time_values <- seq(0, time_difference, by = 1)
+
+# Calculate N(t) using the exponential decay formula
+decay_values <- initial_value * exp(-k * time_values)
+
+# Plot the exponential decay function
+plot(time_values, decay_values, type = "l", xlab = "Time", ylab = "Quantity", main = "Exponential Decay")
+
+# Add points for the initial and final values
+points(0, initial_value, col = "red", pch = 16)
+points(time_difference, final_value, col = "blue", pch = 16)
+
+# Add legend
+legend("topright", legend = c("Exponential Decay", "Initial Value", "Final Value"),
+       col = c("black", "red", "blue"), pch = c(NA, 16, 16))
+
+
+```
 
 Analysis for **present only** dataframe
 To be analyze the mass loss data, arcsine square root transforming proportional mass loss is preferred. This are outlined below...
@@ -1011,18 +1061,20 @@ Lmer 3 (see below) is the model that best fits the data
 library(tidyverse)
 library(ggpubr)
 library(rstatix)
-#relevel HFA factors
+#check levels of HFA factors
 levels(mass.present.deploy.merged.df$hfa)
-mass.present.deploy.merged.df$hfa=factor(mass.present.deploy.merged.df$hfa, levels = c("H", "A"))
-levels(mass.present.deploy.merged.df$hfa)
-names(mass.deploy.merged.df)
 
 #models:
 lm1 <- lm(z_score ~  hfa, data = mass.present.deploy.merged.df)
-lm2 <- lm(z_score ~ factor(hfa, levels = c("A", "H")), data = mass.present.deploy.merged.df)
-lmer1 <- lmer(z_score ~ hfa + (1 | tree_id), data= mass.present.deploy.merged.df)
-lmer2 <- lmer(z_score ~ tree_id * deploy + (1 | tree_num), data= mass.present.deploy.merged.df)
+summary(lm1)
+glm1 <- glm(z_score ~ hfa, data = mass.present.deploy.merged.df)
+summary(lm1)
 
+lmer1 <- lmer(z_score ~ hfa + (1 | tree_id), data= mass.present.deploy.merged.df)
+summary(lmer1)
+
+lmer2 <- lmer(z_score ~ tree_id * deploy + (1 | tree_num), data= mass.present.deploy.merged.df)
+summary(lmer2)
 lmer3 <- lmer(z_score ~ hfa + (1 | tree_num) + (1 | tree_id), data= mass.present.deploy.merged.df)
 
 lmer4 <- lmer(z_score ~ hfa + (1 | tree_id /  tree_num), data= mass.present.deploy.merged.df)
@@ -1030,18 +1082,19 @@ summary(lmer5)
 
 # lmer3 is best fit
 lmer3 <- lmer(z_score ~ hfa + (1 | tree_num) + (1 | tree_id), data= mass.present.deploy.merged.df)
+summary(lmer3)
+plot(resid(lmer3))
+qqnorm(resid(lmer3))
+qqline(resid(lmer3))
 
-lmer10 <- lmer(arcsine_trans_scaled ~ hfa + (1 | deploy) + (1 | tree_num) + (1 | tree_id), data= mass.present.deploy.merged.df)
 
-summary(lmer10)
-plot(residuals(lmer5))
-plot(fitted(lmer5), residuals(lmer5))
-shapiro.test(residuals(lmer5))
+aov1 <- aov(z_score ~ hfa, data= mass.present.deploy.merged.df)
+summary(aov1)
+plot(aov1)
+qqnorm(aov1)
+qqline(aov1)
 
-qqnorm(residuals(lmer5))
-qqline(residuals(lmer5))
-
-AIC(lmer3, lmer10)
+AIC(aov1, lmer3)
 
 
 ```
@@ -1065,8 +1118,6 @@ stat.test.arc <- mass.present.deploy.merged.df %>%
 stat.test.z
 
 #check levels
-levels(mass.present.deploy.merged.df$hfa)
-mass.present.deploy.merged.df$hfa=factor(mass.present.deploy.merged.df$hfa, levels = c("H", "A"))
 levels(mass.present.deploy.merged.df$hfa)
 
 
@@ -1112,6 +1163,7 @@ ggsave("figures/leaf.z.presentonly.plot.pdf", leaf.z.presentonly.plot, width = 8
 
 
 ```
+
 Analysis for **all treatment** dataframe
 There are two ways to go about model exploration: using z scored mass loss or arcsine square root transforming percent mass loss. These are outlined below...
 
@@ -1347,7 +1399,7 @@ cat("Effect size (Eta-squared) for Kruskal-Wallis test:", eta_squared, "\n")
 
 Calculating HFA Index (HFAI) from Ayres et al. (2009):
 
-There are two equations from which HFAI is dervied: the relative mass loss (rml) of species decomposing at home and away site, and the scaling equation which allows for interpretaibility of the home-field advantage. Below is a brief summary of the components found in the derivaitons:
+There are two equations from which HFAI is derived: the relative mass loss (rml) of species decomposing at home and away site, and the scaling equation which allows for interpretaibility of the home-field advantage. Below is a brief summary of the components found in the derivations:
 
 Aa: This represents the percent mass loss of leaf litter from species A (HOK) when it's decomposing at site a (HOK, or the area dominated by species A). This value is given as a percentage.
 
@@ -1769,7 +1821,7 @@ hfai.allsite1.df=rbind(result_df_1, result_ab_df_1)
 
 ggplot(hfai.allsite1.df, aes(x = reorder(names, values), y = values, fill = treatment)) +
   geom_bar(stat = "identity", position= "dodge", alpha = 0.5) +
-  scale_fill_viridis_d()+
+  scale_fill_colorblind()+
   xlab("reciprocated pairs") +
   ylab("home-field advantage (% faster decomposition at home)") +
   theme_minimal() +
@@ -1782,12 +1834,6 @@ ggplot(hfai.allsite1.df, aes(x = reorder(names, values), y = values, fill = trea
     panel.background = element_blank(),
     plot.background = element_blank()
   )
-
-
-hfai.allsite1.df$values %>%
-  n_distinct()
-
-
 
 ```
 
@@ -2193,13 +2239,14 @@ merge all sites; HFAI plots
 #combine sites 1 and 2 including P and AB
 hfai.allsites.df=rbind(result_df_1, result_df_2, result_ab_df_1, result_ab_df_2)
 hfai.allsites.df$treatment=as.factor(hfai.allsites.df$treatment)
+```
 
-
+P only HFAI analysis
+```{r}
 ####################  P ONLY ###################
 #filter P treatment only for HFA effect
 hfai.present.allsites.df=hfai.allsites.df%>%
   filter(treatment == "P")
-
 
 # Filter the dataframe to include only positive cases
 positive_present_df <- hfai.present.allsites.df[hfai.present.allsites.df$values > 0, ]
@@ -2230,36 +2277,51 @@ total_negative <- sum(hfai.present.allsites.df$values < 0)
 # Calculate the percentage of positive values relative to negative
 percentage_positive <- (total_positive / (total_positive + total_negative)) * 100
 percentage_negative <- (total_negative / (total_negative + total_positive)) * 100
-# 68% positive
-# 32% negative
+# 72% positive
+# 28% negative
+```
+
+Plot P only
+```{r}
+#new HFA fig format
+hfa.fig.formatting <- theme_classic() +
+  theme(
+    text = element_text(size = 25),
+    legend.text.align = 0,
+    panel.border = element_rect(fill = NA, colour = "black", size = 1),
+    aspect.ratio = 1,
+    axis.ticks.length.y = unit(0.25, "cm"),
+    axis.text.y = element_text(margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm"), colour = "black", size = 20),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()  # Add this line to remove x-axis ticks
+  ) +
+  theme(legend.key.size = unit(0.4, "cm"), legend.position = "right") +
+  theme(aspect.ratio = 0.4)+
+  theme( plot.margin = margin(r = 1 ))
+
 
 #just P treatment
-#just P treatment with coord_flip
 hfai.present.allsites.plot=ggplot(hfai.present.allsites.df, aes(x = reorder(names, values), y = values, fill = treatment)) +
-  scale_fill_manual(values = "grey")+
-  geom_bar(stat = "identity", position ="dodge", alpha = 0.6) +
+scale_fill_manual(values = c("#E69F00"))+
+geom_bar(stat = "identity", position ="dodge", alpha = 0.5) +
   xlab("") +
-  ylab("home-field advantage (% faster decomposition at home)") +
-  theme_minimal() +
-  theme(text = element_text(size =20), 
-    axis.text.x = element_blank(),
-    legend.position = "right",
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.border = element_blank(),
-    panel.background = element_blank(),
-    plot.background = element_blank())+  
-  geom_vline(xintercept = 14.5, linetype = "dashed", color = "red") +
-scale_y_continuous(limits = c(-20, 70), breaks = seq(-20, 80, by = 20))
+  ylab("% faster decomposition at home") +
+  geom_vline(xintercept = 14.5, linetype = "dashed", color = "red")+
+  scale_x_discrete(expand=c(0.02,0.02))+
+  scale_y_continuous(limits = c(-30, 255), breaks = seq(-30, 255, by = 30))+
+  hfa.fig.formatting
+
 hfai.present.allsites.plot
 
+ggsave("figures/hfai.present.allsites.plot.pdf", hfai.present.allsites.plot, width = 14, height = 6)
+
 #just P treatment with coord_flip
-hfai.present.allsites.plot_flipped=ggplot(hfai.present.allsites.df, aes(x = reorder(names, values), y = values, fill = treatment)) +
+ggplot(hfai.present.allsites.df, aes(x = reorder(names, values), y = values, fill = treatment)) +
   scale_fill_manual(values = "grey")+
-  geom_bar(stat = "identity", position ="dodge", alpha = 0.6) +
+  geom_bar(stat = "identity", position ="dodge", alpha = 0.5) +
   coord_flip()+
   xlab("") +
-  ylab("home-field advantage (% faster decomposition at home)") +
+  ylab("% faster decomposition at home") +
   theme_minimal() +
   theme(text = element_text(size =20), 
     axis.text.y = element_blank(),
@@ -2268,67 +2330,40 @@ hfai.present.allsites.plot_flipped=ggplot(hfai.present.allsites.df, aes(x = reor
     panel.grid.minor = element_blank(),
     panel.border = element_blank(),
     panel.background = element_blank(),
-    plot.background = element_blank())+  
+    plot.background = element_blank())+
   geom_vline(xintercept = 14.5, linetype = "dashed", color = "red") +
-scale_y_continuous(limits = c(-20, 70), breaks = seq(-20, 70, by = 10))
-
-
-
-hfai.present.allsites.plot_flipped=ggplot(hfai.present.allsites.df, aes(x = reorder(names, values), y = values, fill = treatment)) +
-  scale_fill_manual(values = "grey")+
-  geom_bar(stat = "identity", position ="dodge", alpha = 0.6) +
-  coord_flip()+
-  xlab("") +
-  ylab("home-field advantage (% faster decomposition at home)") +
-  theme_minimal() +
-  theme(text = element_text(size =20), 
-    axis.text.y = element_blank(),
-    legend.position = "right",
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.border = element_blank(),
-    panel.background = element_blank(),
-    plot.background = element_blank())+  
-  geom_vline(xintercept = 16.5, linetype = "dashed", color = "red")
-
-hfai.present.allsites.plot_flipped
-ggsave("figures/hfai.present.allsites.plot_flipped.pdf", hfai.present.allsites.plot_flipped, width = 14, height = 10)
+scale_y_continuous(limits = c(-20, 70), breaks = seq(-20, 60, by = 10))
 
 
 ```
 
-
+P and AB HFAI analysis
 ```{r}
 ######################### BOTH P and AB #########################################
 
 # Filter the dataframe to include only positive cases
-
-mean_positive_P <- mean(hfai.allsites.df[hfai.allsites.df$treatment == "P" & hfai.allsites.df$values > 0, "values"])
-
 positive_values <- hfai.allsites.df %>%
   filter(values > 0)
 
-mean_positive <- mean(positive_values$values)
-se_positive <- sd(positive_values$values) / sqrt(nrow(positive_values))
+#calcualte mean HFA for P
+mean_positive_P <- mean(positive_values[positive_values$treatment == "P",]$values)
+se_positive_P <- sd(hfai.allsites.df[hfai.allsites.df$treatment == "P",]$values) / sqrt(nrow(hfai.allsites.df[hfai.allsites.df$treatment == "P",]))
+# mean = 45.09, se = 9.51
 
-se_positive_P <- sd(hfai.allsites.df[hfai.allsites.df$treatment == "P" & hfai.allsites.df$values > 0, "values"]) / sqrt(nrow(hfai.allsites.df[hfai.allsites.df$treatment == "P" & hfai.allsites.df$values > 0, ]))
+#t test for P
+t_test_P <- t.test(positive_values[positive_values$treatment == "P",]$values, mu = 0)
 
+#calcualte mean HFA for AB
+mean_positive_AB <- mean(positive_values[positive_values$treatment == "AB",]$values)
+se_positive_AB <- sd(hfai.allsites.df[hfai.allsites.df$treatment == "AB",]$values) / sqrt(nrow(hfai.allsites.df[hfai.allsites.df$treatment == "AB",]))
+# mean = 14.22, se = 3.64
 
-mean_positive_AB <- mean(hfai.allsites.df[hfai.allsites.df$treatment == "AB" & hfai.allsites.df$values > 0, "values"])
-# mean positive P = 13.7
-# mean positive AB = 14.2
+#t test for AB
+t_test_AB <- t.test(positive_values[positive_values$treatment == "AB",]$values, mu = 0)
 
-print(hfai.allsites.df[hfai.allsites.df$treatment=="P" & hfai.allsites.df$values>0, "values"])
-print(hfai.allsites.df[hfai.allsites.df$treatment=="AB" & hfai.allsites.df$values>0, "values"])
-
-# Calculate the mean of positive "P" values relative to all positive values
-mean_p_relative_to_all <- mean(p_positive_subset$values) / mean(hfai.allsites.df[hfai.allsites.df$values > 0, ]$values)
-
-
-View(hfai.allsites.df)
-
+#another way to look at the means
 hfai.allsites.df %>%
-  filter(values > 0) %>%
+filter(values > 0) %>%
   summarise(mean = mean(values), se = sd(values) / sqrt(n()))
 
 hfai.allsites.df %>%
@@ -2336,98 +2371,40 @@ hfai.allsites.df %>%
   summarise(mean = mean(values))
 
 hfai.allsites.df%>%
-  filter(treatment == "AB")%>%
   filter(values > 0)%>%
 n_distinct()
-# P 34 > 0; AB 19 > 0; P 16 < 0; AB 31 < 0
-
-# Subset the dataframe to include only positive values for each treatment
-positive_values <- hfai.allsites.df[hfai.allsites.df$values > 0, "values"]
-
-positive_values_P <- hfai.allsites.df[hfai.allsites.df$treatment == "P" & hfai.allsites.df$values > 0, "values"]
-positive_values_AB <- hfai.allsites.df[hfai.allsites.df$treatment == "AB" & hfai.allsites.df$values > 0, "values"]
-
-# Perform a t-test for each treatment against 0
-t_test<- t.test(positive_values, mu = 0)
-t_test_P <- t.test(positive_values_P, mu = 0)
-t_test_AB <- t.test(positive_values_AB, mu = 0)
-
-# Calculate Cohen's d for each treatment
-cohen_d_P <- t_test_P$estimate / sd(positive_values_P)
-cohen_d_AB <- t_test_AB$estimate / sd(positive_values_AB)
-# Filter the dataframe for positive values (both "P" and "AB")
-positive_values_subset <- hfai.allsites.df[hfai.allsites.df$values > 0, ]
 
 
 # Calculate the proportion of positive values for the "P" treatment relative to all positive values
 proportion_positive_P <- sum(hfai.allsites.df$treatment == "P" & hfai.allsites.df$values > 0) /
                         sum(hfai.allsites.df$values > 0)
+#65% HFA for P
 proportion_positive_AB <- sum(hfai.allsites.df$treatment == "AB" & hfai.allsites.df$values > 0) /
                         sum(hfai.allsites.df$values > 0)
-
-positive_values_subset%>%
-  filter(treatment == "AB")%>%
-  n_distinct()
-hfai.allsites.df%>%
-  filter(values > 0)%>%
-  n_distinct()
-#53 positive
-# 47 negative
+#35% HFA for AB
 
 
-# Perform a t-test
-t_test_present_result <- t.test(positive_all_df$values, mu = 0)
+# Perform a t-test for total HFA
+t_test_present_result <- t.test(positive_values_subset$values, mu = 0)
 t_test_present_result
 
-# Format the t-test result
-t_test_label <- paste("p =", formatC(t_test_present_result$p.value, format = "e", digits = 2), ",", "t-test =", round(t_test_present_result$statistic, 2))
-# Format the t-test result
-p_value <- t_test_present_result$p.value
-formatted_p_value <- if (p_value < 0.0001) {
-  "p < 0.0001"
-} else {
-  paste("p =", formatC(p_value, digits = 1))
-}
 
-#### proportion that are positive
+##### proportion that are negative ##############
 
-# Filter the dataframe for "AB" and "P" treatments
-ab_p_subset <- hfai.allsites.df[hfai.allsites.df$treatment %in% c("AB", "P"), ]
+# Filter the dataframe to include only positive cases
+neg_values <- hfai.allsites.df %>%
+  filter(values < 0)
 
-# Further filter to include only rows where values are greater than 0
-positive_values_subset <- ab_p_subset[ab_p_subset$values > 0, ]
-View(positive_values_subset)
-# Calculate the proportion of values greater than 0 for "AB"
-prop_positive_ab <- sum(positive_values_subset$treatment == "AB") / nrow(positive_values_subset)
-
-# Calculate the proportion of values greater than 0 for "P"
-prop_positive_p <- sum(positive_values_subset$treatment == "P") / nrow(positive_values_subset)
+## Calculate the proportion of positive values for the "P" treatment relative to all positive values
+proportion_neg_P <- sum(hfai.allsites.df$treatment == "P" & hfai.allsites.df$values < 0) /
+                        sum(hfai.allsites.df$values < 0)
+#31% HFA for P
+proportion_neg_AB <- sum(hfai.allsites.df$treatment == "AB" & hfai.allsites.df$values < 0) /
+                        sum(hfai.allsites.df$values < 0)
+#68% HFA for AB
 
 
-##### proportion that are negative
-# Further filter to include only rows where values are greater than 0
-neg_values_subset <- ab_p_subset[ab_p_subset$values < 0, ]
-
-# Calculate the proportion of values greater than 0 for "AB"
-prop_neg_ab <- sum(neg_values_subset$treatment == "AB") / nrow(ab_p_subset$values)
-
-
-# Calculate the proportion of values greater than 0 for "P"
-prop_neg_p <- sum(neg_values_subset$treatment == "P") / nrow(ab_p_subset$values)
-
-# Calculate mean and SE for 'AB' and 'P' values individually
 mean_ab <- mean(positive_values_subset[positive_values_subset$treatment == "AB", "values"])
-
-# Calculate the weighted mean for group P
-weighted_mean_P <- sum(positive_values_subset[positive_values_subset$treatment == "P", "values"]) / sum(positive_values_subset$treatment == "P")
-
-# Calculate the weighted mean for group AB
-weighted_mean_AB <- sum(positive_values_subset[positive_values_subset$treatment == "AB", "values"]) / sum(positive_values_subset$treatment == "AB")
-
-# Print the results
-weighted_mean_P
-weighted_mean_AB
-
 med_ab <- median(positive_values_subset[positive_values_subset$treatment == "AB", "values"])
 se_ab <- sd(positive_values_subset[positive_values_subset$treatment == "AB", "values"]) / sqrt(sum(positive_values_subset$treatment == "AB"))
 
@@ -2440,8 +2417,10 @@ se_p <- sd(positive_values_subset[positive_values_subset$treatment == "P", "valu
 t_test_result <- t.test(positive_values_subset[positive_values_subset$treatment == "P", "values"], mu = 0)
 t_test_result <- t.test(positive_values_subset[positive_values_subset$treatment == "AB", "values"], mu = 0)
 
-d <- (mean_p - mean_ab) / sqrt((se_p^2 + se_ab^2) / 2)
+d <- (mean_positive_P - mean_positive_AB) / sqrt((se_positive_P^2 + se_positive_AB^2) / 2)
 d
+
+cohensD(positive_values[positive_values$treatment == "P",]$values ~ positive_values[positive_values$treatment == "AB",]$values)
 #positive and negative values
 total_positive <- sum(hfai.allsites.df$values > 0)
 total_negative <- sum(hfai.allsites.df$values < 0)
@@ -2451,35 +2430,56 @@ percentage_negative <- (total_negative / (total_negative + total_positive)) * 10
 
 # 53% positive
 # 47% negative
+```
 
+Plot
+```{r}
+#all sites
+View(hfai.allsites.df)
+
+hfai.allsites.plot=hfai.allsites.df%>%
+  filter(!is.na(values)) %>%
+  ggplot(aes(x = reorder(names, values), y = values, fill = treatment, width = 0.85)) +
+scale_fill_colorblind()+
+geom_bar(stat = "identity", position ="dodge", alpha = 0.5) +
+  xlab("") +
+  ylab("% faster decomposition at home") +
+  theme_minimal() +
+  scale_x_discrete(expand = c(0.01,0.01))+
+  geom_vline(xintercept = 44.5 , linetype = "dashed", color = "red")+
+scale_y_continuous(limits = c(-70, 255), breaks = seq(-70, 255, by = 35)) +
+  hfa.fig.formatting
+
+hfai.allsites.plot
+
+ggsave("figures/hfai.allsites.plot.pdf", hfai.allsites.plot, width = 14, height = 6)
+```
+
+
+```{r}
 #both P and AB treatments
-hfai.allsites.plot=ggplot(hfai.allsites.df, aes(x = reorder(names, values), y = values, fill = treatment)) +
-  geom_bar(stat = "identity", position ="dodge", alpha = 0.3) +
-  scale_fill_viridis_d()+
+hfai.allsites.plot=hfai.allsites.df%>%
+  filter(!is.na(values)) %>%
+  ggplot(aes(x = reorder(names, values), y = values, fill = treatment)) +
+scale_fill_colorblind()+
+geom_bar(stat = "identity", position ="dodge", alpha = 0.5) +
   xlab("") +
   ylab("home-field advantage (% faster decomposition at home)") +
   theme_minimal() +
-  theme(text = element_text(size =20), 
-    axis.text.x = element_blank(),
-    legend.position = "right",
-    panel.grid.major = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.border = element_blank(),
-    panel.background = element_blank(),
-    plot.background = element_blank())+  
-  geom_vline(xintercept = 44.5, linetype = "dashed", color = "red")+
-  scale_y_continuous(
-    limits = c(-65, 255),
-     breaks = seq(-65, 250, by = 65),
-    expand = c(0, 0)
-  )
+  theme(plot.margin = margin(r = 0, l = 0))+
+  scale_x_discrete(expand = c(0,0))+
+  geom_vline(xintercept = 45.5 , linetype = "dashed", color = "red")+
+scale_y_continuous(limits = c(-50, 100), breaks = seq(-50, 100, by = 20))+
+  hfa.fig.formatting
 
+
+hfai.allsites.plot
 hfai.allsites.plot
 min(hfai.allsites.df$values) 
 max(hfai.allsites.df$values)
 
 
-ggplot(hfai.allsites.df, aes(x = reorder(names, values), y = values, fill = treatment)) +
+ggplot(aes(x = reorder(names, values), y = values, fill = treatment)) +
   geom_bar(stat = "identity", position ="dodge", alpha = 0.3) +
   scale_fill_manual(values = c("grey", "grey1"))+
   coord_flip()+
@@ -2494,11 +2494,11 @@ ggplot(hfai.allsites.df, aes(x = reorder(names, values), y = values, fill = trea
     panel.border = element_blank(),
     panel.background = element_blank(),
     plot.background = element_blank())+  
-  geom_vline(xintercept = 44.5, linetype = "dashed", color = "red")+
+  geom_vline(xintercept = 42, linetype = "dashed", color = "red")+
   scale_y_continuous(
     limits = c(-65, 255),
      breaks = seq(-65, 250, by = 65),
-    expand = c(0, 0)
+   
   )
 
 hfai.allsites.plot_flipped=ggplot(hfai.allsites.df, aes(x = reorder(names, values), y = values, fill = treatment)) +
