@@ -228,11 +228,11 @@ Let's first visualize the raw OD readings at both 450 and 590 nm.
 ```{r}
 
 #plot at 450 nm
-meta.df %>%
-    filter(nm == "450", time == "1440")%>%
+meta.450.df %>%
+    filter(time == "1440")%>%
   na.omit()%>%
   ggplot(aes(x = as.factor(decomp_day), y = od_corrected_b_n)) +
-  geom_smooth(aes(group = interaction(group, treatment), linetype = treatment, color = group, fill = group), method = 'gam', formula = y ~ s(x, k = 4), alpha = 0.1) +
+  geom_point()+
   labs(x = "decomposition day", y = "standardized optical density (z score)")+
   scale_color_colorblind() +
   scale_fill_colorblind() +
@@ -381,8 +381,7 @@ meta.450.df %>%
 These are the final plots
 ```{r}
 #####################
-#this is the final plot
-assay.plot=meta.450.df %>%
+meta.450.df %>%
   filter(hours == "24") %>%
   na.omit() %>%
   ggplot(aes(x = as.factor(decomp_day), y = od_corrected_b_n, group = interaction(group, treatment), color = treatment, fill = treatment)) +
@@ -636,6 +635,10 @@ summary(lmer1)
 plot(resid(lmer1))
 qqnorm(resid(lmer1))
 qqline(resid(lmer1))
+
+ggplot(fortify(lmer1), aes(decomp_day, od_corrected_b_n, color=treatment)) +
+  stat_summary(fun.data=mean_se, geom="pointrange") +
+  stat_summary(aes(y=.fitted), fun.y=mean, geom="line")
 
 lmer2 = lmer(z_score ~ treatment * group + (1 | decomp_day)  +  (1 | tree_id) + (1|tree_num), subset = hours == "24", data = na.omit(z_scored_df))
 
@@ -899,6 +902,9 @@ mass.df= mass.df%>%
 mass.df <- mass.df %>%
   mutate(perc.mass_loss = ((initial_mass - final_correct) / initial_mass)*100)
 
+
+ggplot(mass.df, aes(x = interaction(treatment, hfa), y = perc.mass_loss, color = interaction(treatment,hfa)))+
+  geom_boxplot()
 # Calculate the constant C, adding 1 for safety
 C <- abs(min(mass.df$perc.mass_loss)) + 1  
 
@@ -911,7 +917,8 @@ mutate(arcsine_trans = asin(sqrt(prop.mass_loss)))
 mass.df <- mass.df %>%
   mutate(prop.mass_loss = perc.mass_loss/100) %>%
 mutate(arcsine_trans = asin(sqrt(prop.mass_loss)))
-hist(mass.df$arcsine_trans)
+
+
 
 #subset P treatment only for "true" HFA  
 mass.present.df=mass.df %>%
@@ -923,6 +930,38 @@ mass.absent.df=mass.df %>%
 
 
 ```
+
+load abiotic river data 
+```{r}
+#load datq
+temps.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/rivers/river_temps.csv")
+#remove NAs
+temps.df=na.omit(temps.df)
+
+str(temps.df)
+
+# Convert "date" to proper date format
+temps.df <- temps.df %>%
+  mutate(date = as.Date(date, format = "%m/%d/%y"))
+
+# Extract date part
+temps.df <- temps.df %>%
+  mutate(date_only = as.Date(date))
+
+# Group by date and calculate mean water temperature for each day
+daily_mean_temp <- temps.df %>%
+  group_by(site, date_only) %>%
+  summarise(mean_temp = mean(temp_c),
+            mean_light = mean(light_lux))
+
+# Sum the mean daily temperatures for each site
+degree_days <- daily_mean_temp %>%
+  group_by(site) %>%
+  summarise(total_degree_days = sum(pmax(0, mean_temp - 0)))
+
+
+```
+
 
 **Subset dataframes to z score by deployment site (all HOK 1, all HOK 2, etc...)**
 
@@ -1037,6 +1076,34 @@ mass.absent.deploy.merged.df$hfa=as.factor(mass.absent.deploy.merged.df$hfa)
 
 ```
 
+calculate k (Petersen & Cummins 1974, Hanson et al 1984)
+Factor in degree days
+```{r}
+#create new site column
+mass.deploy.merged.df=mass.deploy.merged.df%>%
+  mutate(site = paste(deploy, site_num, sep="_"))
+
+mass_loss_with_dd <- left_join(mass.deploy.merged.df, degree_days, by = "site")
+
+# Calculate k_method2
+mass_loss_with_dd <- mass_loss_with_dd %>%
+  mutate(k_method2 = log(final_mass / initial_mass) / total_degree_days)
+view(mass_loss_with_dd)
+# Check the resulting dataframe
+head(mass_loss_with_dd[, c("treatment", "hfa", "tree_id", "tree_num", "k_method2")])
+
+
+ggplot(mass_loss_with_dd, aes(x = interaction(treatment, hfa), y = k_method2, fill = interaction(treatment, hfa)))+
+  geom_bar(stat = "identity")+
+  ylim(0,0.008)
+
+
+```
+
+
+
+
+
 Let's first look at the P only to see if HFA is there
 ```{r}
 ###P treatment only to see HFA effects
@@ -1065,15 +1132,24 @@ ggplot(mass.deploy.merged.df, aes(x = interaction(treatment,hfa), y = perc.mass_
 #visually, it seems like home shows overall slightly greater mass loss than away. This can be verified by some stats.
 
 
-mass.deploy.merged.df$k <- with(mass.deploy.merged.df, log(initial_mass / final_correct) / 19)
+# Assuming your dataframe is mass.deployed.merged.df
+t <- 19  # time in days
+mt<- mass.deploy.merged.df$final_correct  # final corrected mass
+m0 <- mass.deploy.merged.df$initial_mass  # initial mass
 
-decomp_days = seq()
-ggplot(mass.deploy.merged.df, aes(x = decomp_days, y = perc.mass_loss, group = interaction(treatment, hfa))) +
+# Calculate k
+k <- -1 / t * log(m_t / m_0)
+
+# Calculate decay constant (k)
+mass.deploy.merged.df$k= -1/t * log(mt/m0)
+
+
+
+ggplot(mass.deploy.merged.df, aes(x = interaction(treatment,hfa), y = k, group = interaction(treatment, hfa), color = interaction (treatment, hfa))) +
   geom_boxplot(alpha= 0.3) +
-  geom_point(aes(shape = as.factor(deploy)), position = position_jitter(width = 0.2)) +
-  labs(x = "", y = "mass loss (z score)") +
+  geom_point(aes(shape = interaction(treatment, hfa)), position = position_jitter(width = 0.2)) +
+  labs(x = "treatment", y = "decomposition rate k (/day)") +
   theme(legend.position = "right") +
-  scale_shape_manual(values = c(7,10), name= "site") +
   theme(plot.title = element_text(size = 12)) +
   Fig.formatting
 
@@ -1086,7 +1162,7 @@ time_difference <- 19  # Replace with your time difference
 
 # Calculate decay constant (k)
 k <- -log(final_value / initial_value) / time_difference
-
+k
 # Generate time values for the plot
 time_values <- seq(0, time_difference, by = 1)
 
