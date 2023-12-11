@@ -226,12 +226,18 @@ meta.450.df <- meta.450.df %>%
       treatment == "P" ~ "LAM+FLM",
       treatment == "AB" ~ "FLM-only"))
 
-
-deploy.hok.df=meta.450.df[meta.450.df$deploy=="HOK",]
-deploy.sek.df=meta.450.df[meta.450.df$deploy=="SEK",]
-
-
+#subset by true home 
+deploy.hok_only.df=meta.450.df[meta.450.df$deploy=="HOK" & meta.450.df$tree_id=="HOK",]
+deploy.sek_only.df=meta.450.df[meta.450.df$deploy=="SEK" & meta.450.df$tree_id=="SEK",]
+#merge
 true_home.meta.df=rbind(deploy.hok.df, deploy.sek.df)
+
+#subset by false home 
+deploy.hok.df=meta.450.df[meta.450.df$deploy=="HOK" & meta.450.df$tree_id=="SEK",]
+deploy.sek.df=meta.450.df[meta.450.df$deploy=="SEK" & meta.450.df$tree_id=="HOK",]
+#merge
+false_home.meta.df=rbind(deploy.hok.df, deploy.sek.df)
+
 
 #create subsets
 LAM_FL.df=true_home.meta.df%>%
@@ -676,7 +682,6 @@ This is now looking at a "true" home scenario for the comparison between sampled
 z scored by deployment site and decomposition day
 ```{r}
 
-
 #z score
 ##### Day 1
 #HOK 1 subset
@@ -830,13 +835,62 @@ all.sek.true_home.df=rbind(d1_sek1.true_home.df,
 merged.true_home_z.df = rbind(all.hok.true_home.df, all.sek.true_home.df)
 
  
+# Calculate means for each decomp_day
+means_per_day <- merged.true_home_z.df %>%
+  group_by(decomp_day) %>%
+  summarise(mean_z = mean(z_score, na.rm = TRUE))
+
+hist(na.omit(merged.true_home_z.df$z_score))
+
 merged.true_home_z.df%>%
+  na.omit()%>%
+  filter(group == "H")%>%
+  ggplot(aes(x= new.trt, y = z_score, color = new.trt))+
+  geom_boxplot()+
+  facet_wrap(.~decomp_day)+
+  scale_color_colorblind()+
+           geom_hline(data=means_per_day, aes(yintercept = mean_z, linetype = "Average"), color = alpha("red", 1), linetype = "dashed") +
+  theme_classic()
+
+####################
+
+
+
+
+######################
+#true home
+means_per_day <- true_home.meta.df %>%
+  group_by(decomp_day) %>%
+  summarise(mean_od = mean(od_corrected_b_n, na.rm = TRUE))
+
+true_home.meta.df%>%
+  na.omit()%>%
+  filter(hours =="24", group =="H")%>%
+  ggplot(aes(x= new.trt, y = od_corrected_b_n, color = new.trt))+
+  geom_boxplot()+
+  facet_wrap(.~decomp_day)+
+  scale_color_colorblind()+
+           geom_hline(data= means_per_day, aes(yintercept = mean_od, linetype = "Average"), color = alpha("red", 1), linetype = "dashed") +
+  theme_classic()
+
+
+#false home
+means_per_day <- false_home.meta.df %>%
+  group_by(decomp_day) %>%
+  summarise(mean_od = mean(od_corrected_b_n, na.rm = TRUE))
+
+hist(na.omit(false_home.meta.df$od_corrected_b_n))
+
+
+false_home.meta.df%>%
+  na.omit()%>%
+  filter(hours =="24")%>%
   ggplot(aes(x= new.trt, y = od_corrected_b_n, color = group))+
   geom_boxplot()+
-  facet_wrap(.~decomp_day, scales = "free_y")+
+  facet_wrap(.~decomp_day)+
   scale_color_colorblind()+
+           geom_hline(data= means_per_day, aes(yintercept = mean_od, linetype = "Average"), color = alpha("red", 1), linetype = "dashed") +
   theme_classic()
-  
 
 #find difference between LAM+FL vs FL only
 lam_only.df=all.true_home.df%>%
@@ -846,54 +900,255 @@ lam_only.df=all.true_home.df%>%
   arrange(decomp_day)
 
 
-#merge by new trt
-all_trt.df=rbind(LAM_FL.df, FL_only.df)
-view(all_trt.df)
 
- # Calculate means for each decomp_day
-means_per_day <- all.true_home.df %>%
+#models
+aov1=aov(z_score ~ new.trt*group, subset = decomp_day == "1", data = na.omit(merged.true_home_z.df))
+aov2=aov(od_corrected_b_n ~ new.trt*group, subset = decomp_day == "1", data = na.omit(true_home.meta.df))
+
+AIC(aov1, aov2, aov3)
+
+summary(aov3)
+plot(resid(aov2))
+
+hist(resid(aov3))
+
+```
+
+This is raw and z scored of all communities
+```{r}
+
+#z score
+##### Day 1
+#HOK 1 subset
+d1_hok1.df <- data.frame(meta.450.df[meta.450.df$deploy == "HOK" & meta.450.df$site_num == "1" & meta.450.df$decomp_day == "1", ])
+d3_hok1.df <- data.frame(meta.450.df[meta.450.df$deploy == "HOK" & meta.450.df$site_num == "1" & meta.450.df$decomp_day == "3", ])
+d5_hok1.df <- data.frame(meta.450.df[meta.450.df$deploy == "HOK" & meta.450.df$site_num == "1" & meta.450.df$decomp_day == "5", ])
+d7_hok1.df <- data.frame(meta.450.df[meta.450.df$deploy == "HOK" & meta.450.df$site_num == "1" & meta.450.df$decomp_day == "7", ])
+d11_hok1.df <- data.frame(meta.450.df[meta.450.df$deploy == "HOK" & meta.450.df$site_num == "1" & meta.450.df$decomp_day == "11", ])
+d17_hok1.df <- data.frame(meta.450.df[meta.450.df$deploy == "HOK" & meta.450.df$site_num == "1" & meta.450.df$decomp_day == "17", ])
+# Calculate z-scores 
+d1_hok1.df=d1_hok1.df%>%
+  na.omit()%>%
+  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
+d3_hok1.df=d3_hok1.df%>%
+  na.omit()%>%
+  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
+d5_hok1.df=d5_hok1.df%>%
+  na.omit()%>%
+  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
+d7_hok1.df=d7_hok1.df%>%
+  na.omit()%>%
+  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
+d11_hok1.df=d11_hok1.df%>%
+  na.omit()%>%
+  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
+d17_hok1.df=d17_hok1.df%>%
+  na.omit()%>%
+  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
+
+
+#HOK 2 subset
+d1_hok2.df <- data.frame(meta.450.df[meta.450.df$deploy == "HOK" & meta.450.df$site_num == "2" & meta.450.df$decomp_day == "1", ])
+d3_hok2.df <- data.frame(meta.450.df[meta.450.df$deploy == "HOK" & meta.450.df$site_num == "2" & meta.450.df$decomp_day == "3", ])
+d5_hok2.df <- data.frame(meta.450.df[meta.450.df$deploy == "HOK" & meta.450.df$site_num == "2" & meta.450.df$decomp_day == "5", ])
+d7_hok2.df <- data.frame(meta.450.df[meta.450.df$deploy == "HOK" & meta.450.df$site_num == "2" & meta.450.df$decomp_day == "7", ])
+d11_hok2.df <- data.frame(meta.450.df[meta.450.df$deploy == "HOK" & meta.450.df$site_num == "2" & meta.450.df$decomp_day == "11", ])
+d17_hok2.df <- data.frame(meta.450.df[meta.450.df$deploy == "HOK" & meta.450.df$site_num == "2" & meta.450.df$decomp_day == "17", ])
+# Calculate z-scores 
+d1_hok2.df=d1_hok2.df%>%
+  na.omit()%>%
+  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
+d3_hok2.df=d3_hok2.df%>%
+  na.omit()%>%
+  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
+d5_hok2.df=d5_hok2.df%>%
+  na.omit()%>%
+  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
+d7_hok2.df=d7_hok2.df%>%
+  na.omit()%>%
+  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
+d11_hok2.df=d11_hok2.df%>%
+  na.omit()%>%
+  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
+d17_hok2.df=d17_hok2.df%>%
+  na.omit()%>%
+  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
+
+#merge all hok
+all.hok.df=rbind(d1_hok1.df,
+                           d3_hok1.df,
+                           d5_hok1.df,
+                           d7_hok1.df,
+                           d11_hok1.df,
+                           d17_hok1.df,
+                           
+                          d1_hok2.df,
+                           d3_hok2.df,
+                           d5_hok2.df,
+                           d7_hok2.df,
+                           d11_hok2.df,
+                           d17_hok2.df)
+
+#SEK 1 subset
+d1_sek1.df <- data.frame(meta.450.df[meta.450.df$deploy == "SEK" & meta.450.df$site_num == "1" & meta.450.df$decomp_day == "1", ])
+d3_sek1.df <- data.frame(meta.450.df[meta.450.df$deploy == "SEK" & meta.450.df$site_num == "1" & meta.450.df$decomp_day == "3", ])
+d5_sek1.df <- data.frame(meta.450.df[meta.450.df$deploy == "SEK" & meta.450.df$site_num == "1" & meta.450.df$decomp_day == "5", ])
+d7_sek1.df <- data.frame(meta.450.df[meta.450.df$deploy == "SEK" & meta.450.df$site_num == "1" & meta.450.df$decomp_day == "7", ])
+d11_sek1.df <- data.frame(meta.450.df[meta.450.df$deploy == "SEK" & meta.450.df$site_num == "1" & meta.450.df$decomp_day == "11", ])
+d17_sek1.df <- data.frame(meta.450.df[meta.450.df$deploy == "SEK" & meta.450.df$site_num == "1" & meta.450.df$decomp_day == "17", ])
+# Calculate z-scores 
+d1_sek1.df=d1_sek1.df%>%
+  na.omit()%>%
+  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
+d3_sek1.df=d3_sek1.df%>%
+  na.omit()%>%
+  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
+d5_sek1.df=d5_sek1.df%>%
+  na.omit()%>%
+  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
+d7_sek1.df=d7_sek1.df%>%
+  na.omit()%>%
+  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
+d11_sek1.df=d11_sek1.df%>%
+  na.omit()%>%
+  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
+d17_sek1.df=d17_sek1.df%>%
+  na.omit()%>%
+  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
+
+
+#SEK 2 subset
+d1_sek2.df <- data.frame(meta.450.df[meta.450.df$deploy == "SEK" & meta.450.df$site_num == "2" & meta.450.df$decomp_day == "1", ])
+d3_sek2.df <- data.frame(meta.450.df[meta.450.df$deploy == "SEK" & meta.450.df$site_num == "2" & meta.450.df$decomp_day == "3", ])
+d5_sek2.df <- data.frame(meta.450.df[meta.450.df$deploy == "SEK" & meta.450.df$site_num == "2" & meta.450.df$decomp_day == "5", ])
+d7_sek2.df <- data.frame(meta.450.df[meta.450.df$deploy == "SEK" & meta.450.df$site_num == "2" & meta.450.df$decomp_day == "7", ])
+d11_sek2.df <- data.frame(meta.450.df[meta.450.df$deploy == "SEK" & meta.450.df$site_num == "2" & meta.450.df$decomp_day == "11", ])
+d17_sek2.df <- data.frame(meta.450.df[meta.450.df$deploy == "SEK" & meta.450.df$site_num == "2" & meta.450.df$decomp_day == "17", ])
+# Calculate z-scores 
+d1_sek2.df=d1_sek2.df%>%
+  na.omit()%>%
+  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
+d3_sek2.df=d3_sek2.df%>%
+  na.omit()%>%
+  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
+d5_sek2.df=d5_sek2.df%>%
+  na.omit()%>%
+  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
+d7_sek2.df=d7_sek2.df%>%
+  na.omit()%>%
+  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
+d11_sek2.df=d11_sek2.df%>%
+  na.omit()%>%
+  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
+d17_sek2.df=d17_sek2.df%>%
+  na.omit()%>%
+  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
+
+
+#merge all hok
+all.sek.df=rbind(d1_sek1.df,
+                           d3_sek1.df,
+                           d5_sek1.df,
+                           d7_sek1.df,
+                           d11_sek1.df,
+                           d17_sek1.df,
+                           
+                          d1_sek2.df,
+                           d3_sek2.df,
+                           d5_sek2.df,
+                           d7_sek2.df,
+                           d11_sek2.df,
+                           d17_sek2.df)
+
+#merge z scored dfs
+merged_z.df = rbind(all.hok.df, all.sek.df)
+
+ 
+
+
+#all combinations with meta.df
+means_per_day <- meta.450.df %>%
   group_by(decomp_day) %>%
   summarise(mean_od = mean(od_corrected_b_n, na.rm = TRUE))
 
+hist(na.omit(meta.450.df$od_corrected_b_n))
 
- all.true_home.df%>%
+meta.450.df%>%
   na.omit()%>%
-   filter(group =="H")%>%
-  ggplot(aes(x=new.trt, y = od_corrected_b_n, color = new.trt))+
-  scale_color_colorblind()+
+  filter(hours =="24")%>%
+  ggplot(aes(x= new.trt, y = od_corrected_b_n, color = group))+
   geom_boxplot()+
-         geom_hline(data= means_per_day, aes(yintercept = mean_od, linetype = "Average"), color = alpha("red", 1), linetype = "dashed") +
-  facet_grid(~decomp_day)
- 
+  facet_wrap(.~decomp_day)+
+  scale_color_colorblind()+
+           geom_hline(data= means_per_day, aes(yintercept = mean_od, linetype = "Average"), color = alpha("red", 1), linetype = "dashed") +
+  theme_classic()
+
+d1_all.meta_aov=aov(od_corrected_b_n~new.trt*group, subset = decomp_day == "1", data = na.omit(meta.450.df))
+
+d1_all.meta_lmer=lmer(od_corrected_b_n~new.trt*group + (1|deploy) + (1|site_num) + (1| tree_num) + (1 | tree_id), subset = decomp_day == "1", data = na.omit(meta.450.df))
+
+d3_all.meta_lmer=lmer(od_corrected_b_n~new.trt*group + (1|deploy) + (1|site_num) + (1| tree_num) + (1 | tree_id), subset = decomp_day == "3", data = na.omit(meta.450.df))
+
+
+plot(resid(d1_all.meta_lmer))
+summary(d3_all.meta_lmer)
+
+AIC(d3_all.meta_aov, d3_all.meta_lmer)
+
+d3_all.meta_aov=aov(od_corrected_b_n~new.trt*group, subset = decomp_day == "3", data = na.omit(meta.450.df))
+TukeyHSD(d3_all.meta_aov)
+summary(d3_all.meta_aov)
+
+hist(resid(d3_all.meta_aov))
+plot(resid(d3_all.meta_aov))
+# z score
+means_per_day <- merged_z.df %>%
+  group_by(decomp_day) %>%
+  summarise(mean_z = mean(z_score, na.rm = TRUE))
+
+
+merged_z.df%>%
+  na.omit()%>%
+  filter(hours =="24")%>%
+  ggplot(aes(x= new.trt, y = z_score, color = group))+
+  geom_boxplot()+
+  facet_wrap(.~decomp_day)+
+  scale_color_colorblind()+
+           geom_hline(data= means_per_day, aes(yintercept = mean_z, linetype = "Average"), color = alpha("red", 1), linetype = "dashed") +
+  theme_classic()
+
+d1_all.meta_z_aov=aov(z_score~new.trt*group, subset = decomp_day == "1", data = na.omit(merged_z.df))
+
+d3_all.meta_z_aov=aov(z_score~new.trt*group, subset = decomp_day == "3", data = na.omit(merged_z.df))
+hist(resid(d3_all.meta_z_aov))
+
+plot(resid(d3_all.meta_z_aov))
+
+summary(all.meta_z_aov)
+
+AIC(d3_all.meta_aov, d3_all.meta_z_aov)
+
+plot(resid(all.meta_z_aov))
+plot(all.meta_aov)
+
 
 ```
 
 
 
 
+
+
+
+
+
+
+
+
+
+
 z scored by decomposition day only
 ```{r}
-#create df
-#hok
-true_home.meta.df <- meta.450.df %>%
-  mutate(
-    new.trt = case_when(
-      treatment == "P" ~ "LAM+FLM",
-      treatment == "AB" ~ "FLM-only"))
-view(true_home.meta.df)
-
-#merge df
-
-#create subsets
-LAM_FL.df=true_home.meta.df%>%
-  filter(new.trt=="LAM+FL")%>%
-  select(tree_id, deploy, metabolite,tree_num, site_num, group, decomp_day, od_corrected_b_n, new.trt)%>%
-  arrange(decomp_day)
-
-FL_only.df=true_home.meta.df%>%
-   filter(new.trt=="FLM-only")%>%
-  select(tree_id, deploy, metabolite,tree_num, site_num, group, decomp_day, od_corrected_b_n, new.trt)%>%
-arrange(decomp_day)
 
 #z score
 ##### Day 1
