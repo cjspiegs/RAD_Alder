@@ -230,7 +230,7 @@ meta.450.df <- meta.450.df %>%
 deploy.hok_only.df=meta.450.df[meta.450.df$deploy=="HOK" & meta.450.df$tree_id=="HOK",]
 deploy.sek_only.df=meta.450.df[meta.450.df$deploy=="SEK" & meta.450.df$tree_id=="SEK",]
 #merge
-true_home.meta.df=rbind(deploy.hok.df, deploy.sek.df)
+true_home.meta.df=rbind(deploy.hok_only.df, deploy.sek_only.df)
 
 #subset by false home 
 deploy.hok.df=meta.450.df[meta.450.df$deploy=="HOK" & meta.450.df$tree_id=="SEK",]
@@ -679,8 +679,13 @@ d1.z_scored_df%>%
 
 This is now looking at a "true" home scenario for the comparison between sampled communities against 'home' or 'away' metabolites. In this instance, leaves are sourced from Hoko and deployed at Hoko, or sourced from Sekiu and deployed at  Sekiu. The sampled communities are then "home" communities found at their respective sites with either leaf-associated microbes (LAMs) and free-living microbes (FLMs), FLM-only, or LAM-only. These three groups allow us to see how phyllosphere microbes (i.e., LAMS) influence metabolization of home or away metabolites.
 
+TRUE HOME (HOK to HOK or SEK to SEK)
 z scored by deployment site and decomposition day
 ```{r}
+library(multcompView)
+#filter by correct hours
+true_home.meta.df=true_home.meta.df%>%
+  filter(hours =="24")
 
 #z score
 ##### Day 1
@@ -689,7 +694,7 @@ d1_hok1.true_home.df <- data.frame(true_home.meta.df[true_home.meta.df$deploy ==
 d3_hok1.true_home.df <- data.frame(true_home.meta.df[true_home.meta.df$deploy == "HOK" & true_home.meta.df$site_num == "1" & true_home.meta.df$decomp_day == "3", ])
 d5_hok1.true_home.df <- data.frame(true_home.meta.df[true_home.meta.df$deploy == "HOK" & true_home.meta.df$site_num == "1" & true_home.meta.df$decomp_day == "5", ])
 d7_hok1.true_home.df <- data.frame(true_home.meta.df[true_home.meta.df$deploy == "HOK" & true_home.meta.df$site_num == "1" & true_home.meta.df$decomp_day == "7", ])
-d11_hok1.true_home.df <- data.frame(true_home.meta.df[all.true_home.df$deploy == "HOK" & true_home.meta.df$site_num == "1" & true_home.meta.df$decomp_day == "11", ])
+d11_hok1.true_home.df <- data.frame(true_home.meta.df[true_home.meta.df$deploy == "HOK" & true_home.meta.df$site_num == "1" & true_home.meta.df$decomp_day == "11", ])
 d17_hok1.true_home.df <- data.frame(true_home.meta.df[true_home.meta.df$deploy == "HOK" & true_home.meta.df$site_num == "1" & true_home.meta.df$decomp_day == "17", ])
 # Calculate z-scores 
 d1_hok1.true_home.df=d1_hok1.true_home.df%>%
@@ -710,13 +715,6 @@ d11_hok1.true_home.df=d11_hok1.true_home.df%>%
 d17_hok1.true_home.df=d17_hok1.true_home.df%>%
   na.omit()%>%
   mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
-
-all.hok1.true_home.df=rbind(d1_hok1.true_home.df,
-                            d3_hok1.true_home.df,
-                            d5_hok1.true_home.df,
-                            d7_hok1.true_home.df,
-                            d11_hok1.true_home.df,
-                            d17_hok1.true_home.df)
 
 #HOK 2 subset
 d1_hok2.true_home.df <- data.frame(true_home.meta.df[true_home.meta.df$deploy == "HOK" & true_home.meta.df$site_num == "2" & true_home.meta.df$decomp_day == "1", ])
@@ -816,7 +814,7 @@ d17_sek2.true_home.df=d17_sek2.true_home.df%>%
   mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
 
 
-#merge all hok
+#merge all sek
 all.sek.true_home.df=rbind(d1_sek1.true_home.df,
                            d3_sek1.true_home.df,
                            d5_sek1.true_home.df,
@@ -831,61 +829,286 @@ all.sek.true_home.df=rbind(d1_sek1.true_home.df,
                            d11_sek2.true_home.df,
                            d17_sek2.true_home.df)
 
-#merge z scored dfs
+#merge all z scored dfs
 merged.true_home_z.df = rbind(all.hok.true_home.df, all.sek.true_home.df)
+merged.true_home_z.df <- merged.true_home_z.df %>% 
+  mutate(pairing = factor(pairing, levels = c("P-H", "P-AW", "AB-H", "AB-AW")))
 
- 
 # Calculate means for each decomp_day
-means_per_day <- merged.true_home_z.df %>%
-  group_by(decomp_day) %>%
-  summarise(mean_z = mean(z_score, na.rm = TRUE))
+#od readings
+od_means_per_day <- merged.true_home_z.df %>%
+  dplyr::group_by(decomp_day) %>%
+  dplyr::summarise(mean_od = mean(od_corrected_b_n, na.rm = TRUE))
 
-hist(na.omit(merged.true_home_z.df$z_score))
+od_true.home.boxplot=merged.true_home_z.df%>%
+  na.omit()%>%
+  ggplot(aes(x= treatment, y = od_corrected_b_n, fill = group))+
+  geom_boxplot(alpha = 0.4)+
+  xlab("treatment")+
+  ylab(expression("optical density (OD"[450~nm]*")"))+
+  labs(fill = "hfa")+
+  facet_wrap(.~decomp_day, labeller = labeller(decomp_day = c("1" = "Day 1", "3" = "Day 3", "5" = "Day 5", "7" = "Day 7", "11" = "Day 11", "17" = "Day 17"))) +
+  ggtitle('"True home" comparisons')+
+  scale_fill_colorblind()+
+           geom_hline(data=od_means_per_day, aes(yintercept = mean_od, linetype = "Average"), color = alpha("red", 1), linetype = "dashed") +
+  theme_classic()+
+      theme(plot.title = element_text(face = "bold"))
 
+ggsave("figures/od_true.home.boxplot.pdf", od_true.home.boxplot, width = 8, height = 6)
+
+##### models by decomp day
+
+#Day 1
+d1_aov=aov(od_corrected_b_n ~ treatment*group, subset = decomp_day == "1", data = na.omit(merged.true_home_z.df))
+summary(d1_aov)
+d1_meta_tHSD=TukeyHSD(d1_aov, ordered = F, conf.level = 0.95)
+d1_cld <- multcompLetters4(d1_aov, d1_meta_tHSD)
+
+# table with factors and 3rd quantile
+d1_meta.table <- merged.true_home_z.df%>%
+  filter(decomp_day == "1")%>%
+  dplyr::group_by(treatment, group) %>%
+  dplyr::summarise(mean=mean(od_corrected_b_n), quant = quantile(od_corrected_b_n, probs = 0.75)) %>%
+  dplyr::arrange(desc(mean))
+
+# extracting the compact letter display and adding to the Tk table
+d1_cld <- as.data.frame.list(d1_cld$`treatment:group`)
+d1_meta.table$cld <- d1_cld$Letters
+#plot
+d1_meta.plot=merged.true_home_z.df%>%
+  filter(decomp_day =="1")%>%
+  na.omit()%>%
+  ggplot(aes(x= interaction(treatment, group, sep ="-"), y = od_corrected_b_n, fill = interaction(treatment, group, sep ="-")))+
+  geom_boxplot(alpha = 0.4)+
+  coord_cartesian(ylim = c(0,4))+
+  xlab("")+
+  ylab(expression("optical density (OD"[450~nm]*")"))+
+  labs(fill = "hfa")+
+  ggtitle("Day 1")+
+  scale_fill_colorblind()+
+  geom_hline(aes(yintercept = mean(od_corrected_b_n), linetype = "Average"), color = alpha("red", 1), linetype = "dashed") +
+  theme_classic()+
+  theme(plot.title = element_text(face = "bold"))+
+  geom_text(data = d1_meta.table, aes(y = quant, label = cld), color = "blue", fontface= "bold",size = 5, vjust=-2, hjust =-0.76)+
+  Fig.formatting
+
+
+#Day 3
+d3_aov=aov(od_corrected_b_n ~ treatment*group, subset = decomp_day == "3", data = na.omit(merged.true_home_z.df))
+summary(d3_aov)
+d3_meta_tHSD=TukeyHSD(d3_aov, ordered = F, conf.level = 0.95)
+d3_cld <- multcompLetters4(d3_aov, d3_meta_tHSD)
+
+# table with factors and 3rd quantile
+d3_meta.table <- merged.true_home_z.df%>%
+  filter(decomp_day == "3")%>%
+  dplyr::group_by(treatment, group) %>%
+  dplyr::summarise(mean=mean(od_corrected_b_n), quant = quantile(od_corrected_b_n, probs = 0.75)) %>%
+  dplyr::arrange(desc(mean))
+
+# extracting the compact letter display and adding to the Tk table
+d3_cld <- as.data.frame.list(d3_cld$`treatment:group`)
+d3_meta.table$cld <- d3_cld$Letters
+#plot
+d3_meta.plot=merged.true_home_z.df%>%
+  filter(decomp_day =="3")%>%
+  na.omit()%>%
+  ggplot(aes(x= interaction(treatment, group, sep ="-"), y = od_corrected_b_n, fill = interaction(treatment, group, sep ="-")))+
+  geom_boxplot(alpha = 0.4)+
+    coord_cartesian(ylim = c(0,4))+
+  xlab("")+
+  ylab("")+
+  labs(fill = "hfa")+
+  ggtitle("Day 3")+
+  scale_fill_colorblind()+
+  geom_hline(aes(yintercept = mean(od_corrected_b_n), linetype = "Average"), color = alpha("red", 1), linetype = "dashed") +
+  theme_classic()+
+  theme(plot.title = element_text(face = "bold"))+
+  geom_text(data = d3_meta.table, aes(y = quant, label = cld), color = "blue", fontface= "bold",size = 5, vjust=-2, hjust =-0.76)+
+  Fig.formatting
+
+#Day 5
+d5_aov=aov(od_corrected_b_n ~ treatment*group, subset = decomp_day == "5", data = na.omit(merged.true_home_z.df))
+summary(d5_aov)
+d5_meta_tHSD=TukeyHSD(d5_aov, ordered = F, conf.level = 0.95)
+d5_cld <- multcompLetters4(d5_aov, d5_meta_tHSD)
+
+# table with factors and 3rd quantile
+d5_meta.table <- merged.true_home_z.df%>%
+  filter(decomp_day == "5")%>%
+  dplyr::group_by(treatment, group) %>%
+  dplyr::summarise(mean=mean(od_corrected_b_n), quant = quantile(od_corrected_b_n, probs = 0.75)) %>%
+  dplyr::arrange(desc(mean))
+
+# extracting the compact letter display and adding to the Tk table
+d5_cld <- as.data.frame.list(d5_cld$`treatment:group`)
+d5_meta.table$cld <- d5_cld$Letters
+#plot
+d5_meta.plot=merged.true_home_z.df%>%
+  filter(decomp_day == "5")%>%
+  na.omit()%>%
+  ggplot(aes(x= interaction(treatment, group, sep ="-"), y = od_corrected_b_n, fill = interaction(treatment, group, sep ="-")))+
+  geom_boxplot(alpha = 0.4)+
+    coord_cartesian(ylim = c(0,4))+
+  xlab("")+
+  ylab("")+
+  labs(fill = "hfa")+
+  ggtitle("Day 5")+
+  scale_fill_colorblind()+
+  geom_hline(aes(yintercept = mean(od_corrected_b_n), linetype = "Average"), color = alpha("red", 1), linetype = "dashed") +
+  theme_classic()+
+  theme(plot.title = element_text(face = "bold"))+
+  geom_text(data = d5_meta.table, aes(y = quant, label = cld), color = "blue", fontface= "bold",size = 5, vjust=-2, hjust =-0.76)+
+  Fig.formatting
+
+d5_meta.plot
+
+#Day 7
+d7_aov=aov(od_corrected_b_n ~ treatment*group, subset = decomp_day == "7", data = na.omit(merged.true_home_z.df))
+summary(d7_aov)
+d7_meta_tHSD=TukeyHSD(d7_aov, ordered = F, conf.level = 0.95)
+d7_cld <- multcompLetters4(d7_aov, d7_meta_tHSD)
+
+# table with factors and 3rd quantile
+d7_meta.table <- merged.true_home_z.df%>%
+  filter(decomp_day == "7")%>%
+  dplyr::group_by(treatment, group) %>%
+  dplyr::summarise(mean=mean(od_corrected_b_n), quant = quantile(od_corrected_b_n, probs = 0.75)) %>%
+  dplyr::arrange(desc(mean))
+
+# extracting the compact letter display and adding to the Tk table
+d7_cld <- as.data.frame.list(d7_cld$`treatment:group`)
+d7_meta.table$cld <- d7_cld$Letters
+#plot
+d7_meta.plot=merged.true_home_z.df%>%
+  filter(decomp_day =="7")%>%
+  na.omit()%>%
+  ggplot(aes(x= interaction(treatment, group, sep ="-"), y = od_corrected_b_n, fill = interaction(treatment, group, sep ="-")))+
+  geom_boxplot(alpha = 0.4)+
+    coord_cartesian(ylim = c(0,4))+
+  xlab("treatment")+
+  ylab("")+
+  labs(fill = "hfa")+
+  ggtitle("Day 7")+
+  scale_fill_colorblind()+
+  geom_hline(aes(yintercept = mean(od_corrected_b_n), linetype = "Average"), color = alpha("red", 1), linetype = "dashed") +
+  theme_classic()+
+  theme(plot.title = element_text(face = "bold"))+
+  geom_text(data = d7_meta.table, aes(y = quant, label = cld), color = "blue", fontface= "bold",size = 5, vjust=-3, hjust =-0.76)+
+  Fig.formatting
+
+d7_meta.plot
+
+#Day 11
+d11_aov=aov(od_corrected_b_n ~ treatment*group, subset = decomp_day == "11", data = na.omit(merged.true_home_z.df))
+summary(d11_aov)
+d11_meta_tHSD=TukeyHSD(d11_aov, ordered = F, conf.level = 0.95)
+d11_cld <- multcompLetters4(d11_aov, d11_meta_tHSD)
+
+# table with factors and 3rd quantile
+d11_meta.table <- merged.true_home_z.df%>%
+  filter(decomp_day == "11")%>%
+  dplyr::group_by(treatment, group) %>%
+  dplyr::summarise(mean=mean(od_corrected_b_n), quant = quantile(od_corrected_b_n, probs = 0.75)) %>%
+  dplyr::arrange(desc(mean))
+
+# extracting the compact letter display and adding to the Tk table
+d11_cld <- as.data.frame.list(d11_cld$`treatment:group`)
+d11_meta.table$cld <- d11_cld$Letters
+#plot
+d11_meta.plot=merged.true_home_z.df%>%
+  filter(decomp_day =="11")%>%
+  na.omit()%>%
+  ggplot(aes(x= interaction(treatment, group, sep ="-"), y = od_corrected_b_n, fill = interaction(treatment, group, sep ="-")))+
+  geom_boxplot(alpha = 0.4)+
+    coord_cartesian(ylim = c(0,4))+
+  xlab("")+
+  ylab("")+
+  labs(fill = "hfa")+
+  ggtitle("Day 11")+
+  scale_fill_colorblind()+
+  geom_hline(aes(yintercept = mean(od_corrected_b_n), linetype = "Average"), color = alpha("red", 1), linetype = "dashed") +
+  theme_classic()+
+  theme(plot.title = element_text(face = "bold"))+
+  geom_text(data = d11_meta.table, aes(y = quant, label = cld), color = "blue", fontface= "bold",size = 5, vjust=-2, hjust =-0.76)+
+  Fig.formatting
+
+d11_meta.plot
+
+
+#Day 17
+d17_aov=aov(od_corrected_b_n ~ treatment*group, subset = decomp_day == "17", data = na.omit(merged.true_home_z.df))
+summary(d17_aov)
+d17_meta_tHSD=TukeyHSD(d17_aov, ordered = F, conf.level = 0.95)
+d17_cld <- multcompLetters4(d17_aov, d17_meta_tHSD)
+
+# table with factors and 3rd quantile
+d17_meta.table <- merged.true_home_z.df%>%
+  filter(decomp_day == "17")%>%
+  dplyr::group_by(treatment, group) %>%
+  dplyr::summarise(mean=mean(od_corrected_b_n), quant = quantile(od_corrected_b_n, probs = 0.75)) %>%
+  dplyr::arrange(desc(mean))
+
+# extracting the compact letter display and adding to the Tk table
+d17_cld <- as.data.frame.list(d17_cld$`treatment:group`)
+d17_meta.table$cld <- d17_cld$Letters
+#plot
+d17_meta.plot=merged.true_home_z.df%>%
+  filter(decomp_day=="17")%>%
+  na.omit()%>%
+  ggplot(aes(x= interaction(treatment, group, sep ="-"), y = od_corrected_b_n, fill = interaction(treatment, group, sep ="-")))+
+  geom_boxplot(alpha = 0.4)+
+    coord_cartesian(ylim = c(0,4))+
+  xlab("")+
+  ylab("")+
+  labs(fill = "hfa")+
+  ggtitle("Day 17")+
+  scale_fill_colorblind()+
+  geom_hline(aes(yintercept = mean(od_corrected_b_n), linetype = "Average"), color = alpha("red", 1), linetype = "dashed") +
+  theme_classic()+
+  theme(plot.title = element_text(face = "bold"))+
+  geom_text(data = d17_meta.table, aes(y = quant, label = cld), color = "blue", fontface= "bold",size = 5, vjust=-2, hjust =-0.76)+
+  Fig.formatting
+
+
+all.days_meta.plot=plot_grid(
+  d1_meta.plot + theme(legend.position = "none"),
+  d3_meta.plot + theme(legend.position = "none"),
+  d5_meta.plot + theme(legend.position = "none"),
+  d7_meta.plot + theme(legend.position = "none"),
+  d11_meta.plot+ theme(legend.position = "none"),
+  d17_meta.plot + theme(legend.position = "none"),
+  rel_widths = c(8,8,8,8,8,8), nrow=2)
+
+ggsave("figures/all.days_meta.plot.pdf", all.days_meta.plot, width = 22, height = 10)
+
+
+
+#z score
+z_means_per_day <- merged.true_home_z.df %>%
+  dplyr::group_by(decomp_day) %>%
+  dplyr::summarise(mean_z = mean(z_score, na.rm = TRUE))
+
+library(ggthemes)
 merged.true_home_z.df%>%
   na.omit()%>%
   filter(group == "H")%>%
-  ggplot(aes(x= new.trt, y = z_score, color = new.trt))+
-  geom_boxplot()+
+  ggplot(aes(x= treatment, y = z_score, fill = treatment))+
+  geom_boxplot(alpha = 0.4)+
   facet_wrap(.~decomp_day)+
-  scale_color_colorblind()+
-           geom_hline(data=means_per_day, aes(yintercept = mean_z, linetype = "Average"), color = alpha("red", 1), linetype = "dashed") +
+  scale_fill_colorblind()+
+  geom_hline(data=z_means_per_day, aes(yintercept = mean_z, linetype = "Average"), color = alpha("red", 1), linetype = "dashed") +
   theme_classic()
-
-####################
-
-
-
-
-######################
-#true home
-means_per_day <- true_home.meta.df %>%
-  group_by(decomp_day) %>%
-  summarise(mean_od = mean(od_corrected_b_n, na.rm = TRUE))
-
-true_home.meta.df%>%
-  na.omit()%>%
-  filter(hours =="24", group =="H")%>%
-  ggplot(aes(x= new.trt, y = od_corrected_b_n, color = new.trt))+
-  geom_boxplot()+
-  facet_wrap(.~decomp_day)+
-  scale_color_colorblind()+
-           geom_hline(data= means_per_day, aes(yintercept = mean_od, linetype = "Average"), color = alpha("red", 1), linetype = "dashed") +
-  theme_classic()
-
 
 #false home
 means_per_day <- false_home.meta.df %>%
   group_by(decomp_day) %>%
-  summarise(mean_od = mean(od_corrected_b_n, na.rm = TRUE))
-
-hist(na.omit(false_home.meta.df$od_corrected_b_n))
-
+  summarise(mean_z = mean(z_score, na.rm = TRUE))
 
 false_home.meta.df%>%
   na.omit()%>%
   filter(hours =="24")%>%
-  ggplot(aes(x= new.trt, y = od_corrected_b_n, color = group))+
+  ggplot(aes(x= new.trt, y = od_corrected_b_n, fill = group))+
   geom_boxplot()+
   facet_wrap(.~decomp_day)+
   scale_color_colorblind()+
@@ -901,14 +1124,10 @@ lam_only.df=all.true_home.df%>%
 
 
 
-#models
-aov1=aov(z_score ~ new.trt*group, subset = decomp_day == "1", data = na.omit(merged.true_home_z.df))
-aov2=aov(od_corrected_b_n ~ new.trt*group, subset = decomp_day == "1", data = na.omit(true_home.meta.df))
+AIC(d1_aov, d1_aov2)
 
-AIC(aov1, aov2, aov3)
-
-summary(aov3)
-plot(resid(aov2))
+summary(aov2)
+plot(aov2)
 
 hist(resid(aov3))
 
@@ -916,7 +1135,8 @@ hist(resid(aov3))
 
 This is raw and z scored of all communities
 ```{r}
-
+meta.450.df=meta.450.df%>%
+  filter(hours =="24")
 #z score
 ##### Day 1
 #HOK 1 subset
@@ -1071,16 +1291,13 @@ means_per_day <- meta.450.df %>%
   group_by(decomp_day) %>%
   summarise(mean_od = mean(od_corrected_b_n, na.rm = TRUE))
 
-hist(na.omit(meta.450.df$od_corrected_b_n))
-
 meta.450.df%>%
   na.omit()%>%
-  filter(hours =="24")%>%
-  ggplot(aes(x= new.trt, y = od_corrected_b_n, color = group))+
+  ggplot(aes(x= treatment, y = od_corrected_b_n, color = group))+
   geom_boxplot()+
   facet_wrap(.~decomp_day)+
   scale_color_colorblind()+
-           geom_hline(data= means_per_day, aes(yintercept = mean_od, linetype = "Average"), color = alpha("red", 1), linetype = "dashed") +
+  geom_hline(data= means_per_day, aes(yintercept = mean_od, linetype = "Average"), color = alpha("red", 1), linetype = "dashed") +
   theme_classic()
 
 d1_all.meta_aov=aov(od_corrected_b_n~new.trt*group, subset = decomp_day == "1", data = na.omit(meta.450.df))
@@ -1133,216 +1350,6 @@ plot(all.meta_aov)
 
 
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-z scored by decomposition day only
-```{r}
-
-#z score
-##### Day 1
-#HOK 1 subset
-d1_hok1.true_home.df <- data.frame(true_home.meta.df[true_home.meta.df$deploy == "HOK" & true_home.meta.df$site_num == "1" & true_home.meta.df$decomp_day == "1", ])
-d3_hok1.true_home.df <- data.frame(true_home.meta.df[true_home.meta.df$deploy == "HOK" & true_home.meta.df$site_num == "1" & true_home.meta.df$decomp_day == "3", ])
-d5_hok1.true_home.df <- data.frame(true_home.meta.df[true_home.meta.df$deploy == "HOK" & true_home.meta.df$site_num == "1" & true_home.meta.df$decomp_day == "5", ])
-d7_hok1.true_home.df <- data.frame(true_home.meta.df[true_home.meta.df$deploy == "HOK" & true_home.meta.df$site_num == "1" & true_home.meta.df$decomp_day == "7", ])
-d11_hok1.true_home.df <- data.frame(true_home.meta.df[all.true_home.df$deploy == "HOK" & true_home.meta.df$site_num == "1" & true_home.meta.df$decomp_day == "11", ])
-d17_hok1.true_home.df <- data.frame(true_home.meta.df[true_home.meta.df$deploy == "HOK" & true_home.meta.df$site_num == "1" & true_home.meta.df$decomp_day == "17", ])
-# Calculate z-scores 
-d1_hok1.true_home.df=d1_hok1.true_home.df%>%
-  na.omit()%>%
-  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
-d3_hok1.true_home.df=d3_hok1.true_home.df%>%
-  na.omit()%>%
-  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
-d5_hok1.true_home.df=d5_hok1.true_home.df%>%
-  na.omit()%>%
-  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
-d7_hok1.true_home.df=d7_hok1.true_home.df%>%
-  na.omit()%>%
-  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
-d11_hok1.true_home.df=d11_hok1.true_home.df%>%
-  na.omit()%>%
-  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
-d17_hok1.true_home.df=d17_hok1.true_home.df%>%
-  na.omit()%>%
-  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
-
-all.hok1.true_home.df=rbind(d1_hok1.true_home.df,
-                            d3_hok1.true_home.df,
-                            d5_hok1.true_home.df,
-                            d7_hok1.true_home.df,
-                            d11_hok1.true_home.df,
-                            d17_hok1.true_home.df)
-view(all.hok1.true_home.df)
-
-#HOK 2 subset
-d1_hok2.true_home.df <- data.frame(true_home.meta.df[true_home.meta.df$deploy == "HOK" & true_home.meta.df$site_num == "2" & true_home.meta.df$decomp_day == "1", ])
-d3_hok2.true_home.df <- data.frame(true_home.meta.df[true_home.meta.df$deploy == "HOK" & true_home.meta.df$site_num == "2" & true_home.meta.df$decomp_day == "3", ])
-d5_hok2.true_home.df <- data.frame(true_home.meta.df[true_home.meta.df$deploy == "HOK" & true_home.meta.df$site_num == "2" & true_home.meta.df$decomp_day == "5", ])
-d7_hok2.true_home.df <- data.frame(true_home.meta.df[true_home.meta.df$deploy == "HOK" & true_home.meta.df$site_num == "2" & true_home.meta.df$decomp_day == "7", ])
-d11_hok2.true_home.df <- data.frame(true_home.meta.df[true_home.meta.df$deploy == "HOK" & true_home.meta.df$site_num == "2" & true_home.meta.df$decomp_day == "11", ])
-d17_hok2.true_home.df <- data.frame(true_home.meta.df[true_home.meta.df$deploy == "HOK" & true_home.meta.df$site_num == "2" & true_home.meta.df$decomp_day == "17", ])
-# Calculate z-scores 
-d1_hok2.true_home.df=d1_hok2.true_home.df%>%
-  na.omit()%>%
-  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
-d3_hok2.true_home.df=d3_hok2.true_home.df%>%
-  na.omit()%>%
-  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
-d5_hok2.true_home.df=d5_hok2.true_home.df%>%
-  na.omit()%>%
-  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
-d7_hok2.true_home.df=d7_hok2.true_home.df%>%
-  na.omit()%>%
-  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
-d11_hok2.true_home.df=d11_hok2.true_home.df%>%
-  na.omit()%>%
-  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
-d17_hok2.true_home.df=d17_hok2.true_home.df%>%
-  na.omit()%>%
-  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
-
-#merge all hok
-all.hok.true_home.df=rbind(d1_hok1.true_home.df,
-                           d3_hok1.true_home.df,
-                           d5_hok1.true_home.df,
-                           d7_hok1.true_home.df,
-                           d11_hok1.true_home.df,
-                           d17_hok1.true_home.df,
-                           
-                          d1_hok2.true_home.df,
-                           d3_hok2.true_home.df,
-                           d5_hok2.true_home.df,
-                           d7_hok2.true_home.df,
-                           d11_hok2.true_home.df,
-                           d17_hok2.true_home.df)
-
-#SEK 1 subset
-d1_sek1.true_home.df <- data.frame(true_home.meta.df[true_home.meta.df$deploy == "SEK" & true_home.meta.df$site_num == "1" & true_home.meta.df$decomp_day == "1", ])
-d3_sek1.true_home.df <- data.frame(true_home.meta.df[true_home.meta.df$deploy == "SEK" & true_home.meta.df$site_num == "1" & true_home.meta.df$decomp_day == "3", ])
-d5_sek1.true_home.df <- data.frame(true_home.meta.df[true_home.meta.df$deploy == "SEK" & true_home.meta.df$site_num == "1" & true_home.meta.df$decomp_day == "5", ])
-d7_sek1.true_home.df <- data.frame(true_home.meta.df[true_home.meta.df$deploy == "SEK" & true_home.meta.df$site_num == "1" & true_home.meta.df$decomp_day == "7", ])
-d11_sek1.true_home.df <- data.frame(true_home.meta.df[true_home.meta.df$deploy == "SEK" & true_home.meta.df$site_num == "1" & true_home.meta.df$decomp_day == "11", ])
-d17_sek1.true_home.df <- data.frame(true_home.meta.df[true_home.meta.df$deploy == "SEK" & true_home.meta.df$site_num == "1" & true_home.meta.df$decomp_day == "17", ])
-# Calculate z-scores 
-d1_sek1.true_home.df=d1_sek1.true_home.df%>%
-  na.omit()%>%
-  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
-d3_sek1.true_home.df=d3_sek1.true_home.df%>%
-  na.omit()%>%
-  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
-d5_sek1.true_home.df=d5_sek1.true_home.df%>%
-  na.omit()%>%
-  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
-d7_sek1.true_home.df=d7_sek1.true_home.df%>%
-  na.omit()%>%
-  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
-d11_sek1.true_home.df=d11_sek1.true_home.df%>%
-  na.omit()%>%
-  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
-d17_sek1.true_home.df=d17_sek1.true_home.df%>%
-  na.omit()%>%
-  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
-
-
-#SEK 2 subset
-d1_sek2.true_home.df <- data.frame(true_home.meta.df[true_home.meta.df$deploy == "SEK" & true_home.meta.df$site_num == "2" & true_home.meta.df$decomp_day == "1", ])
-d3_sek2.true_home.df <- data.frame(true_home.meta.df[true_home.meta.df$deploy == "SEK" & true_home.meta.df$site_num == "2" & true_home.meta.df$decomp_day == "3", ])
-d5_sek2.true_home.df <- data.frame(true_home.meta.df[true_home.meta.df$deploy == "SEK" & true_home.meta.df$site_num == "2" & true_home.meta.df$decomp_day == "5", ])
-d7_sek2.true_home.df <- data.frame(true_home.meta.df[true_home.meta.df$deploy == "SEK" & true_home.meta.df$site_num == "2" & true_home.meta.df$decomp_day == "7", ])
-d11_sek2.true_home.df <- data.frame(true_home.meta.df[true_home.meta.df$deploy == "SEK" & true_home.meta.df$site_num == "2" & true_home.meta.df$decomp_day == "11", ])
-d17_sek2.true_home.df <- data.frame(true_home.meta.df[true_home.meta.df$deploy == "SEK" & true_home.meta.df$site_num == "2" & true_home.meta.df$decomp_day == "17", ])
-# Calculate z-scores 
-d1_sek2.true_home.df=d1_sek2.true_home.df%>%
-  na.omit()%>%
-  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
-d3_sek2.true_home.df=d3_sek2.true_home.df%>%
-  na.omit()%>%
-  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
-d5_sek2.true_home.df=d5_sek2.true_home.df%>%
-  na.omit()%>%
-  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
-d7_sek2.true_home.df=d7_sek2.true_home.df%>%
-  na.omit()%>%
-  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
-d11_sek2.true_home.df=d11_sek2.true_home.df%>%
-  na.omit()%>%
-  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
-d17_sek2.true_home.df=d17_sek2.true_home.df%>%
-  na.omit()%>%
-  mutate(z_score= (od_corrected_b_n - mean(od_corrected_b_n))/sd(od_corrected_b_n))
-
-
-#merge all hok
-all.sek.true_home.df=rbind(d1_sek1.true_home.df,
-                           d3_sek1.true_home.df,
-                           d5_sek1.true_home.df,
-                           d7_sek1.true_home.df,
-                           d11_sek1.true_home.df,
-                           d17_sek1.true_home.df,
-                           
-                          d1_sek2.true_home.df,
-                           d3_sek2.true_home.df,
-                           d5_sek2.true_home.df,
-                           d7_sek2.true_home.df,
-                           d11_sek2.true_home.df,
-                           d17_sek2.true_home.df)
-
-#merge z scored dfs
-merged.true_home_z.df = rbind(all.hok.true_home.df, all.sek.true_home.df)
-
- 
-merged.true_home_z.df%>%
-  ggplot(aes(x= new.trt, y = od_corrected_b_n, color = group))+
-  geom_boxplot()+
-  facet_wrap(.~decomp_day, scales ="free_y")+
-  theme_classic()
-  
-
-#find difference between LAM+FL vs FL only
-lam_only.df=all.true_home.df%>%
-  dplyr::group_by(tree_id,  deploy, metabolite,tree_num, site_num, group, decomp_day)%>%
-  dplyr::summarize(od_corrected_b_n = sum(od_corrected_b_n[new.trt == "LAM+FL"]) - sum(od_corrected_b_n[new.trt == "FLM-only"]))%>%
-  mutate(new.trt="LAM-only")%>%
-  arrange(decomp_day)
-
-
-#merge by new trt
-all_trt.df=rbind(LAM_FL.df, FL_only.df)
-view(all_trt.df)
-
- # Calculate means for each decomp_day
-means_per_day <- all.true_home.df %>%
-  group_by(decomp_day) %>%
-  summarise(mean_od = mean(od_corrected_b_n, na.rm = TRUE))
-
-
-
- all.true_home.df%>%
-  na.omit()%>%
-   filter(group =="H")%>%
-  ggplot(aes(x=new.trt, y = od_corrected_b_n, color = new.trt))+
-  scale_color_colorblind()+
-  geom_boxplot()+
-         geom_hline(data= means_per_day, aes(yintercept = mean_od, linetype = "Average"), color = alpha("red", 1), linetype = "dashed") +
-  facet_grid(~decomp_day)
- 
-
-```
-
-
 
 
 
@@ -1832,13 +1839,7 @@ P-H vs. AB-AW: The interaction term (TreatmentP:GroupH) captures the additional 
 
 
 
-
-
-
-
-
-
-------------------- mass loss data -------------------------------
+------------------- % mass loss data -------------------------------
 
 Load mass data 
 ```{r}
@@ -1893,6 +1894,7 @@ mass.df%>%
 
 
 ```
+
 
 load abiotic river data 
 ```{r}
@@ -2025,8 +2027,6 @@ mass.deploy.merged.df=rbind(mass.hok1.df, mass.hok2.df, mass.sek1.df, mass.sek2.
 mass.deploy.merged.df=mass.deploy.merged.df %>%
   mutate(hfa = ifelse(hfa == "A", "AW", "H"))
 
-view(mass.deploy.merged.df)
-
 
 mass.deploy.merged.df$treatment=as.factor(as.factor(mass.deploy.merged.df$treatment))
 mass.deploy.merged.df$tree_id=as.factor(as.factor(mass.deploy.merged.df$tree_id))
@@ -2050,7 +2050,6 @@ mass.absent.deploy.merged.df$hfa=as.factor(mass.absent.deploy.merged.df$hfa)
 ```
 
 
-
 Model and plot for z scored mass loss
 ```{r}
 library(multcompView)
@@ -2066,70 +2065,39 @@ mass.deploy.merged.df <- mass.deploy.merged.df %>%
 mass.deploy.merged.df <- mass.deploy.merged.df %>% 
   mutate(pairing = factor(pairing, levels = c("P-H", "P-AW", "AB-H", "AB-AW")))
 
-
-
-
-
 mass_aov1=aov(z_score ~ treatment * hfa, data = na.omit(mass.deploy.merged.df))
-
-mass_aov2=aov(z_score ~ pairing, data = na.omit(mass.deploy.merged.df))
-
-AIC(mass_aov1, mass_aov2)
-summary(mass_aov1)
-plot(mass_aov2)
 mass_tHSD=TukeyHSD(mass_aov1, ordered = F, conf.level = 0.95)
 cld <- multcompLetters4(mass_aov1, mass_tHSD)
-print(cld)
 
 # table with factors and 3rd quantile
 mass.table <- mass.deploy.merged.df%>%
-  group_by(pairing) %>%
-  summarise(mean=mean(z_score), quant = quantile(z_score, probs = 0.75)) %>%
-  arrange(desc(mean))
-
+  dplyr::group_by(treatment, hfa) %>%
+  dplyr::summarise(mean=mean(z_score), quant = quantile(z_score, probs = 0.75)) %>%
+  dplyr::arrange(desc(mean))
 
 # extracting the compact letter display and adding to the Tk table
-  cld <- as.data.frame.list(cld$`treatment:hfa`)
+cld <- as.data.frame.list(cld$`treatment:hfa`)
 mass.table$cld <- cld$Letters
 
 z_contrast.mass.plot=mass.deploy.merged.df%>%
-  ggplot(aes(x=pairing, y = z_score, fill = pairing))+
+  ggplot(aes(x=interaction(treatment, hfa, sep = "-"), y = z_score, fill = interaction(treatment, hfa, sep = "-")))+
   geom_boxplot(alpha = 0.5)+
      geom_point(aes(shape = as.factor(site_num)), position = position_jitter(width = 0.2)) +
   xlab("")+
   ylab("% mass loss (z scored)")+
     labs(shape = "site", fill = "treatment") +  # Change "Your New Legend Title" to your desired title
-  scale_color_colorblind()+
+  scale_fill_colorblind()+
   geom_hline(data = mass.deploy.merged.df, aes(yintercept = mean(z_score), linetype = "Average"), color = "red", linetype = "dotted", size= 1) +
-    geom_text(data = mass.table, aes(y = quant, label = cld), color = "blue", fontface= "bold",size = 5, vjust=-2, hjust =-0.76)+
+    geom_text(data = mass.table, aes(y = quant, label = cld), color = "blue", fontface= "bold",size = 5, vjust=-1.3, hjust =-0.76)+
   Fig.formatting
 
-ggsave("figures/z_contrast.mass.plot.pdf", z_contrast.mass.plot, width = 6, height = 7)
+
+ggsave("figures/z_contrast.mass.plot.pdf", z_contrast.mass.plot, width = 10, height = 6)
 
 mass_aov2=aov(z_score ~ treatment * hfa, data = na.omit(mass.deploy.merged.df))
 
-#bootstrap
-install.packages("boot")
-library(boot)
-# Set up your ANOVA model
-aov.boot <- aov(z_score ~ treatment * hfa, data = na.omit(mass.deploy.merged.df))
 
-# Create a function to extract the statistic of interest
-calculate_statistic <- function(data, indices) {
-  sampled_data <- data[indices, ]
-  sampled_model <- aov(z_score ~ treatment * hfa, data = sampled_data)
-  return(summary(sampled_model)$fstatistic[1])  # Adjust this based on your desired statistic
-}
 
-# Set the number of bootstrap samples
-num_bootstraps <- 1000  # You can adjust this number based on your needs
-
-# Perform bootstrapping
-set.seed(123)  # for reproducibility
-bootstrap_results <- boot(data = mass.deploy.merged.df, statistic = calculate_statistic, R = num_bootstraps)
-
-# Access the bootstrap results
-bootstrap_f_statistic <- bootstrap_results$t
 mass_lmer1=lmer(perc.mass_loss~ treatment * hfa + (1 | tree_id) + (1|tree_num), data = na.omit(mass.deploy.merged.df))
 mass_lmer2=lmer(z_score~ treatment * hfa + (1 | tree_id/tree_num), data = na.omit(mass.deploy.merged.df))
 mass_lm1=lm(z_score ~ treatment + hfa , data = na.omit(mass.deploy.merged.df))
@@ -2144,8 +2112,6 @@ plot(mass_lmer2)
 plot(resid(mass_lmer2))
 
 ```
-
-
 
 
 
