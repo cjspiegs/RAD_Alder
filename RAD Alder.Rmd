@@ -687,6 +687,7 @@ library(multcompView)
 true_home.meta.df=true_home.meta.df%>%
   filter(hours =="24")
 
+
 #z score
 ##### Day 1
 #HOK 1 subset
@@ -1149,9 +1150,11 @@ ggsave("figures/all.packs.plot.pdf", all.packs.plot, width = 22, height = 10)
 
 #### using gams
 view(merged.true_home_z.df)
-true_home.assay.plot=merged.true_home_z.df%>%
+
+true_home.assay.plot
+merged.true_home_z.df%>%
   na.omit() %>%
-  ggplot(aes(x = as.factor(decomp_day), y = od_corrected_b_n, color = pairing, group = pairing)) +
+  ggplot(aes(x = as.factor(decomp_day), y = z_score, color = interaction(treatment,group), group = interaction(treatment,group))) +
   stat_summary(fun = mean, geom = "point", show.legend = F, size = 2.3) +
   geom_smooth(aes(linetype= pairing, fill = pairing),method = 'gam', formula = y ~ s(x, k = 6), alpha = 0.15) +
   xlab("decomposition day")+
@@ -1169,12 +1172,324 @@ true_home.assay.plot=merged.true_home_z.df%>%
   )+
   Fig.formatting
 true_home.assay.plot
-ggsave("figures/true_home.assay.plot.pdf", true_home.assay.plot, width = 15, height = 8)
 
 
-    geom_point(aes(y= neg,  shape = "neg"), size= 2.3, color = alpha("red", 0.3), show.legend = F)
+# present gam models
+p.true_home.gam=gam(z_score ~ s(decomp_day, k=6) + s(tree_id, bs= "re") + s(tree_num, bs= "re"), data = merged.true_home_z.df[merged.true_home_z.df$treatment=="P",])
+summary(p.true_home.gam)
 
-  geom_smooth(aes(y = neg), fill = alpha ("red", 0.3), method = 'loess', formula = y ~ x, span= 0.6, color = alpha("red", 0.3), show.legend = F, linetype = "longdash") 
+p.true_home.gam2=gam(z_score ~ group + s(decomp_day, by= group, k = 6) + s(tree_id, bs= "re") + s(tree_num, bs= "re"), data = merged.true_home_z.df[merged.true_home_z.df$treatment=="P",])
+
+p.true_home.gam3=gam(z_score ~ group + s(decomp_day, by= group, k = 6, bs="ps") + s(tree_id, bs= "re") + s(tree_num, bs= "re"), data = merged.true_home_z.df[merged.true_home_z.df$treatment=="P",])
+summary(p.true_home.gam3)
+
+p.true_home.gam4=gam(z_score ~ group + s(decomp_day, by= group, k = 6, bs="gp") + s(tree_id, bs= "re") + s(tree_num, bs= "re"), data = merged.true_home_z.df[merged.true_home_z.df$treatment=="P",])
+
+p.true_home.gam5=gam(z_score ~ group + s(decomp_day, k = 6, bs="fs") + s(tree_id, bs= "re") + s(tree_num, bs= "re"), data = merged.true_home_z.df[merged.true_home_z.df$treatment=="P",])
+
+AIC(p.true_home.gam,p.true_home.gam2,p.true_home.gam3,p.true_home.gam4, p.true_home.gam5)
+
+
+#plot differences
+plot_difference(
+  p.true_home.gam,
+  series = decomp_day
+)+
+  Fig.formatting
+
+#plot with model
+p.tue_home.gam.plot=plot_smooths(
+model = p.true_home.gam,
+series = decomp_day,
+) + 
+stat_summary(data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment == "P",]), 
+             fun = mean, geom = "point", size = 1.8, aes(color = group, x = decomp_day)) +
+ggtitle("Present treatment only") +
+xlab("decomposition day") +
+ylab(expression("standardized optical density (OD"[450~nm]*")")) +
+scale_color_colorblind() +
+scale_fill_colorblind() +
+geom_hline(aes(yintercept = 0, linetype = "Average"), color = alpha("red", 1), linetype = "dotted") +
+  coord_cartesian(ylim = c(-1,1))+
+      scale_x_continuous( breaks = seq(1, 17, by = 2))+
+theme(
+  axis.text = element_text(size = 12),
+  axis.title = element_text(size = 14),
+  legend.text = element_text(size = 12),
+  legend.title = element_text(size = 14),
+  strip.text = element_text(size = 16)
+) +
+Fig.formatting
+
+
+merged.true_home_z.df%>%
+    na.omit() %>%
+  filter(treatment == "P")%>%
+  ggplot(aes(x = as.factor(decomp_day), y = z_score, color = group, group = group)) +
+  stat_summary(fun = median, geom = "point", size = 2.3) +
+  geom_smooth(aes(linetype= group, fill = group),method = 'gam', formula = y ~ s(x, k = 6), alpha = 0.15) +
+    ggtitle("Present treatment only")+
+  xlab("decomposition day")+
+    ylab(expression("standardized optical density (OD"[450~nm]*")"))+
+  scale_color_colorblind()+
+  scale_fill_colorblind()+
+    coord_cartesian(ylim = c(-1,1))+
+      geom_hline(aes(yintercept = 0, linetype = "Average"), color = alpha("red", 1), linetype = "dotted") +
+  theme(
+    axis.text = element_text(size = 12),
+    axis.title = element_text(size = 14),
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 14),
+    strip.text = element_text(size = 16)
+  )+
+  Fig.formatting
+
+
+
+# absent gam
+ab.true_home.gam=gam(z_score ~ group + s(decomp_day, k = 6) + s(tree_id, bs= "re") + s(tree_num, bs= "re"), data = merged.true_home_z.df[merged.true_home_z.df$treatment=="AB",])
+
+ab.true_home.gam2=gam(z_score ~ group + s(decomp_day, by= group, k = 6) + s(tree_id, bs= "re") + s(tree_num, bs= "re"), data = merged.true_home_z.df[merged.true_home_z.df$treatment=="AB",])
+ab.true_home.gam3=gam(z_score ~ group + s(decomp_day, by= group, k = 6, bs="ps") + s(tree_id, bs= "re") + s(tree_num, bs= "re"), data = merged.true_home_z.df[merged.true_home_z.df$treatment=="AB",])
+ab.true_home.gam4=gam(z_score ~ group + s(decomp_day, by= group, k = 6, bs="gp") + s(tree_id, bs= "re") + s(tree_num, bs= "re"), data = merged.true_home_z.df[merged.true_home_z.df$treatment=="AB",])
+ab.true_home.gam5=gam(z_score ~ group + s(decomp_day, k = 6, bs="fs") + s(tree_id, bs= "re") + s(tree_num, bs= "re"), data = merged.true_home_z.df[merged.true_home_z.df$treatment=="AB",])
+
+
+AIC(ab.true_home.gam3,ab.true_home.gam5)
+summary(ab.true_home.gam2)
+gam.check(ab.true_home.gam2)
+
+#plot differences
+plot_difference(
+  ab.true_home.gam3,
+  series = decomp_day,
+  difference = list(group = c("AW", "H"))
+)+
+  Fig.formatting
+
+summary(ab.true_home.gam3)
+#plot with model
+ab.tue_home.gam.plot=plot_smooths(
+model = ab.true_home.gam3,
+series = decomp_day,
+  comparison = group
+) + 
+stat_summary(data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment == "AB",]),
+              fun = mean, geom = "point", size = 1.8, aes(group = group, color = group, x = decomp_day)) +
+ggtitle("Absent treatment only") +
+xlab("decomposition day") +
+ylab(expression("standardized optical density (OD"[450~nm]*")")) +
+scale_color_colorblind() +
+scale_fill_colorblind() +
+geom_hline(aes(yintercept = 0, linetype = "Average"), color = alpha("red", 1), linetype = "dotted") +
+coord_cartesian(ylim = c(-1, 1)) +
+    scale_x_continuous( breaks = seq(1, 17, by = 2))+
+theme(
+  axis.text = element_text(size = 12),
+  axis.title = element_text(size = 14),
+  legend.text = element_text(size = 12),
+  legend.title = element_text(size = 14),
+  strip.text = element_text(size = 16)
+) +
+Fig.formatting
+
+merged.true_home_z.df%>%
+    na.omit() %>%
+  filter(treatment == "AB")%>%
+  ggplot(aes(x = as.factor(decomp_day), y = z_score, color = group, group = group)) +
+  stat_summary(fun = mean, geom = "point", size = 2.3) +
+  geom_smooth(aes(linetype= group, fill = group),method = 'gam', formula = y ~ s(x, k = 6), alpha = 0.15) +
+  ggtitle("Absent treatment only")+
+  xlab("decomposition day")+
+    ylab(expression("standardized optical density (OD"[450~nm]*")"))+
+  scale_color_colorblind()+
+  scale_fill_colorblind()+
+      geom_hline(aes(yintercept = 0, linetype = "Average"), color = alpha("red", 1), linetype = "dotted") +
+  coord_cartesian(ylim = c(-1,1))+
+      scale_x_discrete(expand = c(0.03, 0.03)) +  # Adjust the expand argument
+  theme(
+    axis.text = element_text(size = 12),
+    axis.title = element_text(size = 14),
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 14),
+    strip.text = element_text(size = 16)
+  )+
+  Fig.formatting
+ab.tue_home.gam.plot
+
+  scale_y_continuous(limits = c(-1, 1), breaks = seq(-1, 1, by = 0.25))
+
+
+#present box (use response: od_corrected_b_n)
+day1.p.meta_aov1=aov(z_score ~ group, subset = decomp_day == "1", data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment=="P",]))
+plot(resid(day1.p.meta_aov1))
+
+day1.p.meta_aov2=aov(od_corrected_b_n ~ group, subset = decomp_day == "1", data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment=="P",]))
+plot(resid(day1.p.meta_aov2))
+summary(day1.p.meta_aov)
+
+AIC(day1.p.meta_aov1,day1.p.meta_aov2)
+
+
+day1.p.meta_lmer=lmer(od_corrected_b_n ~ group + (1 | deploy) + (1|tree_id) + ( 1 | site_num) + (1|tree_num), subset = decomp_day == "1", data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment=="P",]))
+summary(day1.p.meta_lmer)
+plot(resid(day1.p.meta_lmer))
+
+AIC(day1.p.meta_aov,day1.p.meta_lmer)
+
+day3.p.meta_aov1=aov(z_score ~ group, subset = decomp_day == "3", data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment=="P",]))
+summary(day3.p.meta_aov1)
+
+day3.p.meta_aov=aov(od_corrected_b_n ~ group, subset = decomp_day == "3", data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment=="P",]))
+summary(day3.p.meta_aov)
+day3.p.meta_lmer=lmer(od_corrected_b_n ~ group + (1 | deploy) + (1|tree_id) + ( 1 | site_num) + (1|tree_num), subset = decomp_day == "3", data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment=="P",]))
+summary(day3.p.meta_lmer)
+
+day5.p.meta_aov1=aov(z_score ~ group, subset = decomp_day == "5", data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment=="P",]))
+summary(day5.p.meta_aov1)
+
+day5.p.meta_lmer2=lmer(z_score ~ group  + (1 | tree_id) , subset = decomp_day == "5", data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment=="P",]))
+AIC(day5.p.meta_aov1,day5.p.meta_lmer2)
+
+day5.p.meta_aov=aov(od_corrected_b_n ~ group, subset = decomp_day == "5", data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment=="P",]))
+summary(day5.p.meta_aov)
+day5.p.meta_lmer=lmer(od_corrected_b_n ~ group + (1 | deploy) + (1|tree_id) + ( 1 | site_num) + (1|tree_num), subset = decomp_day == "5", data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment=="P",]))
+summary(day5.p.meta_lmer)
+
+
+day7.p.meta_aov1=aov(z_score ~ group, subset = decomp_day == "7", data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment=="P",]))
+summary(day7.p.meta_aov1)
+
+day7.p.meta_aov=aov(od_corrected_b_n ~ group, subset = decomp_day == "7", data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment=="P",]))
+summary(day7.p.meta_aov)
+day7.p.meta_lmer=lmer(od_corrected_b_n ~ group + (1 | deploy) + (1|tree_id) + ( 1 | site_num) + (1|tree_num), subset = decomp_day == "7", data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment=="P",]))
+summary(day7.p.meta_lmer)
+
+
+day11.p.meta_aov1=aov(z_score ~ group, subset = decomp_day == "11", data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment=="P",]))
+summary(day11.p.meta_aov1)
+
+day11.p.meta_aov=aov(od_corrected_b_n ~ group, subset = decomp_day == "11", data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment=="P",]))
+summary(day11.p.meta_aov)
+day11.p.meta_lmer=lmer(od_corrected_b_n ~ group + (1 | deploy) + (1|tree_id) + ( 1 | site_num) + (1|tree_num), subset = decomp_day == "11", data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment=="P",]))
+summary(day11.p.meta_lmer)
+
+
+day17.p.meta_aov1=aov(z_score ~ group, subset = decomp_day == "17", data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment=="P",]))
+summary(day17.p.meta_aov1)
+
+day17.p.meta_aov=aov(od_corrected_b_n ~ group, subset = decomp_day == "17", data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment=="P",]))
+summary(day17.p.meta_aov)
+day17.p.meta_lmer=lmer(od_corrected_b_n ~ group + (1 | deploy) + (1|tree_id) + ( 1 | site_num) + (1|tree_num), subset = decomp_day == "17", data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment=="P",]))
+summary(day17.p.meta_lmer)
+
+#based on the above model comparisons (lower AIC), we will use anova with response: z score
+day1.p.meta_aov1=aov(z_score ~ group, subset = decomp_day == "1", data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment=="P",]))
+day3.p.meta_aov1=aov(z_score ~ group, subset = decomp_day == "3", data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment=="P",]))
+day5.p.meta_aov1=aov(z_score ~ group, subset = decomp_day == "5", data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment=="P",]))
+day7.p.meta_aov1=aov(z_score ~ group, subset = decomp_day == "7", data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment=="P",]))
+day11.p.meta_aov1=aov(z_score ~ group, subset = decomp_day == "11", data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment=="P",]))
+day17.p.meta_aov1=aov(z_score ~ group, subset = decomp_day == "17", data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment=="P",]))
+
+#model ouput
+summary(day1.p.meta_aov1)
+summary(day3.p.meta_aov1)
+summary(day5.p.meta_aov1)
+summary(day7.p.meta_aov1)
+summary(day11.p.meta_aov1)
+summary(day17.p.meta_aov1)
+
+#present boxplot
+p.meta.true_home.boxplot=merged.true_home_z.df%>%
+    na.omit() %>%
+  filter(treatment == "P")%>%
+  ggplot(aes(x = group, y = z_score, fill = group, group = group)) +
+  geom_boxplot(alpha= 0.5)+
+  xlab("group")+
+  ggtitle("Present treatment only")+
+    ylab(expression("standardized optical density (OD"[450~nm]*")"))+
+  scale_fill_colorblind()+
+    geom_hline(aes(yintercept = 0, linetype = "Average"), color = alpha("red", 1), linetype = "dashed") +
+coord_cartesian(ylim = c(-2,2))+
+facet_wrap(.~decomp_day, labeller = labeller(decomp_day = c("1" = "Day 1", "3" = "Day 3","5" = "Day 5","7" = "Day 7","11" = "Day 11", "17" = "Day 17")))+
+  theme(
+    axis.text = element_text(size = 12),
+    axis.title = element_text(size = 14),
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 14),
+    strip.text = element_text(size = 16)
+  )+
+  Fig.formatting
+
+p.meta.true_home.boxplot
+
+
+#absent boxplot
+#based on the above model comparisons (lower AIC), we will use anova with response: z score
+day1.ab.meta_aov1=aov(z_score ~ group, subset = decomp_day == "1", data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment=="AB",]))
+day3.ab.meta_aov1=aov(z_score ~ group, subset = decomp_day == "3", data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment=="AB",]))
+day5.ab.meta_aov1=aov(z_score ~ group, subset = decomp_day == "5", data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment=="AB",]))
+day7.ab.meta_aov1=aov(z_score ~ group, subset = decomp_day == "7", data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment=="AB",]))
+day11.ab.meta_aov1=aov(z_score ~ group, subset = decomp_day == "11", data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment=="AB",]))
+day17.ab.meta_aov1=aov(z_score ~ group, subset = decomp_day == "17", data = na.omit(merged.true_home_z.df[merged.true_home_z.df$treatment=="AB",]))
+
+#model ouput
+summary(day1.ab.meta_aov1)
+summary(day3.ab.meta_aov1)
+summary(day5.ab.meta_aov1)
+summary(day7.ab.meta_aov1)
+summary(day11.ab.meta_aov1)
+summary(day17.ab.meta_aov1)
+
+#plot
+ab.meta.true_home.boxplot=merged.true_home_z.df%>%
+    na.omit() %>%
+  filter(treatment == "AB")%>%
+  ggplot(aes(x = group, y = z_score, fill = group, group = group)) +
+  geom_boxplot(alpha= 0.5)+
+  xlab("group")+
+    ggtitle("Absent treatment only")+
+    ylab(expression("standardized optical density (OD"[450~nm]*")"))+
+  scale_fill_colorblind()+
+    geom_hline(aes(yintercept = 0, linetype = "Average"), color = alpha("red", 1), linetype = "dashed") +
+  facet_wrap(.~decomp_day, labeller = labeller(decomp_day = c("1" = "Day 1", "3" = "Day 3","5" = "Day 5","7" = "Day 7","11" = "Day 11", "17" = "Day 17")))+
+  theme(
+    axis.text = element_text(size = 12),
+    axis.title = element_text(size = 14),
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 14),
+    strip.text = element_text(size = 16)
+  )+
+  Fig.formatting
+
+ab.meta.true_home.boxplot
+
+#present gam and boxplot merged
+present.meta.gam_box.plot=plot_grid(
+ p.meta.true_home.boxplot,
+   p.tue_home.gam.plot,
+  rel_widths = c(8,8),
+  ncol=2
+)
+
+#absent gam and boxplot merged
+absent.meta.gam_box.plot=plot_grid(
+ ab.meta.true_home.boxplot,
+   ab.tue_home.gam.plot,
+  rel_widths = c(8,8),
+  ncol=2
+)
+
+#combined
+p.ab.meta.gam_box.plot=
+  plot_grid(
+ present.meta.gam_box.plot,
+   absent.meta.gam_box.plot,
+  rel_widths = c(8,8),
+  nrow=2
+)
+
+ggsave("figures/p.ab.meta.gam_box.plot.pdf", p.ab.meta.gam_box.plot, width = 24, height = 18)
 
 
 
@@ -2065,7 +2380,7 @@ mass.loss.plot=plot_grid(
   ncol=3,
   rel_widths = c(8,8,3))
 
-ggsave("figures/mass.loss.plot.pdf", mass.loss.plot, width = 20, height = 12 )
+ggsave("figures/mass.loss.plot.pdf", mass.loss.plot, width = 20, height = 6 )
 
 ```
 
