@@ -833,8 +833,8 @@ all.sek.true_home.df=rbind(d1_sek1.true_home.df,
 #merge all z scored dfs
 merged.true_home_z.df = rbind(all.hok.true_home.df, all.sek.true_home.df)
 merged.true_home_z.df <- merged.true_home_z.df %>% 
-  mutate(treatment = factor(treatment, levels = c("P", "AB")))%>%
-           mutate(group = factor(group, levels =c("H", "AW")))
+  mutate(treatment = factor(treatment, levels = c("AB", "P")))%>%
+           mutate(group = factor(group, levels =c("AW", "H")))
 
 # Calculate means for each decomp_day
 #od readings
@@ -861,7 +861,7 @@ ggsave("figures/od_true.home.boxplot.pdf", od_true.home.boxplot, width = 8, heig
 ##### models by decomp day
 merged.true_home_z.df <- merged.true_home_z.df %>% 
   mutate(treatment = factor(treatment, levels = c("P", "AB")))%>%
-           mutate(group = factor(group, levels =c("AW", "H")))
+           mutate(group = factor(group, levels =c("H", "AW")))
 #Day 1
 d1_aov=aov(od_corrected_b_n ~ treatment*group, subset = decomp_day == "1", data = na.omit(merged.true_home_z.df))
 summary(d1_aov)
@@ -1147,7 +1147,12 @@ plot_grid(
 
 
 ggsave("figures/all.packs.plot.pdf", all.packs.plot, width = 22, height = 10)
+```
 
+
+
+12/14/23: model exploration for gams and boxplots (anova); final figs
+```{r}
 #### using gams
 view(merged.true_home_z.df)
 
@@ -1492,8 +1497,8 @@ p.ab.meta.gam_box.plot=
 ggsave("figures/p.ab.meta.gam_box.plot.pdf", p.ab.meta.gam_box.plot, width = 24, height = 18)
 
 
-
 ```
+
 
 
 ```{r}
@@ -1546,7 +1551,9 @@ hist(resid(aov3))
 
 ```
 
-This is raw and z scored of all communities
+
+
+
 ```{r}
 meta.450.df=meta.450.df%>%
   filter(hours =="24")
@@ -2280,7 +2287,7 @@ mass.absent.deploy.merged.df$hfa=as.factor(mass.absent.deploy.merged.df$hfa)
 ```
 
 
-Model and plot for z scored mass loss
+12/13/23 model and plot for z scored mass loss; final fig
 ```{r}
 library(multcompView)
 
@@ -2288,11 +2295,20 @@ library(multcompView)
 mass.deploy.merged.df <- mass.deploy.merged.df %>%
   mutate(pairing = paste(treatment, hfa, sep = "-"))
 
+mass.deploy.merged.df %>% 
+  mutate(treatment = factor(treatment, levels = c("P", "AB")))%>%
+           mutate(hfa = factor(hfa, levels =c("H", "AW")))
+#Day 1
+
 #model exploration
 p.mass_aov1=aov(z_score ~ hfa, data = na.omit(mass.deploy.merged.df[mass.deploy.merged.df$treatment=="P",]))
 m2=lmer(perc.mass_loss ~ hfa + (1 | tree_id) + (1 | tree_num) + (1 | deploy) + (1 | site_num), data = na.omit(mass.deploy.merged.df[mass.deploy.merged.df$treatment=="P",]) )
 m3=lmer(z_score ~ hfa + (1 | tree_num) , data = na.omit(mass.deploy.merged.df[mass.deploy.merged.df$treatment=="P",]) )
 
+t.test(na.omit(mass.deploy.merged.df[mass.deploy.merged.df$treatment=="P" & mass.deploy.merged.df$hfa=="H",]$perc.mass_loss),na.omit(mass.deploy.merged.df[mass.deploy.merged.df$treatment=="P" & mass.deploy.merged.df$hfa=="AW",]$perc.mass_loss))
+
+p.mass_aov=aov(perc.mass_loss ~ hfa, data = na.omit(mass.deploy.merged.df[mass.deploy.merged.df$treatment=="P",]))
+summary(p.mass_aov)
 
 #model aov 1
 summary(p.mass_aov1)
@@ -2383,6 +2399,7 @@ mass.loss.plot=plot_grid(
 ggsave("figures/mass.loss.plot.pdf", mass.loss.plot, width = 20, height = 6 )
 
 ```
+
 
 
 ```{r}
@@ -2677,6 +2694,8 @@ ggplot(mass.deploy.merged.df, aes(x = combined_group, y = z_score, fill = combin
 
 
 ```
+
+
 
 model exploration of all treatments: ph, pa, abh, aba; lmer 7 is best fit
 ```{r}
@@ -4146,7 +4165,7 @@ range(positive_values[positive_values$treatment == "P",]$values)
 
 ```
 
-Plot
+12/14/23: updated HFAI above, this is the final fig
 ```{r}
 #all sites
 range(hfai.allsites.df$values)
@@ -4154,8 +4173,8 @@ range(hfai.allsites.df$values)
 hfai.allsites.plot=hfai.allsites.df%>%
   filter(!is.na(values)) %>%
   ggplot(aes(x = reorder(names, values), y = values, fill = treatment, width = 0.85)) +
-scale_fill_colorblind()+
-geom_bar(stat = "identity", position ="dodge", alpha = 0.5) +
+scale_fill_manual(values  = c("#CC79A7", "#009E73"))+
+geom_bar(stat = "identity", position ="dodge", alpha = 0.7) +
   xlab("") +
   ylab("% faster decomposition at home") +
   theme_minimal() +
@@ -5777,6 +5796,204 @@ pos_permanova_ra <- adonis2(pos_dist_metabolites_ra ~ pos_PCA_whole_ra_scores$At
 
 #by tree ID
 adonis2(pos_dist_metabolites_ra ~ PCA_whole_ra_scores_pos$Attribute_TreeID, PCA_whole_ra_scores_pos, na.action = na.omit)
+
+
+```
+
+
+isotopes
+```{r}
+#load data
+isotope.df=read.csv("/Users/Cody1/Desktop/GitHub/RAD Alder/data/isotopes.csv") 
+isotope.df$tree_id <- as.factor(isotope.df$tree_id)
+isotope.df$treatment <- as.factor(isotope.df$treatment)
+view(isotope.df)
+
+#add columns
+isotope.df=isotope.df%>%
+  group_by(treatment, tree_id, site_num, tree_num)%>%
+    mutate(total_C.g=total_C/10^6)%>%
+    mutate(total_N.g=total_N/10^6)%>%
+    mutate(c_n = total_C.g / total_N.g)%>%
+    mutate(weight.g = weight/1000)%>%
+    mutate(perc.C= (total_C.g/weight.g)*100)%>%
+    mutate(perc.N= (total_N.g/weight.g)*100)
+
+
+#C:N ratio
+c_n.aov=aov(c_n ~ treatment, data =isotope.df)
+c_n.tHSD=TukeyHSD(c_n.aov, ordered = F, conf.level = 0.95)
+c_n.cld <- multcompLetters4(c_n.aov, c_n.tHSD)
+
+# table with factors and 3rd quantile
+c_n.table <- isotope.df%>%
+  dplyr::group_by(treatment) %>%
+  dplyr::summarise(mean=mean(c_n), quant = quantile(c_n, probs = 0.75)) %>%
+  dplyr::arrange(desc(mean))
+
+# extracting the compact letter display and adding to the Tk table
+c_n.cld <- as.data.frame.list(c_n.cld$treatment)
+c_n.table$cld <- c_n.cld$Letters
+#plot
+
+C_N.plot=isotope.df %>%
+  ggplot(aes(x = treatment, y = c_n, fill = treatment)) +
+  geom_boxplot(alpha = 0.6) +
+  xlab("treatment")+
+  ylab("C:N")+
+  geom_point(aes(shape = as.factor(site_num)), position = position_jitter(width = 0.15))+
+  scale_fill_colorblind()+
+  geom_hline(aes(yintercept = mean(c_n), linetype = "Average"), color = alpha("red", 1), linetype = "dashed") +
+  theme_classic()+
+  theme(plot.title = element_text(face = "bold"))+
+  geom_text(data = c_n.table, aes(y = quant, label = cld), color = "blue", fontface= "bold",size = 5, vjust=-2, hjust =-0.76)+
+  theme_classic()
+
+summary(c_n.aov)
+plot(resid(c_n.aov))
+c_n.t_test=t.test(isotope.df[isotope.df$treatment == "P",]$C_N, isotope.df[isotope.df$treatment == "AB",]$C_N)
+c_n.lmer=lmer(C_N ~ treatment  + ( 1 | tree_id) + (1 | tree_num) + (1 | site_num), data =isotope.df)
+c_n.lmer2=lmer(C_N ~ treatment  + ( 1 | tree_id) + (1 | tree_num) + (1 | site_num), data =isotope.df)
+c_n.lmer3=lmer(C_N ~ treatment  + ( 1 | tree_id) + (1 | tree_num), data =isotope.df)
+c_n.lmer4=lmer(C_N ~ treatment  + ( 1 | tree_id), data =isotope.df)
+c_n.lmer5=lmer(C_N ~ treatment  + (1 | tree_num) + (1 | site_num), data =isotope.df)
+c_n.lmer6=lmer(C_N ~ treatment  + (1 | tree_num), data =isotope.df)
+c_n.lmer7=lmer(C_N ~ treatment  + (1 | site_num), data =isotope.df)
+c_n.lmer8=lmer(C_N ~ treatment  + ( 1 | tree_id) + (1 | site_num), data =isotope.df)
+
+
+AIC(c_n.aov, c_n.lmer,c_n.lmer2,c_n.lmer3,c_n.lmer4,c_n.lmer5,c_n.lmer6,c_n.lmer7,c_n.lmer8)
+
+#d13C
+d13C.aov=aov(d13C ~ treatment, data =isotope.df)
+d13C.tHSD=TukeyHSD(d13C.aov, ordered = F, conf.level = 0.95)
+d13C.cld <- multcompLetters4(d13C.aov, d13C.tHSD)
+
+# table with factors and 3rd quantile
+d13C.table <- isotope.df%>%
+  dplyr::group_by(treatment) %>%
+  dplyr::summarise(mean=mean(d13C), quant = quantile(d13C, probs = 0.75)) %>%
+  dplyr::arrange(desc(mean))
+
+# extracting the compact letter display and adding to the Tk table
+d13C.cld <- as.data.frame.list(d13C.cld$treatment)
+d13C.table$cld <- d13C.cld$Letters
+#plot
+
+d13C.plot=isotope.df %>%
+  ggplot(aes(x = treatment, y = d13C, fill = treatment)) +
+  geom_boxplot(alpha = 0.6) +
+  xlab("treatment")+
+  ylab("d13C")+
+  geom_point(aes(shape = as.factor(site_num)), position = position_jitter(width = 0.15))+
+  scale_fill_colorblind()+
+  geom_hline(aes(yintercept = mean(d13C), linetype = "Average"), color = alpha("red", 1), linetype = "dashed") +
+  theme_classic()+
+  theme(plot.title = element_text(face = "bold"))+
+  geom_text(data = d13C.table, aes(y = quant, label = cld), color = "blue", fontface= "bold",size = 5, vjust=-2, hjust =-0.76)+
+  theme_classic()
+
+
+
+#d15N
+d15N.aov=aov(d15N ~ treatment, data =isotope.df)
+d15N.tHSD=TukeyHSD(d15N.aov, ordered = F, conf.level = 0.95)
+d15N.cld <- multcompLetters4(d15N.aov, d15N.tHSD)
+
+# table with factors and 3rd quantile
+d15N.table <- isotope.df%>%
+  dplyr::group_by(treatment) %>%
+  dplyr::summarise(mean=mean(d15N), quant = quantile(d15N, probs = 0.75)) %>%
+  dplyr::arrange(desc(mean))
+
+# extracting the compact letter display and adding to the Tk table
+d15N.cld <- as.data.frame.list(d15N.cld$treatment)
+d15N.table$cld <- d15N.cld$Letters
+
+#plot
+d15N.plot=isotope.df %>%
+  ggplot(aes(x = treatment, y = d15N, fill = treatment)) +
+  geom_boxplot(alpha = 0.6) +
+  xlab("treatment")+
+  ylab("d15N")+
+  geom_point(aes(shape = as.factor(site_num)), position = position_jitter(width = 0.15))+
+  scale_fill_colorblind()+
+  geom_hline(aes(yintercept = mean(d15N), linetype = "Average"), color = alpha("red", 1), linetype = "dashed") +
+  theme_classic()+
+  theme(plot.title = element_text(face = "bold"))+
+  geom_text(data = d15N.table, aes(y = quant, label = cld), color = "blue", fontface= "bold",size = 5, vjust=-2, hjust =-0.76)+
+  theme_classic()
+
+# %C
+perc.C.aov=aov(perc.C ~ treatment, data =isotope.df)
+perc.C.tHSD=TukeyHSD(perc.C.aov, ordered = F, conf.level = 0.95)
+perc.C.cld <- multcompLetters4(perc.C.aov, d15N.tHSD)
+
+# table with factors and 3rd quantile
+perc.C.table <- isotope.df%>%
+  dplyr::group_by(treatment) %>%
+  dplyr::summarise(mean=mean(perc.C), quant = quantile(perc.C, probs = 0.75)) %>%
+  dplyr::arrange(desc(mean))
+
+# extracting the compact letter display and adding to the Tk table
+perc.C.cld <- as.data.frame.list(perc.C.cld$treatment)
+perc.C.table$cld <- perc.C.cld$Letters
+
+#plot
+perc.C.plot=isotope.df %>%
+  ggplot(aes(x = treatment, y = perc.C, fill = treatment)) +
+  geom_boxplot(alpha = 0.6) +
+  xlab("treatment")+
+  ylab("% C")+
+  geom_point(aes(shape = as.factor(site_num)), position = position_jitter(width = 0.15))+
+  scale_fill_colorblind()+
+  geom_hline(aes(yintercept = mean(perc.C), linetype = "Average"), color = alpha("red", 1), linetype = "dashed") +
+  theme_classic()+
+  theme(plot.title = element_text(face = "bold"))+
+  geom_text(data = perc.C.table, aes(y = quant, label = cld), color = "blue", fontface= "bold",size = 5, vjust=-2, hjust =-0.76)+
+  theme_classic()
+
+
+# %N
+perc.N.aov=aov(perc.N ~ treatment, data =isotope.df)
+perc.N.tHSD=TukeyHSD(perc.N.aov, ordered = F, conf.level = 0.95)
+perc.N.cld <- multcompLetters4(perc.N.aov, d15N.tHSD)
+
+# table with factors and 3rd quantile
+perc.N.table <- isotope.df%>%
+  dplyr::group_by(treatment) %>%
+  dplyr::summarise(mean=mean(perc.N), quant = quantile(perc.N, probs = 0.75)) %>%
+  dplyr::arrange(desc(mean))
+
+# extracting the compact letter display and adding to the Tk table
+perc.N.cld <- as.data.frame.list(perc.N.cld$treatment)
+perc.N.table$cld <- perc.N.cld$Letters
+
+#plot
+perc.N.plot=isotope.df %>%
+  ggplot(aes(x = treatment, y = perc.N, fill = treatment)) +
+  geom_boxplot(alpha = 0.6) +
+  xlab("treatment")+
+  ylab("% N")+
+  geom_point(aes(shape = as.factor(site_num)), position = position_jitter(width = 0.15))+
+  scale_fill_colorblind()+
+  geom_hline(aes(yintercept = mean(perc.N), linetype = "Average"), color = alpha("red", 1), linetype = "dashed") +
+  theme_classic()+
+  theme(plot.title = element_text(face = "bold"))+
+  geom_text(data = perc.N.table, aes(y = quant, label = cld), color = "blue", fontface= "bold",size = 5, vjust=-2, hjust =-0.76)+
+  theme_classic()
+
+prelim.isotope.plot=plot_grid(
+  C_N.plot,
+  d13C.plot,
+  d15N.plot,
+  perc.C.plot,
+  perc.N.plot,
+  rel_widths = c(8,8,8,8,8))
+  
+  
+ggsave("figures/prelim.isotope.plot.pdf", prelim.isotope.plot, width = 18, height = 12)
+
 
 
 ```
