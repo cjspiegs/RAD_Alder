@@ -2298,12 +2298,14 @@ mass.deploy.merged.df <- mass.deploy.merged.df %>%
 mass.deploy.merged.df %>% 
   mutate(treatment = factor(treatment, levels = c("P", "AB")))%>%
            mutate(hfa = factor(hfa, levels =c("H", "AW")))
-#Day 1
 
 #model exploration
 p.mass_aov1=aov(z_score ~ hfa, data = na.omit(mass.deploy.merged.df[mass.deploy.merged.df$treatment=="P",]))
+summary(p.mass_aov1)
 m2=lmer(perc.mass_loss ~ hfa + (1 | tree_id) + (1 | tree_num) + (1 | deploy) + (1 | site_num), data = na.omit(mass.deploy.merged.df[mass.deploy.merged.df$treatment=="P",]) )
+summary(m2)
 m3=lmer(z_score ~ hfa + (1 | tree_num) , data = na.omit(mass.deploy.merged.df[mass.deploy.merged.df$treatment=="P",]) )
+summary(m3)
 
 t.test(na.omit(mass.deploy.merged.df[mass.deploy.merged.df$treatment=="P" & mass.deploy.merged.df$hfa=="H",]$perc.mass_loss),na.omit(mass.deploy.merged.df[mass.deploy.merged.df$treatment=="P" & mass.deploy.merged.df$hfa=="AW",]$perc.mass_loss))
 
@@ -2396,7 +2398,15 @@ mass.loss.plot=plot_grid(
   ncol=3,
   rel_widths = c(8,8,3))
 
-ggsave("figures/mass.loss.plot.pdf", mass.loss.plot, width = 20, height = 6 )
+ggsave("figures/mass.loss.plot.pdf", mass.loss.plot, width = 20, height = 6)
+
+#### anova for treatment P vs AB only
+m4=lmer(z_score ~ treatment + (1 | hfa) , data = na.omit(mass.deploy.merged.df))
+aov4=aov(z_score ~ treatment , data = na.omit(mass.deploy.merged.df))
+
+summary(aov4)
+
+AIC(m4, aov4)
 
 ```
 
